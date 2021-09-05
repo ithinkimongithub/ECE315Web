@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<!--Author: Thomas Kubler. using examples from w3schools.com-->
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    
+    <script defer src="ecescript.js"></script>
+    <title>ECE 315 Examples</title>
+
+    <!--<link href="styles.css" rel="stylesheet"> If the CSS goes overboard, the MathJax breaks-->
+
+    <!-- MathJax for equations means the local styles has to be removed. Apache 2.0 license -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script type="text/javascript" id="MathJax-script" async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+    </script>
+    <style>
+        body{
+            background-color: rgb(240,240,240);
+        }
+        .tablink {
+            background-color: rgb(70,71,117);
+            color: white;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 14px;
+            font-size: 17px;
+            width: 20%;
+        }
+        .tablink:hover {
+            background-color: #33F;
+        }
+    </style>
+</head>
+
+<body onload="InitPage()">
+    <h1>ECE 315 Examples</h1>
+    <button class="tablink" onclick="openBigTab('DCCircuits',this)" >DC Circuits</button>
+    <button class="tablink" onclick="openBigTab('ACCircuits',this)" id="defaultOpen">AC Circuits</button>
+    <button class="tablink" onclick="openBigTab('tab3',this)">tab3</button>
+    <button class="tablink" onclick="openBigTab('tab4',this)">tab4</button>
+    <button class="tablink" onclick="openBigTab('tab5',this)">tab5</button>
+    <br>
+    <button class="tablink" onclick="openBigTab('tab6',this)">tab6</button>
+    <button class="tablink" onclick="openBigTab('tab7',this)">tab7</button>
+    <button class="tablink" onclick="openBigTab('tab8',this)">tab8</button>
+    <button class="tablink" onclick="openBigTab('tab9',this)">tab9</button>
+    <button class="tablink" onclick="openBigTab('tab0',this)">tab0</button>
+    <br>
+    <button class="tablink" onclick="openBigTab('commequations',this)">Communications</button>
+    <button class="tablink" onclick="openBigTab('commpicture',this)">Comm Picture</button>
+    <button class="tablink" onclick="openBigTab('radarequations',this)">RADAR</button>
+    <button class="tablink" onclick="openBigTab('radardoppler',this)" >Doppler</button>
+    <button class="tablink" onclick="openBigTab('radarjamming',this)">Jamming</button>
+
+    <div class="tabcontent" id="DCCircuits">
+        <hr />
+        <!--<img src="static/CircuitOneR.PNG" alt="One Resistor Circuit" height="300">-->
+        <p>Ohm's Law says that the current through a resistor is directly proportional to the applied voltage: \[V=I\times R\]</p>
+        <p>Commonly, voltage and resistance are defined and we are computing the current: \[I=\frac{V}{R}\]</p>
+        Voltage: <input type="number" id="virvoltage" min="1" max="999" value="12" step="any" onchange="ChangedCircuits()">
+        <select id="selectvvir" onchange="ChangedCircuits()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        <br>
+        Resistance: <input type="number" id="virresistance" min="1" max="999" value="100" step="any" onchange="ChangedCircuits()">
+        <select id="selectrvir" onchange="ChangedCircuits()">
+            <option value="-3">m&#8486;</option>
+            <option value="0" selected>&#8486;</option>
+            <option value="3">k&#8486;</option>
+            <option value="6">M&#8486;</option>
+            <option value="9">G&#8486;</option>
+        </select>
+        <p id="virequation">eqn</p>
+        <hr />
+        <p>Power is the product of voltage and current: \[P=V\times I\]</p>
+        Voltage: <input type="number" id="pvivoltage" min="1" max="999" value="12" step="any" onchange="ChangedCircuits()">
+        <select id="selectvpvi" onchange="ChangedCircuits()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        <br>
+        Current: <input type="number" id="pvicurrent" min="1" max="999" value="120" step="any" onchange="ChangedCircuits()">
+        <select id="selectipvi" onchange="ChangedCircuits()">
+            <option value="-9">nA</option>
+            <option value="-6">&#181;A</option>
+            <option value="-3" selected>mA</option>
+            <option value="0">A</option>
+            <option value="3">kA</option>
+            <option value="6">MA</option>
+        </select>
+        <p id="pviequation">eqn</p>
+        <hr />
+        <P>The next section uses the following DC circuit and an intermediate step for showing an \(R_{EQ}\):</P>
+        <img src="static/CircuitThreeR.PNG" alt="Three-Resistor Circuit" height="300">
+        <img src="static/CircuitThreeReq.PNG" alt="Three-Resistor Circuit EQ" height="300"><br>
+        \(R_A\)=<input type="number" id="kvlra" min="1" max="999" value="1.7" step="any" onchange="ChangedCircuits()">
+        <select id="selectkvlra" onchange="ChangedCircuits()">
+            <option value="-3">m&#8486;</option>
+            <option value="0">&#8486;</option>
+            <option value="3" selected>k&#8486;</option>
+            <option value="6">M&#8486;</option>
+            <option value="9">G&#8486;</option>
+        </select><br>
+        \(R_B\)=<input type="number" id="kvlrb" min="1" max="999" value="3.3" step="any" onchange="ChangedCircuits()">
+        <select id="selectkvlrb" onchange="ChangedCircuits()">
+            <option value="-3">m&#8486;</option>
+            <option value="0">&#8486;</option>
+            <option value="3" selected>k&#8486;</option>
+            <option value="6">M&#8486;</option>
+            <option value="9">G&#8486;</option>
+        </select><br>
+        \(R_C\)=<input type="number" id="kvlrc" min="1" max="999" value="330" step="any" onchange="ChangedCircuits()">
+        <select id="selectkvlrc" onchange="ChangedCircuits()">
+            <option value="-3">m&#8486;</option>
+            <option value="0" selected>&#8486;</option>
+            <option value="3">k&#8486;</option>
+            <option value="6">M&#8486;</option>
+            <option value="9">G&#8486;</option>
+        </select><br>
+        \(V_S\)=<input type="number" id="kvlv" min="1" max="999" value="12" step="any" onchange="ChangedCircuits()">
+        <select id="selectkvlv" onchange="ChangedCircuits()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select><br>
+        <p>Computing an equivalent resistance helps to quickly simplify circuit analysis:</p>
+        <p>Resistors in parallel add conductivity together (the inverse of resistance's ohm \( \Omega \) is conductivity's mho \( \mho \)):</p>
+        <p id="resistanceparallel">eqn</p>
+        <p>Resistors in series add resistance together:</p>
+        <p id="resistanceseries">eqn</p>
+        <p>For good practice, we'll wait until the final equivalent resistance before using the term \(R_{EQ}\) as it is the value
+            that the voltage source will see as a single resistor. From Ohm's Law, the source current is:</p>
+        <p id="kvlohms">eqn</p>
+        <p>The source current will travel through \(R_A\) and then split between parallel resistors \(R_B\) and \(R_C\) according to the current divider (be careful
+            with the 2-resistor current divider equation, the resistance value in the numerator is of the *other* resistor!):
+        </p>
+        <p id="currentdividerb">eqn</p>
+        <p id="currentdividerc">eqn</p>
+        <p>Verifying the current divider by finding each device's voltage will also demonstrate how the ratio of current is inversely proportional to the resistance ratio:</p>
+        <p id="currentdividerverifyb">eqn</p>
+        <p id="currentdividerverifyc">eqn</p>
+        <p>A voltage divider can only be applied where the resistors are in series. Only after combining \(R_B\) and \(R_C\) into \(R_{BC}\),
+            as shown in the right-most diagram, are the resistors in series. The voltage divider provides a shortcut by not computing current values:
+        </p>
+        <p id="voltagedivider">eqn</p>
+        <p>Kirchhoff's Voltage Law states that over any loop in a circuit, the net voltage change is zero:
+            \[\sum^{}_{loop}\Delta V=0 \text{ or: } \sum^{}_{loop}\Delta V_{up}=\sum^{}_{loop}\Delta V_{down}\]
+            From the circuit above a KVL expression \(V_S=V_A+V_B\) could be used to find \(V_A\):</p>
+        <p id="kvlkvl">eqn</p>
+        <p>Kirchhoff's Current Law states that for any node in a circuit, the net current flow is zero:
+            \[\sum^{}_{node}I=0 \text{ or: } \sum^{}_{node}I_{in}=\sum^{}_{node}I_{out}  \]
+            In the above circuit, we could use the KCL expression \(I_B+I_C=I_S\) to verify our results:
+        </p>
+        <p id="kclkcl">eqn</p>
+    </div>
+
+    <div class="tabcontent" id="ACCircuits">
+        <hr />
+        <p>The generic form of an AC voltage source is: 
+            \[v_s(t)=V_{B}+V_{m}cos(360^\circ f t+\phi)V\]
+            Where \(V_B\) is the Bias (or DC component). \(V_m\) is the Magnitude.
+            \(\phi\) is the Phase shift. \(f\) is the Frequency and can be derived from the signal's period \(T\) by the relationship:
+            \[f=\frac{1}{T}\]
+            For example, the period: <input type="number" id="ACperiod" min="1" max="999" value="16.667" step="any" onchange="ChangedAC()">
+            <select id="selectACperiod" onchange="ChangedAC()">
+                <option value="-12">ps</option>
+                <option value="-9">ns</option>
+                <option value="-6">&#181;s</option>
+                <option value="-3" selected >ms</option>
+                <option value="0">s</option>
+            </select> correlates to the frequency:
+        </p>
+        <p id="periodfrequency">eqn</p>
+        We can start with a graph of a cosine and derive the terms \(V_B, V_m,\) and \(f\).<br>
+        \(V_{Max}=\)<input type="number" id="ACVmax" min="-999" max="999" value="169.7" step="any" onchange="ChangedAC()">
+        <select id="selectACVmax" onchange="ChangedAC()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3" >mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+        </select><br>
+        \(V_{Min}=\)<input type="number" id="ACVmin" min="-999" max="999" value="-169.7" step="any" onchange="ChangedAC()">
+        <select id="selectACVmin" onchange="ChangedAC()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3" >mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+        </select><br>
+        \(\phi=\)<input type="number" id="ACphi" min="-360" max="360" value="90" step="any" onchange="ChangedAC()">\(^\circ\) 
+        ...and also specify a resistance for computing power. 
+        Resistance: <input type="number" id="rmsresistance" min="1" max="999" value="100" step="any" onchange="ChangedAC()">
+        <select id="selectrmsr" onchange="ChangedAC()">
+            <option value="-3">m&#8486;</option>
+            <option value="0" selected>&#8486;</option>
+            <option value="3">k&#8486;</option>
+            <option value="6">M&#8486;</option>
+            <option value="9">G&#8486;</option>
+        </select><br>
+        <canvas id="ACcanvas" width="801" height="401"></canvas>
+        <canvas id="ACcanvasPower" width="801" height="401"></canvas><br>
+        The magnitude \(V_m\) is one-half the voltage deviation:
+        <p id="vmderived">eqn</p>
+        The bias \(V_B\) is the average value:
+        <p id="vbderived">eqn</p>
+        The RMS-value of this AC signal is:
+        <p id="acrms">eqn</p>
+        <hr />
+    </div>
+
+    <div class="tabcontent" id="commequations">
+        <hr />
+        <p>The wavelength of a radio transmission can be computed using the speed of light \(c\) and the radio frequency \(f\):</p>
+        <a>Frequency: </a>
+        <input type="number" id="commfreqarg" min="1" max="999" value="300" step="any" onchange="ChangedInput()">
+        <select id="commfreqexp" onchange="ChangedInput()">
+            <option value="0">Hz</option>
+            <option value="3">kHz</option>
+            <option value="6" selected>MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <p id="lambdaeqn">eqn</p>
+        <hr />
+        <p>The gain \(G\) of a parabolic dish antenna of radius \(r\), efficiency \(\eta\), and wavelength \(\lambda\):
+            \[G={(2\pi r)^2\over \lambda^2}\eta\]</p>
+        <p>The monopole antenna achieves an ideal gain \(G=3.24\) at it's ideal length, one-quarter wavelength: \(L={\lambda \over 4}\) </p>
+        <p>The dipole antenna achieves an ideal gain \(G=1.64\) at it's ideal length, one-half wavelength: \(L={\lambda \over 2}\)</p>
+        <a>Transmitter:</a>
+        <select id="transmittertype" onchange="ChangedInput()">
+            <option value="1">Dipole</option>
+            <option value="2">Monopole</option>
+            <option value="3">Parabolic</option>
+            <option value="4"selected>Unspecified</option>
+        </select><br>
+        <a id="txlengthtext">Radius (not diameter): </a>
+        <input type="number" id="txantennalength" min="1" max="999" value="1" step="any" onchange="ChangedInput()">
+        <select id="txantennaexp" onchange="ChangedInput()">
+            <option value="-3">mm</option>
+            <option value="0" selected>m</option>
+            <option value="3">km</option>
+        </select>
+        <br>
+        <a id="txetatext">Reflective Efficiency (max 1.0): </a>
+        <input type="number" id="txdisheta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedInput()">
+        <br>
+        <a>Gain:</a><input disabled type="number" id="txgain" value="2" step="any" onchange="ChangedInput()">
+        <br><br>
+        <a>Receiver:</a>
+        <select id="receivertype" onchange="ChangedInput()">
+            <option value="1">Dipole</option>
+            <option value="2">Monopole</option>
+            <option value="3" selected>Parabolic</option>
+            <option value="4">Unspecified</option>
+        </select><br>
+        <a id="rxlengthtext">Radius (not diameter): </a>
+        <input type="number" id="rxantennalength" min="1" max="999" value="1" step="any" onchange="ChangedInput()">
+        <select id="rxantennaexp" onchange="ChangedInput()">
+            <option value="-3">mm</option>
+            <option value="0" selected>m</option>
+            <option value="3">km</option>
+        </select>
+        <br>
+        <a id="rxetatext">Reflective Efficiency (max 1.0): </a>
+        <input type="number" id="rxdisheta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedInput()">
+        <br>
+        <a>Gain:</a><input disabled type="number" id="rxgain" value="1" step="any" onchange="ChangedInput()">
+        <hr />
+        <p>The Friis equation for propagation computes power received \(P_R\) based upon power transmitted \(P_T\),
+            transmitter gain \(G_T\), receiver gain \(G_R\), wavelength \(\lambda\), and range \(R\).</p>
+        <p>Range, \(R\) =
+        <input type="number" id="friisrange" value="100" min ="0" max="99999" step="any" onchange="ChangedInput()">
+        <select id="friisrangeexp" onchange="ChangedInput()">
+            <option value="0">m</option>
+            <option value="3" selected>km</option>
+        </select></p>
+        <p>Transmitter Power, \(P_T\) =
+            <input type="number" id="powertransmitted" value="100" min ="0" max="99999" step="any" onchange="ChangedInput()">
+            <select id="powertransmittedexp" onchange="ChangedInput()">
+                <option value="-3">mW</option>
+                <option value="0" selected>W</option>
+                <option value="3">kW</option>
+                <option value="6">MW</option>
+            </select></p>
+            <p id="friiseqn">eqn</p>
+        <hr />
+        <p>Often, it is necessary to solve for a maximum range \(R_{Max}\) (which we'll name \(R_{Friis}\)) based upon a minimum receive power \(P_{Rmin}\).</p>
+           <a>Minimum Receive Power, \(P_{Rmin}\) =</a>
+           <input type="number" id="prminvalue" value="4" min ="0" max="99999" step="any" onchange="ChangedInput()">
+           <select id="prminexp" onchange="ChangedInput()">
+            <option value="-18">aW</option>
+            <option value="-15">fW</option>
+            <option value="-12">pW</option>
+            <option value="-9" selected>nW</option>
+            <option value="-6">&#181;W</option>
+            <option value="-3">mW</option>
+            <option value="0" >W</option>
+        </select></p>
+           <p id="rmaxeqn">eqn</p>
+        <hr />
+        <p>For a given height \(h\) in feet, the radio-distance to the horizon \(R_{LOS}\) is computed in miles: \(R_{LOS}=\sqrt{2h}\). But when both Tx and Rx are elevated: \(R_{LOS}=\sqrt{2h_1}+\sqrt{2h_2}\)</p>
+        <a>Transmitter height above ground: </a>
+        <input type="number" id="txheight" value="5000" min="0" max="500000" value="1000" step="any" onchange="ChangedInput()">
+        <a>ft. Distance to horizon is: </a><a id="txrlosmi">0</a><a> miles, </a><a id="txrloskm">0</a><a> km.</a>
+        <br>
+        <a>Receiver height above ground: </a>
+        <input type="number" id="rxheight" value="3000" min="0" max="500000" value="1000" step="any" onchange="ChangedInput()">
+        <a>ft. Distance to horizon is: </a><a id="rxrlosmi">0</a><a> miles, </a><a id="rxrloskm">0</a><a> km.</a>
+        <br><br>
+        <a>Whenever a comparison is made, convert \(R_{LOS}\) to kilometers:</a>
+        <p id="rloseqn">eqn</p>
+        <hr />
+        <a>Communication is possible at distances within both limitations: \(R_{Friis}\) and \(R_{LOS}\), meaning that the lower value represents the maximum communication distance: </a>
+        <p id="rcommeqn">eqn</p>
+        </div>
+
+        <!--COMM PICTURE TAB-->
+        
+        <div class="tabcontent" id="commpicture">
+        <hr />
+        <a>This is a visual representation of the scenario. Use the buttons to exaggerate the heights and Earth's curvature to more easily view the solution. These entries duplicate earlier entries on the page.</a><br>
+        <a>Earth: </a><button onclick="ChangeEarth(1)">Rounder</button><button onclick="ChangeEarth(-1)">Flatter</button><br>
+        <a>Heights: </a><button onclick="ChangeHeights(1)">Taller</button><button onclick="ChangeHeights(-1)">Shorter</button><br>
+        <a>Gain Pattern: </a><button onclick="ChangeGainArc(1)">Tighter</button><button onclick="ChangeGainArc(-1)">Wider</button><br>
+        
+        
+        <a>Frequency: </a><input type="number" id="lowerfreq" min="1" max="999" value="300" step="any" onchange="ChangeLowerInput()">
+        <select id="lowerfreqexp" onchange="ChangeLowerInput()">
+            <option value="0">Hz</option>
+            <option value="3">kHz</option>
+            <option value="6" selected>MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br>
+        <a>Transmitter:</a>
+        <select id="lowertxtype" onchange="ChangeLowerInput()">
+            <option value="1">Dipole</option>
+            <option value="2">Monopole</option>
+            <option value="3" selected>Parabolic</option>
+            <option value="4">Unspecified</option>
+        </select><br>
+        <a id="lowertxtext">Radius (not diameter): </a>
+        <input type="number" id="lowertxlength" min="1" max="999" value="1" step="any" onchange="ChangeLowerInput()">
+        <select id="lowertxexp" onchange="ChangeLowerInput()">
+            <option value="-3">mm</option>
+            <option value="0" selected>m</option>
+            <option value="3">km</option>
+        </select>
+        <br>
+        <a id="lowertxetatext">Reflective Efficiency (max 1.0): </a>
+        <input type="number" id="lowertxeta" min="0" max="1" value="0.7" step="0.01" onchange="ChangeLowerInput()">
+        <br>
+        <a>Gain:</a><input disabled type="number" id="lowertxgain" value="1" step="any" onchange="ChangeLowerInput()">
+        <br>
+        <a>Receiver:</a>
+        <select id="lowerrxtype" onchange="ChangeLowerInput()">
+            <option value="1">Dipole</option>
+            <option value="2">Monopole</option>
+            <option value="3" selected>Parabolic</option>
+            <option value="4">Unspecified</option>
+        </select><br>
+        <a id="lowerrxtext">Radius (not diameter): </a>
+        <input type="number" id="lowerrxlength" min="1" max="999" value="1" step="any" onchange="ChangeLowerInput()">
+        <select id="lowerrxexp" onchange="ChangeLowerInput()">
+            <option value="-3">mm</option>
+            <option value="0" selected>m</option>
+            <option value="3">km</option>
+        </select>
+        <br>
+        <a id="lowerrxetatext">Reflective Efficiency (max 1.0): </a>
+        <input type="number" id="lowerrxeta" min="0" max="1" value="0.7" step="0.01" onchange="ChangeLowerInput()">
+        <br>
+        <a>Gain:</a><input disabled type="number" id="lowerrxgain" value="1" step="any" onchange="ChangeLowerInput()">
+        <br>
+        <a>Transmitter Power, \(P_T\) =
+            <input type="number" id="lowerpowertrans" value="100" min ="0" max="99999" step="any" onchange="ChangeLowerInput()">
+            <select id="lowerpowertransexp" onchange="ChangeLowerInput()">
+                <option value="-3">mW</option>
+                <option value="0" selected>W</option>
+                <option value="3">kW</option>
+                <option value="6">MW</option>
+            </select></a>
+        <a>Minimum Receive Power, \(P_{Rmin}\) =</a>
+            <input type="number" id="lowerprmin" value="4" min ="0" max="99999" step="any" onchange="ChangeLowerInput()">
+            <select id="lowerprminexp" onchange="ChangeLowerInput()">
+             <option value="-18">aW</option>
+             <option value="-15">fW</option>
+             <option value="-12">pW</option>
+             <option value="-9" selected>nW</option>
+             <option value="-6">&#181;W</option>
+             <option value="-3">mW</option>
+             <option value="0" >W</option>
+         </select></a>
+         <br>
+         <a>Transmitter height above ground: </a>
+        <input type="number" id="lowertxheight" value="5000" min="0" max="500000" value="1000" step="100" onchange="ChangeLowerInput()">
+        <a>Receiver height above ground: </a>
+        <input type="number" id="lowerrxheight" value="3000" min="0" max="500000" value="1000" step="100" onchange="ChangeLowerInput()">
+        <a>Graphics will be skewed when both heights are \(0ft\).</a>
+        <br>
+
+        <div class="CanvasPlacement">
+            <canvas class="flight-canvas" id="TheCanvas" width="1200" height="600" style="border:1px solid black"></canvas>
+        </div>
+    </div>
+
+    <!--RADAR EQUATIONS TAB-->
+
+    <div class="tabcontent" id="radarequations">
+        <hr />
+        <a>RADAR propagation is a 2-way path, which combines two Friis (1-way) computations that arrives at power received
+             \(P_R\) based on power transmitted \(P_T\), transmitter/receiver gain \(G\), target \(RCS\), wavelength \(\lambda\), and range \(R\).</a><br>
+        <a>Transmitter Power, \(P_T\) =
+        <input type="number" id="radarpt" value="80" onchange="ChangedRadar()" min="1" max="999">
+        <select id="radarptexp" onchange="ChangedRadar()">
+            <option value="-3">mW</option>
+            <option value="0">W</option>
+            <option value="3" selected>kW</option>
+            <option value="6">MW</option>
+        </select></a><br>
+        <a>Gain: \(G\) = <input type="number" id="radargain" value="9002" onchange="ChangedRadar()" min="1" max="999999"></a><br>
+        <a>Radar Cross Section: \(RCS\) = <input type="number" id="radarrcs" value="25" onchange="ChangedRadar()" min="1" max="999"></a>\(m^2\)
+         (sometimes \(RCS\) is written with the symbol \(\sigma\))<br>
+        <a>Frequency, \(f\) = <input type="number" id="radarfreq" value="3.5" onchange="ChangedRadar()" min="1" max="999">
+        <select id="radarfreqexp" onchange="ChangedRadar()">
+            <option value="0">Hz</option>
+            <option value="3">kHz</option>
+            <option value="6">MHz</option>
+            <option value="9" selected>GHz</option>
+            <option value="12">THz</option>
+        </select></a><br>
+        <a>Range, \(R\) = <input type="number" id="radarrange" value="100" onchange="ChangedRadar()" min="1" max="999">
+        <select id="radarrangeexp" onchange="ChangedRadar()">
+            <option value="0">m</option>
+            <option value="3" selected>km</option>
+        </select></a><br>
+        <p id="radarpreqn">eqn</p>
+        <a>To solve for a maximum RADAR range \(R_{Max}\) (which we'll name \(R_{Radar}\)) based upon a minimum receive power \(P_{Rmin}\).</a><br>
+        <a>Minimum Receive Power, \(P_{Rmin}\) =</a>
+           <input type="number" id="radarprmin" value="1"  onchange="ChangedRadar()" min="1" max="999">
+           <select id="radarprminexp" onchange="ChangedRadar()">
+            <option value="-18">aW</option>
+            <option value="-15">fW</option>
+            <option value="-12" selected>pW</option>
+            <option value="-9">nW</option>
+            <option value="-6">&#181;W</option>
+            <option value="-3">mW</option>
+            <option value="0" >W</option>
+        </select></p>
+        <p id="radarrmaxeqn">eqn</p>
+        <a>Another important parameter of a basic RADAR system is the Pulse Repetition Frequency \(PRF\) which quantifies how often pulses are transmitted.
+            The reciprocal of the \(PRF\) is the Pulse Reptition Interval \(PRI\). During the \(PRI\), the RADAR system is running
+            a timer that associates returns with a distance according to the 2-way Range equation \(R=\frac{c t}{2}\). At the end of the \(PRI\) a
+            new pulse is sent out and the timer is reset to \(0\). Very distant targets will thus cause returns to occur in a later \(PRI\) window and 
+            lead to an "ambiguous" range reading. The maximum "unambiguous" range, \(R_{U}\) is the range reading when the round-trip travel time 
+            to a target and back is equal to the \(PRI\).
+        </a><br>
+        <a>Pulse Repetition Frequency, \(PRF\) = <input type="number" id="radarPRF" value="1" onchange="ChangedRadar()" min="1" max="999">
+        <select id="radarPRFexp" onchange="ChangedRadar()">
+            <option value="0">Hz</option>
+            <option value="3" selected>kHz</option>
+            <option value="6">MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select></a><br>
+        <p id="radarrueqn">eqn</p>
+        <a>The critical separation distance that quantifies a RADAR's ability to resolve two targets, Range Resolution, \(\Delta R\) depends upon the duration of the RADAR pulse,
+            \(\tau\).</a><br>
+        <a>Pulse Width, \(\tau\) = <input type="number" id="radarpw" value="100" onchange="ChangedRadar()" min="1" max="999">
+        <select id="radarpwexp" onchange="ChangedRadar()">
+            <option value="-12">ps</option>
+            <option value="-9" selected>ns</option>
+            <option value="-6">&#181;s</option>
+            <option value="-3">ms</option>
+            <option value="0">s</option>
+        </select></a><br>
+        <p id="radarresolutioneqn">eqn</p>
+        <a>A RADAR Warning Receiver (RWR) is a radio receiver tuned to the RADAR's frequency, and can normally detect the RADAR system if enough power reaches the RWR antenna.
+            This is a one-way path that is evaluated with the Friis equation, where \(G_T\) is the RADAR antenna gain, and \(G_R\) is the RWR receiver gain.
+            Normally, we'll compute a maximum range for the sake of comparison with other range-based metrics. To avoid confusion with other values of \(R_{Max}\),
+            we'll name this value \(R_{RWR}\).
+        </a><br>
+        <a>RWR Gain, \(G_R\) = </a><input type="number" id="rwrgain" value="1.64" onchange="ChangedRadar()" min="1" max="999999"><br>
+        <a>RWR Minimum Receive Power, \(P_{Rmin}\) = </a>
+        <input type="number" id="rwrprmin" value="1" onchange="ChangedRadar()" min="1" max="999">
+            <select id="rwrprminexp" onchange="ChangedRadar()">
+            <option value="-18">aW</option>
+            <option value="-15">fW</option>
+            <option value="-12">pW</option>
+            <option value="-9">nW</option>
+            <option value="-6" selected>&#181;W</option>
+            <option value="-3">mW</option>
+            <option value="0" >W</option>
+        </select>
+        <p id="radarrwreqn">eqn</p>
+        <a>Both propagations, 2-way and 1-way, are limited to line-of-sight, so we'll compute \(R_{LOS}\).</a><br>
+        <a>RADAR height above ground: </a>
+        <input type="number" id="radarheight" value="10" min="0" max="50000" value="1000" onchange="ChangedRadar()">
+        <a> ft. Target height above ground: </a>
+        <input type="number" id="targetheight" value="10000" min="0" max="50000" value="1000" onchange="ChangedRadar()"><a> ft.</a>
+        <p id="radarloseqn">eqn</p>
+        <a>In determining "Who sees whom first?" the choice is somewhat involved. You may draw a picture or use the following concept: that we are finding
+            which propagation case is less-limited. Separately, we'll check the final RADAR detection range against R<sub>U</sub> for ambiguous returns.
+        </a>
+        <p>\[ Max\begin{cases} Radar= & Min(R_{LOS},R_{Radar}) \\ RWR= & Min(R_{LOS},R_{RWR}) \end{cases}  \]</p>
+        <p id="minmaxmessage">Min-Max</p>
+        <a id="winnermessage">**</a>
+        </a>
+    </div>
+
+    <!--DOPPLER TAB-->
+
+    <div id="radardoppler" class="tabcontent">
+        <hr />
+        <p>The computations for \(R_{MAX}\) only help to determine whether a RADAR could detect a target.
+            Actual range-finding is done by using the pulse's round-trip travel time and its known speed, \(c\).</p>
+            <a>2-way travel time: \(t\) = <input type="number" id="radartime" value="1" onchange="ChangedRadar()" min="1" max="999">
+                <select id="radartimeexp" onchange="ChangedRadar()">
+                    <option value="-12">ps</option>
+                    <option value="-9">ns</option>
+                    <option value="-6">&#181;s</option>
+                    <option value="-3" selected>ms</option>
+                    <option value="0">s</option>
+                </select></a><br>
+        <p id="radartimedistanceeqn">eqn</p>
+        <p>Of course, if you are measuring the time from just transmitter to receiver, do not divide by 2.</p>
+            <a>1-way travel time: \(t\) = <input type="number" id="radiotime" value="1" onchange="ChangedRadar()" min="1" max="999">
+                <select id="radiotimeexp" onchange="ChangedRadar()">
+                    <option value="-12">ps</option>
+                    <option value="-9">ns</option>
+                    <option value="-6">&#181;s</option>
+                    <option value="-3" selected>ms</option>
+                    <option value="0">s</option>
+                </select></a><br>
+        <p id="radiotimedistanceeqn">eqn</p>
+        <p>The Doppler effect is used to find a target's velocity. When the target is moving towards a RADAR, velocity
+            is positive and the return frequency increases. When the target is moving away from a RADAR, return frequency will
+            decrease. The sign can be entered as a negative velocity, by placing a '-' in place of \(\pm\)), or using a value of \(\theta\)
+            that makes \(cos(\theta)\) negative. Choose one method.
+        </p>
+        <a>Frequency (original), \(f_0\) = <input type="number" id="radarFzero" value="2" onchange="ChangedRadar()" min="1" max="999">
+            <select id="radarFzeroexp" onchange="ChangedRadar()">
+                <option value="0">Hz</option>
+                <option value="3">kHz</option>
+                <option value="6">MHz</option>
+                <option value="9" selected>GHz</option>
+                <option value="12">THz</option>
+            </select></a><br>
+        <a>velocity, \(v\) = <input type="number" id="radarvelocity" value="100" onchange="ChangedRadar()" min="1" max="999999"></a>\(m/s\)<br>
+        <a>angle, \(\theta\) = <input type="number" id="radarangle" value="0" onchange="ChangedRadar()" min="0" max="360"></a>&#176;<br>
+        <a>To/From \(\pm\)</a><select id="radartowards" onchange="ChangedRadar()">
+        <option value="1" selected>Towards '+'</option>
+        <option value="-1">Away   '-'</option></select>
+        <p id="radarreturnfrequency">eqn</p>
+        <p id="radarreturnshift">eqn</p>
+        <a>In practice, a RADAR system will be used to compute velocity from the Doppler shift:</a><br>
+        <a>Doppler Shift, \(\Delta f\) = <input type="number" id="radarShift" value="1.333" onchange="ChangedRadar()" min="1" max="999">
+            <select id="radarShiftexp" onchange="ChangedRadar()">
+                <option value="-3">mHz</option>
+                <option value="0">Hz</option>
+                <option value="3" selected>kHz</option>
+                <option value="6">MHz</option>
+                <option value="9">GHz</option>
+                <option value="12">THz</option>
+            </select></a><br>
+        <p id="radarcomputevelocity">eqntocomputevelocity</p>
+        <p>These Doppler equations disregard relativity and will be increasingly inaccurate at very high velocities.
+        </p>
+    </div>
+
+    <!--JAMMING TAB-->
+
+    <div id="radarjamming" class="tabcontent">
+        <hr />
+        COMING SOON!
+    </div>
+
+    <hr />
+    Equation styling from <a href="https://www.mathjax.org">MathJax</a>. The page must remain very bland to not upset the styling.
+    <div style="font-size:10px;">
+        Author: Thomas Kubler
+    <a href="mailto:thomas.kubler@gmail.com">thomas.kubler@gmail.com</a>
+    <a href="mailto:thomas.kubler@usafa.edu">thomas.kubler@usafa.edu</a>
+</body>
+</html>
