@@ -216,8 +216,7 @@ function VoltageToPixel(voltage,Kvalue,Bvalue){
     console.log("voltagetopixel",voltage,result);
     return result;
 }
-function DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq){
-    var rmsr = GrabNumber("rmsresistance","selectrmsr",true,minnorm,maxnorm);
+function DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq, rmsr){
     //somewhat from  http://www.ecircuitcenter.com/Calc/draw_sine1/draw_sine_canvas1.htm
     var canvas = document.getElementById("ACcanvas");
     var pcan = document.getElementById("ACcanvasPower");
@@ -294,40 +293,70 @@ function ChangedAC(){
     var acvmax = GrabNumber("ACVmax","selectACVmax",true,-maxnorm,maxnorm);
     var acvmin = GrabNumber("ACVmin","selectACVmin",true,-maxnorm,maxnorm);
     var acphi =  GrabNumber("ACphi","none",false,-360,360);
+    var rmsr = GrabNumber("rmsresistance","selectrmsr",true,minnorm,maxnorm);
     var acvm = (acvmax - acvmin)/2.0;
     var acvb = (acvmax + acvmin)/2.0;
     var acvrms = Math.sqrt(acvb*acvb+acvm*acvm/2);
+    var acirms = acvrms / rmsr;
+    var acpave = acvrms*acirms; 
+    var acim = acvm / rmsr;
+    var acib = acvb / rmsr;
     var includepar1 = "";
     var includepar2 = "";
     if(acvmin < 0){
         includepar1 = "(";
         includepar2 = ")";
     }
-    var acvbexp, acvmexp, acrmsexp;
+    var acvbexp, acvmexp, acrmsexp, acrmsiexp, acvexp,aciexp,acpaveexp;
     if(acvmax > acvmin){
-        DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq);
+        DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq,rmsr);
         acvmexp = "V_m=\\frac{V_{Max}-V_{Min}}{2}=\\frac{"+MakeTripleNotation(acvmax,"V")+"-"+includepar1+MakeTripleNotation(acvmin,"V")+includepar2+"}{2}="
             +MakeTripleNotation(acvm,"V")+MakeEngNotation(acvm,"V",true,false,false);
         acvbexp = "V_B=\\frac{V_{Max}+V_{Min}}{2}=\\frac{"+MakeTripleNotation(acvmax,"V")+"+"+includepar1+MakeTripleNotation(acvmin,"V")+includepar2+"}{2}="
             +MakeTripleNotation(acvb,"V")+MakeEngNotation(acvb,"V",true,false,false);
+        acvexp = "v_s(t)=";
+        aciexp = "i_s(t)=\\frac{v_s(t)}{R_{EQ}}=";
         acrmsexp = "V_{S,RMS}=\\sqrt{V_B^2+\\frac{V_m^2}{2}}=";
+        acrmsiexp= "I_{S,RMS}=\\sqrt{I_B^2+\\frac{I_m^2}{2}}=";
+        acpaveexp = "P_{AVE}=I_{RMS}V_{RMS}="+MakeTripleNotation(acvrms,"V_{RMS}")+"\\times "+MakeTripleNotation(acirms,"A_{RMS}")
+            +"="+MakeTripleNotation(acpave,"W")+MakeEngNotation(acpave,"W",true,false,false);
         if(acvb == 0){
             acrmsexp += "\\frac{V_m}{\\sqrt{2}}=\\frac{"+MakeTripleNotation(acvm,"V")+"}{\\sqrt{2}}=";
+            acrmsiexp+= "\\frac{I_m}{\\sqrt{2}}=\\frac{"+MakeTripleNotation(acim,"A")+"}{\\sqrt{2}}=";
         }
         else{
+            acvexp += MakeTripleNotation(acvb,"V")+"+";
+            aciexp += MakeTripleNotation(acib,"A")+"+";
             acrmsexp += "\\sqrt{("+MakeTripleNotation(acvb,"V")+")^2+\\frac{("+MakeTripleNotation(acvm,"V")+")^2}{2}}=";
+            acrmsiexp+= "\\sqrt{("+MakeTripleNotation(acib,"A")+")^2+\\frac{("+MakeTripleNotation(acim,"A")+")^2}{2}}=";
         }
+        acvexp += "("+MakeTripleNotation(acvm,"V")+")cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
+            +MakeTripleNotation(acphi,"^\\circ")+")";
+        aciexp += "("+MakeTripleNotation(acim,"A")+")cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
+            +MakeTripleNotation(acphi,"^\\circ")+")";
         acrmsexp += MakeTripleNotation(acvrms,"V_{RMS}")+MakeEngNotation(acvrms,"V_{RMS}",true,false,false);
+        acrmsiexp+= MakeTripleNotation(acirms,"A_{RMS}")+MakeEngNotation(acirms,"A_{RMS}",true,false,false);
     }
     else{
         var acerror = "\\text {Error: } V_{Max}\\ngtr V_{Min}";
         acvbexp = acerror;
         acvmexp = acerror;
         acrmsexp = acerror;
+        acrmsiexp= acerror;
+        acvexp = acerror;
+        aciexp = acerror;
+        acpaveexp = acerror;
     }
+    var acohmsexp = "I_{S,RMS}=\\frac{V_{S,RMS}}{R_{EQ}}=\\frac{"+MakeTripleNotation(acvrms,"V_{RMS}")+"}{"+MakeTripleNotation(rmsr,"\\Omega")+"}="
+        +MakeTripleNotation(acirms,"A_{RMS}")+MakeEngNotation(acirms,"A_{RMS}",true,false,false);
     NewMathAtItem(acvmexp,"vmderived");
     NewMathAtItem(acvbexp,"vbderived");
     NewMathAtItem(acrmsexp,"acrms");
+    NewMathAtItem(acrmsiexp,"acirms");
+    NewMathAtItem(acohmsexp,"acohms");
+    NewMathAtItem(acvexp, "acveqn");
+    NewMathAtItem(aciexp, "acieqn");
+    NewMathAtItem(acpaveexp,"acpave");
 }
 
 function ChangedRadar(){

@@ -171,7 +171,7 @@
 
     <div class="tabcontent" id="ACCircuits">
         <hr />
-        <p>The generic form of an AC voltage source is: 
+        <p>The generic form of an AC voltage signal is: 
             \[v_s(t)=V_{B}+V_{m}cos(360^\circ f t+\phi)V\]
             Where \(V_B\) is the Bias (or DC component). \(V_m\) is the Magnitude.
             \(\phi\) is the Phase shift. \(f\) is the Frequency and can be derived from the signal's period \(T\) by the relationship:
@@ -203,9 +203,9 @@
             <option value="0" selected>V</option>
             <option value="3">kV</option>
         </select><br>
-        \(\phi=\)<input type="number" id="ACphi" min="-360" max="360" value="90" step="any" onchange="ChangedAC()">\(^\circ\) 
-        ...and also specify a resistance for computing power. 
-        Resistance: <input type="number" id="rmsresistance" min="1" max="999" value="100" step="any" onchange="ChangedAC()">
+        \(\phi=\)<input type="number" id="ACphi" min="-360" max="360" value="90" step="any" onchange="ChangedAC()">\(^\circ\)<br>
+        An \(R_{EQ}\) for power computations:
+        <input type="number" id="rmsresistance" min="1" max="999" value="100" step="any" onchange="ChangedAC()">
         <select id="selectrmsr" onchange="ChangedAC()">
             <option value="-3">m&#8486;</option>
             <option value="0" selected>&#8486;</option>
@@ -219,9 +219,21 @@
         <p id="vmderived">eqn</p>
         The bias \(V_B\) is the average value:
         <p id="vbderived">eqn</p>
-        The RMS-value of this AC signal is:
+        The AC voltage signal is:
+        <p id="acveqn">eqn</p>
+        The RMS-value of the AC voltage is:
         <p id="acrms">eqn</p>
-        <hr />
+        The AC current equation can be found using Ohm's law and \(v_s(t)\):
+        <p id="acieqn">eqn</p>
+        The RMS-value of the AC current is:
+        <p id="acirms">eqn</p>
+        You can use functions of time, or RMS values, with Ohm's Law, KVL, KCL, and the current and voltage dividers.
+        For example, after finding \(V_{S,RMS}\), finding \(I_{S,RMS}\) from \(R_{EQ}\) is trivial:
+        <p id="acohms">eqn</p>
+        RMS (Root-Mean-Squared) Voltage and Current values are used to compute average power. 
+        \[P_{AVE}=I_{RMS}V_{RMS}=I_{RMS}^2 R=\frac{V_{RMS}^2}{R}\]
+        Average Power from the example:
+        <p id="acpave">eqn</p>
     </div>
 
     <div class="tabcontent" id="commequations">
