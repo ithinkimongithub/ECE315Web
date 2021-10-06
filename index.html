@@ -38,16 +38,16 @@
 <body onload="InitPage()">
     <h1>ECE 315 Examples</h1>
     <button class="tablink" onclick="openBigTab('DCCircuits',this)" >DC Circuits</button>
-    <button class="tablink" onclick="openBigTab('ACCircuits',this)" id="defaultOpen">AC Circuits</button>
-    <button class="tablink" onclick="openBigTab('tab3',this)">tab3</button>
-    <button class="tablink" onclick="openBigTab('tab4',this)">tab4</button>
-    <button class="tablink" onclick="openBigTab('tab5',this)">tab5</button>
+    <button class="tablink" onclick="openBigTab('ACCircuits',this)" >AC Circuits</button>
+    <button class="tablink" onclick="openBigTab('Transmission',this)">Transmission</button>
+    <button class="tablink" onclick="openBigTab('Distribution',this)">Distribution</button>
+    <button class="tablink" onclick="openBigTab('Efficiency',this)">Efficiency</button>
     <br>
-    <button class="tablink" onclick="openBigTab('tab6',this)">tab6</button>
-    <button class="tablink" onclick="openBigTab('tab7',this)">tab7</button>
-    <button class="tablink" onclick="openBigTab('tab8',this)">tab8</button>
-    <button class="tablink" onclick="openBigTab('tab9',this)">tab9</button>
-    <button class="tablink" onclick="openBigTab('tab0',this)">tab0</button>
+    <button class="tablink" onclick="openBigTab('ComplexNumbers',this)" id="defaultOpen">Complex Numbers</button>
+    <button class="tablink" onclick="openBigTab('InductorCapacitor',this)">Inductor Capacitor</button>
+    <button class="tablink" onclick="openBigTab('AnalogFilter',this)">Analog Filter</button>
+    <button class="tablink" onclick="openBigTab('TransducerInterface',this)">Transducer Interface</button>
+    <button class="tablink" onclick="openBigTab('ADC',this)">ADC</button>
     <br>
     <button class="tablink" onclick="openBigTab('commequations',this)">Communications</button>
     <button class="tablink" onclick="openBigTab('commpicture',this)">Comm Picture</button>
@@ -248,6 +248,32 @@
         \[ = V_BI_B+\frac{V_mI_m}{2}\]        
         <p id="acderive">eqn</p>
     </div>
+
+    <div class="tabcontent" id="ComplexNumbers">
+        <hr />
+        <p>Complex numbers have a number of applications in electrical engineering (and to avoid confusion with current \(i\) we use \(j=\sqrt{-1}\)). If you have ever seen that \(e^{i\pi}-1=0\), then you can appreciate:
+            \[e^{j\theta}=cos(\theta)+j sin(\theta)\]
+            With another term \(A\) for an arbitrary magnitude, Euler's formula shows how to convert between "Polar" and "Rectangular" (Cartesian) coordinate systems:
+            \[Ae^{j\theta}=Acos(\theta)+j Asin(\theta)\]
+            For any known angle, the trigonometry functions can be evaluated to provide an imaginary number in imaginary form:
+            <br>Magnitude \(A\): <input type="number" id="complexmag" min="0" max="10" value="5" step="any" onchange="ChangedComplex()">
+            <br>Angle (deg) \(\theta\): <input type="number" id="complextheta" min="-360" max="360" value="60" step="any" onchange="ChangedComplex()"> \(^{\circ}\)<br>
+            <canvas id="canvasmagphase" width="300" height="200"></canvas>
+            <!--
+            Why is this so useful? Recall that \(\frac{d}{dt} e^t=e^t\). When the complex number \(j\) is introduced as a constant coefficient to \(t\) it behaves like any other constant coefficient:
+            \[\frac{d}{dt} e^{jt}=je^{jt}\]
+            \[\frac{d}{dt} je^{jt}=-e^{jt}\]
+            \[-\frac{d}{dt} e^{jt}=-je^{jt}\]
+            \[-\frac{d}{dt} je^{jt}=e^{jt}\]
+            This same behavior is seen its rectangular form:
+            \[\frac{d}{dt} [ cos(t)+j sin(t)] = -sin(t)+jcos(t)\]
+            \[\frac{d}{dt} [-sin(t)+j cos(t)] = -cos(t)-jsin(t)\]
+            \[\frac{d}{dt} [-cos(t)-j sin(t)] =  sin(t)-jcos(t)\]
+            \[\frac{d}{dt} [ sin(t)-j cos(t)] =  cos(t)+jsin(t)\]
+            Complex numbers greatly reduce the difficulty of analyzing circuits. Instead of differential equations, we use algebra. And instead of using trigonometry, we use complex numbers. -->
+        </p>
+    </div>
+
 
     <div class="tabcontent" id="commequations">
         <hr />

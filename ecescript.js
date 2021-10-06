@@ -57,12 +57,32 @@ const maxRCS = Math.pow(10, 12);
 const minangle = -360;
 const maxangle = 360;
 var multiplier; //for remembering scale :(
+//******************************************** PLOT VARS *********************************************************/
+var plotxstart;
+var plotxend;
+var plotystart;
+var plotyend;
+var plotpixwidth;
+var plotpixheight;
+var plotxgridstep; //logical size, not pixel size
+var plotygridstep;
+function initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep){
+    plotxstart = xstart;
+    plotystart = ystart;
+    plotxend = xend;
+    plotyend = yend;
+    plotpixwidth = xpix;
+    plotpixheight = ypix;
+    plotxgridstep = xgridstep;
+    plotygridstep = ygridstep;
+}
 //******************************************* TABS ***************************************************************/
 function InitPage () {
     ChangedAC();
     ChangedCircuits();
     ChangedInput(); //Need to initially populate equations
     ChangedRadar(); //Need to initially populate equations
+    ChangedComplex();
     console.log("initpage");
     document.getElementById("defaultOpen").click();
 }
@@ -94,6 +114,61 @@ function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue)
         answer *= Math.pow(10,parseFloat(document.getElementById(exponenthtml).value));
     }
     return answer;
+}
+
+function ChangedComplex(){
+    var cmag   = GrabNumber("complexmag",0,false,0,10);
+    var ctheta = GrabNumber("complextheta",0,false,-360,360);
+    var creal = cmag*Math.cos(ctheta);
+    var cimag = cmag*Math.sin(ctheta);
+    var canvas = document.getElementById("canvasmagphase");
+    if (canvas == null || !canvas.getContext){
+        console.log("ok canvas");
+        return;
+    } 
+    var ctx = canvas.getContext("2d");
+    initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep);
+    showGrid(canvas,ctx,20,20,1,0);
+    //PlotComplex(canvas,ctx,20,20,3,4)
+}
+
+function showGrid(canvas,ctx,xsize,ysize,xstep,ystep,axesonly=false){
+    //xsize is the virtual (not pixel) size of the entire plot
+    //ysize is the virtual size of the plot
+    //xstep is the virtual size of each grid square
+    //the axes will be drawn at the 0,0 point in the middle of this plot
+    //to auto-size the ystep, send a zero
+    ctx.fillStyle="#77dddd";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    var x0=canvas.width/2, w=ctx.canvas.width;
+    var y0=canvas.height/2, h=ctx.canvas.height;
+    if(!axesonly){
+        ctx.beginPath();
+        ctx.strokeStyle = "rgb(128,128,128)";
+        var xpixstep = w*xstep/xsize;
+        var ypixstep = h*ystep/ysize;
+        if(ystep == 0){
+            ypixstep = xpixstep;
+        }
+        for(var x = w/2; x <= w; x+=xpixstep){
+            ctx.moveTo(x,0);    ctx.lineTo(x,h);
+        }
+        for(var y = h/2; y <= h; y+=ypixstep){
+            ctx.moveTo(0,y);    ctx.lineTo(w,y);
+        }
+        for(var x = w/2; x >= 0; x-=xpixstep){
+            ctx.moveTo(x,0);    ctx.lineTo(x,h);
+        }
+        for(var y = h/2; y >= 0; y-=ypixstep){
+            ctx.moveTo(0,y);    ctx.lineTo(w,y);
+        }
+        ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.strokeStyle = "rgb(0,0,0)"; 
+    ctx.moveTo(0,y0);    ctx.lineTo(w,y0);  // X axis
+    ctx.moveTo(x0,0);    ctx.lineTo(x0,h);  // Y axis
+    ctx.stroke();
 }
 
 function ChangedCircuits(){
