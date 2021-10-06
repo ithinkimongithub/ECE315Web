@@ -301,13 +301,14 @@ function ChangedAC(){
     var acpave = acvrms*acirms; 
     var acim = acvm / rmsr;
     var acib = acvb / rmsr;
+    var acpavevi = acvb*acib+0.5*acvm*acim;
     var includepar1 = "";
     var includepar2 = "";
     if(acvmin < 0){
         includepar1 = "(";
         includepar2 = ")";
     }
-    var acvbexp, acvmexp, acrmsexp, acrmsiexp, acvexp,aciexp,acpaveexp;
+    var acvbexp, acvmexp, acrmsexp, acrmsiexp, acvexp,aciexp,acpaveexp,acderive;
     if(acvmax > acvmin){
         DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq,rmsr);
         acvmexp = "V_m=\\frac{V_{Max}-V_{Min}}{2}=\\frac{"+MakeTripleNotation(acvmax,"V")+"-"+includepar1+MakeTripleNotation(acvmin,"V")+includepar2+"}{2}="
@@ -320,22 +321,26 @@ function ChangedAC(){
         acrmsiexp= "I_{S,RMS}=\\sqrt{I_B^2+\\frac{I_m^2}{2}}=";
         acpaveexp = "P_{AVE}=I_{RMS}V_{RMS}="+MakeTripleNotation(acvrms,"V_{RMS}")+"\\times "+MakeTripleNotation(acirms,"A_{RMS}")
             +"="+MakeTripleNotation(acpave,"W")+MakeEngNotation(acpave,"W",true,false,false);
+        acderive = "=";
         if(acvb == 0){
             acrmsexp += "\\frac{V_m}{\\sqrt{2}}=\\frac{"+MakeTripleNotation(acvm,"V")+"}{\\sqrt{2}}=";
             acrmsiexp+= "\\frac{I_m}{\\sqrt{2}}=\\frac{"+MakeTripleNotation(acim,"A")+"}{\\sqrt{2}}=";
         }
         else{
-            acvexp += MakeTripleNotation(acvb,"V")+"+";
-            aciexp += MakeTripleNotation(acib,"A")+"+";
+            acvexp += MakeEngNotation(acvb,"V",false,true,false)+"+";
+            aciexp += MakeEngNotation(acib,"A",false,true,false)+"+";
             acrmsexp += "\\sqrt{("+MakeTripleNotation(acvb,"V")+")^2+\\frac{("+MakeTripleNotation(acvm,"V")+")^2}{2}}=";
             acrmsiexp+= "\\sqrt{("+MakeTripleNotation(acib,"A")+")^2+\\frac{("+MakeTripleNotation(acim,"A")+")^2}{2}}=";
+            acderive += MakeTripleNotation(acvb,"V")+"\\times"+MakeTripleNotation(acib,"A")+"+";
         }
-        acvexp += "("+MakeTripleNotation(acvm,"V")+")cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
-            +MakeTripleNotation(acphi,"^\\circ")+")";
-        aciexp += "("+MakeTripleNotation(acim,"A")+")cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
-            +MakeTripleNotation(acphi,"^\\circ")+")";
+        acvexp += MakeEngNotation(acvm,"V",false,true,false,true,false)+"cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
+            +MakeTripleNotation(acphi,"^\\circ",false,true,false)+")"+MakeEngNotation(acvm,"V",false,true,false,false,true);
+        aciexp += MakeEngNotation(acim,"A",false,true,false,true,false)+"cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
+            +MakeTripleNotation(acphi,"^\\circ",false,true,false)+")"+MakeEngNotation(acim,"A",false,true,false,false,true);
         acrmsexp += MakeTripleNotation(acvrms,"V_{RMS}")+MakeEngNotation(acvrms,"V_{RMS}",true,false,false);
         acrmsiexp+= MakeTripleNotation(acirms,"A_{RMS}")+MakeEngNotation(acirms,"A_{RMS}",true,false,false);
+        acderive += "\\frac{" +MakeTripleNotation(acvm,"V")+"\\times"+MakeTripleNotation(acim,"A")+"}{2}="
+            +MakeTripleNotation(acpavevi,"W")+MakeEngNotation(acpavevi,"W",true,false,false);
     }
     else{
         var acerror = "\\text {Error: } V_{Max}\\ngtr V_{Min}";
@@ -346,6 +351,7 @@ function ChangedAC(){
         acvexp = acerror;
         aciexp = acerror;
         acpaveexp = acerror;
+        acderive = acerror;
     }
     var acohmsexp = "I_{S,RMS}=\\frac{V_{S,RMS}}{R_{EQ}}=\\frac{"+MakeTripleNotation(acvrms,"V_{RMS}")+"}{"+MakeTripleNotation(rmsr,"\\Omega")+"}="
         +MakeTripleNotation(acirms,"A_{RMS}")+MakeEngNotation(acirms,"A_{RMS}",true,false,false);
@@ -357,6 +363,7 @@ function ChangedAC(){
     NewMathAtItem(acvexp, "acveqn");
     NewMathAtItem(aciexp, "acieqn");
     NewMathAtItem(acpaveexp,"acpave");
+    NewMathAtItem(acderive,"acderive")
 }
 
 function ChangedRadar(){
@@ -790,7 +797,7 @@ function MakeTripleNotation(value,units="",makedoppler=false){
         return putinnegativesign+argstring+"\\times "+"10^{"+t_exp+"}"+units;
     }
 }
-function MakeEngNotation(value, units, prependequals = false, forceoutput = false, dopplerfreq = false){
+function MakeEngNotation(value, units, prependequals = false, forceoutput = false, dopplerfreq = false, outputnumber = true, outputunits = true){
     var absvalue = Math.abs(value);
     var sign = "";
     if(value < 0) sign = "-";
@@ -800,12 +807,7 @@ function MakeEngNotation(value, units, prependequals = false, forceoutput = fals
     var triplets = Math.round(exp/3.0-0.5);
     var t_exp = 3*triplets;
     var prefix = " ";
-    var output = "";
     var precision = 4; //if going to millions of meters, increase precision to keep digits from turning into sci notation
-    if(prependequals){
-        output = "=";
-    }
-    output += sign;
     switch(t_exp){
         case -18:   prefix = "a";   break;
         case -15:   prefix = "f";   break;
@@ -835,7 +837,17 @@ function MakeEngNotation(value, units, prependequals = false, forceoutput = fals
         precision = exp + 2;
     }
     var argument = absvalue / Math.pow(10,t_exp);
-    output += argument.toPrecision(precision)+prefix+units;
+    var output = "";
+    if(outputnumber == true){
+        if(prependequals){ //outputnumber and output units allow splitting the answer to throw in the cosine in between for AC signals
+            output = "=";
+        }
+        output += sign;
+        output += argument.toPrecision(precision);
+    }
+    if(outputunits == true){
+        output += prefix+units;
+    }
     return output;
 }
 function ChangeLowerInput(pullfromupperhalf=false){

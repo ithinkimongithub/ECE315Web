@@ -171,7 +171,7 @@
 
     <div class="tabcontent" id="ACCircuits">
         <hr />
-        <p>The generic form of an AC voltage signal is: 
+        <p>The generic form of an AC voltage signal (composed of a DC bias and one cosine) is: 
             \[v_s(t)=V_{B}+V_{m}cos(360^\circ f t+\phi)V\]
             Where \(V_B\) is the Bias (or DC component). \(V_m\) is the Magnitude.
             \(\phi\) is the Phase shift. \(f\) is the Frequency and can be derived from the signal's period \(T\) by the relationship:
@@ -187,7 +187,7 @@
         </p>
         <p id="periodfrequency">eqn</p>
         We can start with a graph of a cosine and derive the terms \(V_B, V_m,\) and \(f\).<br>
-        \(V_{Max}=\)<input type="number" id="ACVmax" min="-999" max="999" value="169.7" step="any" onchange="ChangedAC()">
+        \(V_{Max}=\)<input type="number" id="ACVmax" min="-999" max="999" value="24" step="any" onchange="ChangedAC()">
         <select id="selectACVmax" onchange="ChangedAC()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -195,7 +195,7 @@
             <option value="0" selected>V</option>
             <option value="3">kV</option>
         </select><br>
-        \(V_{Min}=\)<input type="number" id="ACVmin" min="-999" max="999" value="-169.7" step="any" onchange="ChangedAC()">
+        \(V_{Min}=\)<input type="number" id="ACVmin" min="-999" max="999" value="-12" step="any" onchange="ChangedAC()">
         <select id="selectACVmin" onchange="ChangedAC()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -234,6 +234,19 @@
         \[P_{AVE}=I_{RMS}V_{RMS}=I_{RMS}^2 R=\frac{V_{RMS}^2}{R}\]
         Average Power from the example:
         <p id="acpave">eqn</p>
+        Converting \(v_s(t)\) into \(V_{S,RMS}\) (or \(i_s(t)\) into \(I_{S,RMS}\)) is a clever way of accomplishing
+        the calculus as the first step and it removes the variable \(t\) as well as abstracting a complex signal into a single value.
+        We'll see the steps and how the RMS equation forms. Instead of using \(360^\circ\) we'll use \(2\pi\).
+        To compute an average of a periodic function, integrate that function over one cycle and then divide by its width:
+        \[P_{AVE}=\frac{1}{T}\int_{0}^{T} p(t) \,dt = \frac{1}{T}\int_{0}^{T} v(t)i(t) \,dt \]
+        \[ =\frac{1}{T}\int_{0}^{T} [V_B+V_m cos(2\pi f t+\phi)]\times [I_B+I_m cos(2\pi f t+\phi)] \,dt \]
+        \[ =\frac{1}{T}\int_{0}^{T} V_B I_B + (V_m I_B + V_B I_m ) cos(2\pi f t+\phi)+ V_m I_m cos^2(2\pi f t+\phi) \,dt \]
+        \[ =\frac{1}{T}\int_{0}^{T} V_B I_B + (V_m I_B + V_B I_m ) cos(2\pi f t+\phi)+ \frac{V_m I_m}{2}+\frac{V_mI_m}{2}cos(4\pi f t+2\phi) \,dt \]
+        \[ =\frac{1}{T}\int_{0}^{T} V_B I_B + \frac{V_m I_m}{2} + (V_m I_B + V_B I_m ) cos(2\pi f t+\phi)+\frac{V_mI_m}{2}cos(4\pi f t+2\phi) \,dt \]
+        \[ =\frac{1}{T}[V_B I_B t + \frac{V_m I_m}{2}t + \frac{V_mI_B + V_BI_m}{2\pi f}sin(2\pi f t+\phi)+
+            \frac{V_mI_m}{2\times4\pi f}sin(4\pi f t+2\phi)]\Big|_0^T \]
+        \[ = V_BI_B+\frac{V_mI_m}{2}\]        
+        <p id="acderive">eqn</p>
     </div>
 
     <div class="tabcontent" id="commequations">
