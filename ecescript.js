@@ -58,23 +58,38 @@ const minangle = -360;
 const maxangle = 360;
 var multiplier; //for remembering scale :(
 //******************************************** PLOT VARS *********************************************************/
-var plotxstart;
-var plotxend;
-var plotystart;
-var plotyend;
-var plotpixwidth;
-var plotpixheight;
+var plotxstart, plotxend;
+var plotystart, plotyend;
+var plotxspan, plotyspan;
+var plotxfirst, plotyfirst;
+var plotpixw, plotpixh;
 var plotxgridstep; //logical size, not pixel size
 var plotygridstep;
+var plotxzero; //pixel location of x=0
+var plotyzero;
+var plotgridstep, plotxpixgridstep, plotypixgridstep;
+var plotctx;
+var plotxfact, plotyfact;
 function initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep){
-    plotxstart = xstart;
+    //grids will get stretched unless you make the spans squared' up
+    plotxstart = xstart; //translates to pixel 0
     plotystart = ystart;
     plotxend = xend;
     plotyend = yend;
-    plotpixwidth = xpix;
-    plotpixheight = ypix;
+    plotxspan = xend-xstart;
+    plotyspan = yend-ystart;
+    plotpixw = xpix;
+    plotpixh = ypix;
+    plotxfact = xpix/plotxspan;
+    plotyfact = ypix/plotyspan;
     plotxgridstep = xgridstep;
     plotygridstep = ygridstep;
+    plotxpixgridstep = xpix/((xend-xstart)/xgridstep)
+    plotypixgridstep = ypix/((yend-ystart)/ygridstep)
+    plotxzero = (-xstart)/(xend-xstart)*xpix;
+    plotyzero = (-ystart)/(yend-ystart)*ypix;
+    plotxfirst = Math.round(plotxstart/plotxgridstep);
+    plotyfirst = Math.round(plotystart/plotygridstep);
 }
 //******************************************* TABS ***************************************************************/
 function InitPage () {
@@ -119,6 +134,9 @@ function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue)
 function ChangedComplex(){
     var cmag   = GrabNumber("complexmag",0,false,0,10);
     var ctheta = GrabNumber("complextheta",0,false,-360,360);
+    ctheta = ctheta * Math.PI / 180.0;
+    console.log("theta:",ctheta);
+    console.log("cos:",Math.cos(ctheta));
     var creal = cmag*Math.cos(ctheta);
     var cimag = cmag*Math.sin(ctheta);
     var canvas = document.getElementById("canvasmagphase");
@@ -127,48 +145,53 @@ function ChangedComplex(){
         return;
     } 
     var ctx = canvas.getContext("2d");
-    initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep);
-    showGrid(canvas,ctx,20,20,1,0);
-    //PlotComplex(canvas,ctx,20,20,3,4)
+    initPlot(-10,-10,10,10,canvas.width,canvas.height,1,1);
+    showGrid(ctx,true,true,true);
+    drawVector(ctx,creal,cimag);
 }
 
-function showGrid(canvas,ctx,xsize,ysize,xstep,ystep,axesonly=false){
-    //xsize is the virtual (not pixel) size of the entire plot
-    //ysize is the virtual size of the plot
-    //xstep is the virtual size of each grid square
-    //the axes will be drawn at the 0,0 point in the middle of this plot
-    //to auto-size the ystep, send a zero
+function drawVector(ctx,r,i){
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "red";
+    ctx.moveTo(plotxzero,plotyzero);
+    ctx.lineTo(plotxzero+r*plotxfact,plotyzero-i*plotyfact); //because +y is down in graphics
+    //arrow?
+    ctx.stroke();
+    ctx.closePath();
+}
+
+function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
+    //initPlot has to have been already done
     ctx.fillStyle="#77dddd";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    var x0=canvas.width/2, w=ctx.canvas.width;
-    var y0=canvas.height/2, h=ctx.canvas.height;
-    if(!axesonly){
+    ctx.fillRect(0,0,plotpixw,plotpixh);
+    if(gridsquares){
         ctx.beginPath();
-        ctx.strokeStyle = "rgb(128,128,128)";
-        var xpixstep = w*xstep/xsize;
-        var ypixstep = h*ystep/ysize;
-        if(ystep == 0){
-            ypixstep = xpixstep;
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "gray";
+        //start at the first xgridstep value above xstart. e.g. -4.5 start at -4. round up to next value by finding: xstart/xgridstep = 4
+        var px;
+        for(var x = plotxfirst; x <= plotxend; x+= plotxgridstep){
+            px = (x-plotxstart)*plotxfact;
+            ctx.moveTo(px,0);   ctx.lineTo(px,plotpixh);
         }
-        for(var x = w/2; x <= w; x+=xpixstep){
-            ctx.moveTo(x,0);    ctx.lineTo(x,h);
-        }
-        for(var y = h/2; y <= h; y+=ypixstep){
-            ctx.moveTo(0,y);    ctx.lineTo(w,y);
-        }
-        for(var x = w/2; x >= 0; x-=xpixstep){
-            ctx.moveTo(x,0);    ctx.lineTo(x,h);
-        }
-        for(var y = h/2; y >= 0; y-=ypixstep){
-            ctx.moveTo(0,y);    ctx.lineTo(w,y);
+        var py;
+        for(var y = plotyfirst; y <= plotyend; y+= plotygridstep){
+            py = (y-plotystart)*plotyfact;
+            ctx.moveTo(0,py);   ctx.lineTo(plotpixw,py);
         }
         ctx.stroke();
+        ctx.closePath();
     }
-    ctx.beginPath();
-    ctx.strokeStyle = "rgb(0,0,0)"; 
-    ctx.moveTo(0,y0);    ctx.lineTo(w,y0);  // X axis
-    ctx.moveTo(x0,0);    ctx.lineTo(x0,h);  // Y axis
-    ctx.stroke();
+    if(includeaxes){
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "black"; 
+        ctx.moveTo(0,plotyzero);    ctx.lineTo(plotpixw,plotyzero);  // X axis
+        ctx.moveTo(plotxzero,0);    ctx.lineTo(plotxzero,plotpixh);  // Y axis
+        ctx.stroke();
+        ctx.closePath();
+    } 
 }
 
 function ChangedCircuits(){
