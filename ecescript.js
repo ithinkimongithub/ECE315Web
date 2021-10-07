@@ -70,6 +70,7 @@ var plotyzero;
 var plotgridstep, plotxpixgridstep, plotypixgridstep;
 var plotctx;
 var plotxfact, plotyfact;
+var plotxpixelstep, plotypixelstep;
 function initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep){
     //grids will get stretched unless you make the spans squared' up
     plotxstart = xstart; //translates to pixel 0
@@ -90,6 +91,8 @@ function initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep){
     plotyzero = (-ystart)/(yend-ystart)*ypix;
     plotxfirst = Math.round(plotxstart/plotxgridstep);
     plotyfirst = Math.round(plotystart/plotygridstep);
+    plotxpixelstep = (xend-xstart)/xpix;
+    plotypixelstep = (yend-ystart)/ypix;
 }
 //******************************************* TABS ***************************************************************/
 function InitPage () {
@@ -131,6 +134,14 @@ function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue)
     return answer;
 }
 
+function checkIota(input){
+    if(Math.abs(input) < Math.pow(10,-15)) return 0;
+    return input;
+}
+
+var animationangle=0;
+var animationInterval = null; 
+
 function ChangedComplex(){
     var cmag   = GrabNumber("complexmag",0,false,0,10);
     var ctheta = GrabNumber("complextheta",0,false,-360,360);
@@ -155,14 +166,99 @@ function ChangedComplex(){
     NewMathAtItem(phasetorectexp,"phasetorect");
     var phasorexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+MakeTripleNotation(ctheta)+"^{\\circ}}"+"="+writePhasor(cmag,ctheta);
     NewMathAtItem(phasorexp,"phasorform");
+    var recttomagexp = "A=\\sqrt{Real^2+Imag^2}=\\sqrt{{"+MakeTripleNotation(creal)+"}^2+{"+MakeTripleNotation(cimag)+"}^2}="+MakeTripleNotation(cmag);
+    NewMathAtItem(recttomagexp,"recttomagnitude");
+    var atanarg = cimag/creal;
+    var atanphi = Math.atan(atanarg)*180/Math.PI;
+    var recttophaseexp = "\\phi=tan^{-1}(\\frac{"+MakeTripleNotation(cimag)+"}{"+MakeTripleNotation(creal)+"})=tan^{-1}("+MakeTripleNotation(atanarg)+")={"
+        +MakeTripleNotation(atanphi)+"}^{\\circ}\\text{ when }Real\\geq 0";
+    NewMathAtItem(recttophaseexp,"recttophase");
+    if(creal < 0){
+        var fixcomplexexp = "Real<0\\rightarrow\\phi={"+MakeTripleNotation(atanphi)+"}^{\\circ}+180^{\\circ}={"+MakeTripleNotation(atanphi+180)+"}^{\\circ}";
+        NewMathAtItem(fixcomplexexp,"complexfixphase");
+    }
+    else{
+        NewMathAtItem("Real\\geq 0 \\rightarrow \\text{ No Change, }\\phi={"+MakeTripleNotation(atanphi)+"}^{\\circ}","complexfixphase");
+    }
+    
+    var vm1 = GrabNumber("complexvm1",0,false,0,10);
+    var vm2 = GrabNumber("complexvm2",0,false,0,10);
+    var phi1= GrabNumber("complext1",0,false,-360,360);
+    var phi2= GrabNumber("complext2",0,false,-360,360);
+    var phi1rad = phi1 * Math.PI/180;
+    var phi2rad = phi2 * Math.PI/180;
+    var add1real = checkIota(vm1*Math.cos(phi1rad));
+    var add2real = checkIota(vm2*Math.cos(phi2rad));
+    var add1imag = checkIota(vm1*Math.sin(phi1rad));
+    var add2imag = checkIota(vm2*Math.sin(phi2rad));
+    var sumreal =  add1real + add2real;
+    var sumimag =  add1imag + add2imag;
+    var summag = Math.sqrt(sumreal*sumreal+sumimag*sumimag);
+    var sumphi = Math.atan2(sumimag,sumreal);
+    var sumphideg = sumphi*180/Math.PI;
+    var complexadd1exp = "v_{s1}(t)="+MakeTripleNotation(vm1)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi1)+"}^{\\circ})V="+writePhasor(vm1,phi1)+"V";
+    NewMathAtItem(complexadd1exp,"complexaddend1");
+    var complexadd2exp = "v_{s2}(t)="+MakeTripleNotation(vm2)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi2)+"}^{\\circ})V="+writePhasor(vm2,phi2)+"V";
+    NewMathAtItem(complexadd2exp,"complexaddend2");
+    var complexadditionexp = writePhasor(vm1,phi1)+"V+"+writePhasor(vm2,phi2)+"V=["+writeRectangular(add1real,add1imag)+"+"
+        +writeRectangular(add2real,add2imag)+"]V=["+writeRectangular(sumreal,sumimag)+"]V";
+    NewMathAtItem(complexadditionexp,"complexaddition");
+    var complexresultexp = "["+writeRectangular(sumreal,sumimag)+"]V="+writePhasor(summag,sumphideg)+"V\\rightarrow v_{sum}(t)="+
+        MakeTripleNotation(summag)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(sumphideg)+"}^{\\circ})V";
+    NewMathAtItem(complexresultexp,"complexresult");
+    
     canvas = document.getElementById("canvasaddvoltage");
     if (canvas == null || !canvas.getContext){
         console.log("bad canvas");
         return;
     } 
     ctx = canvas.getContext("2d");
-    initPlot(-2.5,-10,2.5,10,canvas.width,canvas.height,0.0625,1);
+    initPlot(-2.5/100,-10,2.5/100,10,canvas.width,canvas.height,0.0625/100,1);
     showGrid(ctx,true,true,true);
+    drawComplexCosine(ctx,vm1,phi1,100,"blue");
+    drawComplexCosine(ctx,vm2,phi2,100,"red");
+    drawComplexCosine(ctx,summag,sumphideg,100,"purple");
+    animatecomplexOnce();
+}
+
+function animatecomplexOnce(){
+    var vm1 = GrabNumber("complexvm1",0,false,0,10);
+    var vm2 = GrabNumber("complexvm2",0,false,0,10);
+    var phi1rad= Math.PI/180*(animationangle+GrabNumber("complext1",0,false,-360,360));
+    var phi2rad= Math.PI/180*(animationangle+GrabNumber("complext2",0,false,-360,360));
+    var canvas = document.getElementById("canvasaddvectors");
+    var r1 = vm1*Math.cos(phi1rad);
+    var i1 = vm1*Math.sin(phi1rad);
+    var r2 = vm2*Math.cos(phi2rad);
+    var i2 = vm2*Math.sin(phi2rad);
+    var rs = r1+r2;
+    var is = i1+i2;
+    if (canvas == null || !canvas.getContext){
+        console.log("bad canvas");
+        return;
+    } 
+    var ctx = canvas.getContext("2d");
+    initPlot(-10,-10,10,10,canvas.width,canvas.height,1,1);
+    showGrid(ctx,true,true,true);
+    drawVector(ctx,r1,i1,0,0,"blue");
+    drawVector(ctx,r2,i2,0,0,"red");
+    drawVector(ctx,r1,i1,r2,i2,"gray");
+    drawVector(ctx,r2,i2,r1,i1,"gray");
+    drawVector(ctx,rs,is,0,0,"purple");
+    animationangle += 1;
+    if(animationangle >= 360) animationangle = 0;
+}
+function stopanimatecomplex(reset){
+    if (reset){
+        animationangle = 0;
+        animatecomplexOnce();
+    }
+    clearInterval(animationInterval);
+}
+function animatecomplex(){
+    //start a timer and a counter, no skip
+    clearInterval(animationInterval);
+    animationInterval = setInterval(animatecomplexOnce, 10);
 }
 
 function writeRectangular(r,i){
@@ -178,26 +274,33 @@ function writeRectangular(r,i){
 }
 
 function writePhasor(cmag,ctheta){
-    return MakeTripleNotation(cmag)+"\\angle"+MakeTripleNotation(ctheta)+"^{\\circ}";
+    return MakeTripleNotation(cmag)+"\\angle{"+MakeTripleNotation(ctheta)+"}^{\\circ}";
 }
 
-function drawVector(ctx,r,i){
+function drawVector(ctx,r,i,x=0,y=0,color="red"){
     ctx.beginPath();
     ctx.lineWidth = 2;
-    ctx.strokeStyle = "red";
-    ctx.moveTo(plotxzero,plotyzero);
-    ctx.lineTo(plotxzero+r*plotxfact,plotyzero-i*plotyfact); //because +y is down in graphics
+    ctx.strokeStyle = color;
+    ctx.moveTo(plotxzero+x*plotxfact,plotyzero-y*plotyfact);
+    ctx.lineTo(plotxzero+x*plotxfact+r*plotxfact,plotyzero-y*plotyfact-i*plotyfact); //because +y is down in graphics
     //arrow?
     ctx.stroke();
     ctx.closePath();
 }
-function drawComplexCosine(A, phi, freq,color){
+function drawComplexCosine(ctx, A, phi, freq,color){
     ctx.beginPath();
     ctx.lineWidth = 1;
     ctx.strokeStyle = color;
-    for(var )
-    //moveTo on first
-    //lineTo on subsequent
+    var x, y;
+    var phirad = phi*Math.PI/180.0;
+    y = A*Math.cos(plotxstart*freq*2*Math.PI+phirad);
+    ctx.moveTo(0,y);
+    for(x = plotxstart; x <= plotxend; x+=plotxpixelstep){
+        y = A*Math.cos(x*freq*2*Math.PI+phirad);
+        ctx.lineTo(x*plotxfact+plotxzero,plotyzero-y*plotyfact);
+    }
+    ctx.stroke();
+    ctx.closePath();
 }
 
 function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
