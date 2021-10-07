@@ -251,13 +251,15 @@
 
     <div class="tabcontent" id="ComplexNumbers">
         <hr />
-        <p>Complex numbers have a number of applications in electrical engineering (and to avoid confusion with current \(i\) we use \(j=\sqrt{-1}\)). If you have ever seen that \(e^{i\pi}-1=0\), then you can appreciate:
+        <p>Complex numbers have a number of applications in electrical engineering (and to avoid confusion with current \(i\) we use \(j=\sqrt{-1}\)).
+            If you have ever seen that \(e^{\pi i}-1=0\), then you can appreciate where it comes from (using \(j\)):
             \[e^{j\theta}=cos(\theta)+j sin(\theta)\]
             With another term \(A\) for an arbitrary magnitude, Euler's formula shows how to convert between "Polar" and "Rectangular" (Cartesian) coordinate systems:
             \[Ae^{j\theta}=Acos(\theta)+j Asin(\theta)\]
-            For any known angle, the trigonometry functions can be evaluated to provide an imaginary number in imaginary form:
-            <br>Magnitude \(A\): <input type="number" id="complexmag" min="0" max="10" value="5" step="any" onchange="ChangedComplex()">
-            <br>Angle (deg) \(\theta\): <input type="number" id="complextheta" min="-360" max="360" value="60" step="any" onchange="ChangedComplex()"> \(^{\circ}\)<br>
+            The angle \(0^{\circ}\) is pointing to the right along the positive-real axis, and as angles increase, the vector rotates counter-clockwise through the four
+            quadrants.
+            <br>Magnitude \(A\): <input type="number" id="complexmag" min="0" max="10" value="10" step="any" onchange="ChangedComplex()">
+            <br>Angle (deg) \(\theta\): <input type="number" id="complextheta" min="-360" max="360" value="45" step="any" onchange="ChangedComplex()"> \(^{\circ}\)<br>
             <canvas id="canvasmagphase" width="250" height="250"></canvas>
             <!--
             Why is this so useful? Recall that \(\frac{d}{dt} e^t=e^t\). When the complex number \(j\) is introduced as a constant coefficient to \(t\) it behaves like any other constant coefficient:
@@ -271,7 +273,25 @@
             \[\frac{d}{dt} [-cos(t)-j sin(t)] =  sin(t)-jcos(t)\]
             \[\frac{d}{dt} [ sin(t)-j cos(t)] =  cos(t)+jsin(t)\]
             Complex numbers greatly reduce the difficulty of analyzing circuits. Instead of differential equations, we use algebra. And instead of using trigonometry, we use complex numbers. -->
+            <br>This complex value in rectangular form is: <p id="phasetorect">eqn</p>
+            <br>In "Phasor" form, we emphasize that only magnitude and phase are considered, using the "&#8736;" symbol<p id="phasorform">eqn</p>
+            <br>Complex numbers come from the Phasor Transform. Time and frequency are removed leaving an expression of just two variables: magnitude and phase.
+            Generally:
+            \[f(t)=Acos(360^{\circ}ft+\phi)\]
+            \[Phasor[f(t)]=F\]
+            \[F=A\angle\phi\]
+            The Phasor representation says that the waveform \(f(t)\) will have phase difference \(\phi\) from the cosine at this frequency.
+            The transform is also reversible, but frequency has to take on its original value. Assume \(f=60Hz\)
+            \[I=3\angle 45^{\circ}A\]
+            \[i(t)=3cos(360^{\circ}60t+45^{\circ})A\]
+            <br>So lets try to add up two voltage sources connected directly in series both operating at the same frequency (a must with Phasor's). Assume \(f=100Hz\)<br>
+            <br>Magnitude \(V_{m1}\): <input type="number" id="complexvm1" min="0" max="10" value="4" step="any" onchange="ChangedComplex()">
+            <br>Angle (deg) \(\theta_1\): <input type="number" id="complext1" min="-360" max="360" value="0" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
+            <br>Magnitude \(V_{m2}\): <input type="number" id="complexvm2" min="0" max="10" value="4" step="any" onchange="ChangedComplex()">
+            <br>Angle (deg) \(\theta_2\): <input type="number" id="complext2" min="-360" max="360" value="90" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
+            <br><canvas id="canvasaddvoltage" width="1000" height="250"></canvas>
         </p>
+
     </div>
 
 

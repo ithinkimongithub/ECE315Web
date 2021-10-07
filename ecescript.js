@@ -134,20 +134,51 @@ function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue)
 function ChangedComplex(){
     var cmag   = GrabNumber("complexmag",0,false,0,10);
     var ctheta = GrabNumber("complextheta",0,false,-360,360);
-    ctheta = ctheta * Math.PI / 180.0;
+    var cthetar = ctheta * Math.PI / 180.0;
     console.log("theta:",ctheta);
     console.log("cos:",Math.cos(ctheta));
-    var creal = cmag*Math.cos(ctheta);
-    var cimag = cmag*Math.sin(ctheta);
+    var creal = cmag*Math.cos(cthetar);
+    var cimag = cmag*Math.sin(cthetar);
     var canvas = document.getElementById("canvasmagphase");
     if (canvas == null || !canvas.getContext){
-        console.log("ok canvas");
+        console.log("bad canvas");
         return;
     } 
     var ctx = canvas.getContext("2d");
     initPlot(-10,-10,10,10,canvas.width,canvas.height,1,1);
     showGrid(ctx,true,true,true);
     drawVector(ctx,creal,cimag);
+    var complexsign = "+";
+    if(cimag < 0)   complexsign = "-";
+    var phasetorectexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+MakeTripleNotation(ctheta)+"^{\\circ}}"+"="+
+        MakeTripleNotation(cmag)+"cos("+MakeTripleNotation(ctheta)+"^{\\circ})+j"+MakeTripleNotation(cmag)+"sin("+MakeTripleNotation(ctheta)+"^{\\circ})="+writeRectangular(creal,cimag);
+    NewMathAtItem(phasetorectexp,"phasetorect");
+    var phasorexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+MakeTripleNotation(ctheta)+"^{\\circ}}"+"="+writePhasor(cmag,ctheta);
+    NewMathAtItem(phasorexp,"phasorform");
+    canvas = document.getElementById("canvasaddvoltage");
+    if (canvas == null || !canvas.getContext){
+        console.log("bad canvas");
+        return;
+    } 
+    ctx = canvas.getContext("2d");
+    initPlot(-2.5,-10,2.5,10,canvas.width,canvas.height,0.0625,1);
+    showGrid(ctx,true,true,true);
+}
+
+function writeRectangular(r,i){
+    var complexsign = "+";
+    if(i < 0)   complexsign = "-";
+    var prefix = "";
+    var suffix = "";
+    if(i >= 1000 || i <= -1000){
+        prefix = "(";
+        suffix = ")";
+    }
+    return MakeTripleNotation(r)+complexsign+"j"+prefix+MakeTripleNotation(i)+suffix;
+}
+
+function writePhasor(cmag,ctheta){
+    return MakeTripleNotation(cmag)+"\\angle"+MakeTripleNotation(ctheta)+"^{\\circ}";
 }
 
 function drawVector(ctx,r,i){
