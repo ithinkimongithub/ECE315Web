@@ -191,6 +191,14 @@ function drawVector(ctx,r,i){
     ctx.stroke();
     ctx.closePath();
 }
+function drawComplexCosine(A, phi, freq,color){
+    ctx.beginPath();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = color;
+    for(var )
+    //moveTo on first
+    //lineTo on subsequent
+}
 
 function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
     //initPlot has to have been already done
