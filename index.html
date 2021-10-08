@@ -251,10 +251,12 @@
 
     <div class="tabcontent" id="ComplexNumbers">
         <hr />
-        Complex numbers have a number of applications in electrical engineering (and to avoid confusion with current \(i\) we use \(j=\sqrt{-1}\)).
+        <h4>Complex Number Formats: Rectangular, Polar, and Exponential</h4>
+        Complex numbers (e.g \(2+3i\)) have a number of applications in electrical engineering (and to avoid confusion with current's \(i(t)\) we use \(j=\sqrt{-1}\)).
         If you have ever seen that \(e^{\pi i}-1=0\), then you can appreciate Euler's Formula (shown using \(j\)):
         \[e^{j\theta}=cos(\theta)+j sin(\theta)\]
-        With another term \(A\) for an arbitrary magnitude, Euler's formula shows how to convert between "Polar" and "Rectangular" (Cartesian) coordinate systems:
+        With another term \(A\) for an arbitrary magnitude, Euler's formula shows how to convert a complex number from its "Exponential" to 
+        "Rectangular" (Cartesian) form. The variables are magnitude \(A\) and angle \(\theta\), and \(e\) and \(j\) are constants:
         \[Ae^{j\theta}=Acos(\theta)+j Asin(\theta)\]
         \[Real=Acos(\theta)\text{ and }Imag=Asin(\theta)\]
         <!--Why is this so useful? Recall that \(\frac{d}{dx} e^x=e^x\). When the complex number \(j\) is introduced as a constant coefficient to \(x\) it behaves like any other constant coefficient.
@@ -275,35 +277,52 @@
         <br>Magnitude \(A\): <input type="number" id="complexmag" min="0" max="10" value="10" step="any" onchange="ChangedComplex()">
         <br>Angle (deg) \(\theta\): <input type="number" id="complextheta" min="-360" max="360" value="30" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
         <br><canvas id="canvasmagphase" width="250" height="250"></canvas>
-        <br>This complex value in rectangular form is: 
+        <br>To create the Rectangular form: 
         <p id="phasetorect">eqn</p>
-        In "Phasor" form, we consider only magnitude and phase and the \(e^j\) is simply replaced with the "&#8736;" symbol (although there is more going on).
+        To create the "Polar" form, we replace the \(e^j\) with the "&#8736;" symbol (for now, it is this simple).
         <p id="phasorform">eqn</p>
-        We treat the angles just as exponents when performing multiplication or division (Phasor form is great for this task):
+        Adding complex values is most easily done with the Rectangular form. Add the terms piece-wise: Real with Real and Imaginary with Imaginary:
+        \[Re_1+jIm_1+Re_2+jIm_2=Re_1+Re_2+j[Im_1+Im_2]\]
+        Rectangular multiplication isn't very convenient, but it can be done (FOIL):
+        \[(Re_1+jIm_1)\times(Re_2+jIm_2)=Re_1\times Re_2 - (Im_1\times Im_2)+ j(Re_1\times Im_2+Re_2\times Im_1)\]
+        Rectangular division requires the use of the Complex Conjugate to rationalize the denominator and then distribute the division:
+        (The Complex Conjugate of \([Re+jIm]\) is \([Re-jIm]\))
+        \[\frac{Re_1+jIm_1}{Re_2+jIm_2}=\frac{(Re_1+jIm_1)}{(Re_2+jIm_2)}\times\frac{(Re_2-jIm_2)}{(Re_2-jIm_2)}=
+        \frac{(Re_1\times Re_2 + Im_1\times Im_2)+ j(Re_2\times Im_1-Re_1\times Im_2)}{Re_2^2+Im_2^2}=
+        \frac{Re_1\times Re_2 + Im_1\times Im_2}{Re_2^2+Im_2^2}+j\frac{Re_2\times Im_1-Re_1\times Im_2}{Re_2^2+Im_2^2}\]
+        Multiplication is much easier in Exponential and Polar forms:
         \[A_1e^{j\theta_1}\times A_2e^{j\theta_2}=A_1\times A_2e^{j(\theta_1+\theta_2)}\text{  and  }\frac{A_1e^{j\theta_1}}{A_2e^{j\theta_2}}=\frac{A_1}{A_2}e^{j(\theta_1-\theta_2)}\]
         \[A_1\angle\theta_1 \times A_2\angle \theta_2=A_1\times A_2\angle \theta_1+\theta_2\ \text{  and  }\frac{A_1\angle\theta_1}{A_2\angle\theta_2}=\frac{A_1}{A_2}\angle\theta_1-\theta_2\]
-        To go from "Rectangular" to "Phasor" use the Pythagorean Theorem for magnitude \(A=\sqrt{Real^2+Imag^2}\) and an arctangent function to obtain the angle that satisfies
-            \(tan(\theta)=\frac{Imag}{Real}\). The computation \(\theta=tan^{-1}(\frac{Imag}{Real})\)  is only correct in quadrants I and IV. Use \(atan2\) or a calculator's complex phasor 
-            functionality to correctly compute angles in Quadrants II and III.
+        To go from "Rectangular" to "Polar" use the Pythagorean Theorem for magnitude \(A=\sqrt{Real^2+Imag^2}\) and an arctangent function to obtain the angle that satisfies
+            \(tan(\theta)=\frac{Imag}{Real}\). Beware: the computation \(\theta=tan^{-1}(\frac{Imag}{Real})\)  is only correct in quadrants I and IV. Use \(atan2\) or a calculator's complex phasor 
+            functionality to correctly compute angles when the complex number is in Quadrants II and III.
+            If you must use \(tan^{-1}\) add \(180^{\circ}\) to the result whenever the real component is negative.
+            Then, whenever \(\phi\) exceeds \(180^{\circ}\) subtract \(360^{\circ}\) (I won't show this final step -- 
+            your efforts are better spent learning how to have your calculator provide phase in a single step).
         <p id="recttomagnitude">eqn</p>
         <p id="recttophase">eqn</p>
-        When using \(tan^{-1}\) add \(180^{\circ}\) to the result whenever the real component is negative.
         <p id="complexfixphase">eqn</p>
         <hr />
+        <h4>Phasor Transform</h4>
         Complex numbers appear in circuits when using the Phasor Transform, which removes time and frequency, leaving an expression of magnitude and phase.
-        \[f(t)=Acos(360^{\circ}ft+\phi)\]
-        \[Phasor\{f(t)\}=F\]
-        \[F=A\angle\phi\]
-        The Phasor representation says that the waveform \(f(t)\) will have phase difference \(\phi\) from the cosine at this frequency.
-        The transform is also reversible, but frequency has to take on its original value. Assume \(f=60Hz\)
+        \[v_s(t)=V_m cos(360^{\circ}ft+\phi)\]
+        \[Phasor\{v_s(t)\}=V_s\]
+        \[V=V_m\angle\phi\]
+        The transform is also reversible, but frequency has to take on its original value. And it is only valid for expressions of
+        voltage or current. Assume \(f=60Hz\)
         \[I=3\angle 45^{\circ}A\]
         \[i(t)=3cos(360^{\circ}60t+45^{\circ})A\]
-        So lets try to add up two voltage sources connected directly in series both operating at the same frequency (a must with Phasor's). Assume \(f=100Hz\)
-        <br>Magnitude \(V_{m1}\): <input type="number" id="complexvm1" min="0" max="10" value="7" step="any" onchange="ChangedComplex()">
-        <br>Angle (deg) \(\theta_1\): <input type="number" id="complext1" min="-360" max="360" value="30" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
-        <br>Magnitude \(V_{m2}\): <input type="number" id="complexvm2" min="0" max="10" value="5" step="any" onchange="ChangedComplex()">
-        <br>Angle (deg) \(\theta_2\): <input type="number" id="complext2" min="-360" max="360" value="145" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
-        <br>A computer can of course perform the addition at every t-point and plot the result. But we'll take advantage of the property that these two cosines are always the same
+        Depending on the textbook, the Phasor Transform's magnitude will be the RMS-value (thus, divide by \(\sqrt{2}\) where applicable).
+        You can choose whether or not to convert to RMS and back - just keep track - it is sometimes easier to remain in peak, but remember average power uses RMS.
+        Thankfully, we won't do any power computations in this subject area.
+        <hr />
+        <h4>Phasor Addition</h4>
+        So lets try to add up two voltage sources both operating at the same frequency (a must with Phasors) connected in series. Assume \(f=100Hz\)
+        <br>Magnitude \(V_{m1}\): <input type="number" id="complexvm1" min="0" max="10" value="7" step="any" onchange="ChangedComplex()">V
+        <br>Angle (deg) \(\phi_1\): <input type="number" id="complext1" min="-360" max="360" value="30" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
+        <br>Magnitude \(V_{m2}\): <input type="number" id="complexvm2" min="0" max="10" value="5" step="any" onchange="ChangedComplex()">V
+        <br>Angle (deg) \(\phi_2\): <input type="number" id="complext2" min="-360" max="360" value="145" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
+        <br>A computer can of course perform the addition at several hundred values of \(t\) and plot the result. But we'll take advantage of the property that these two cosines are always the same
         phase apart, and that their sum will be a single cosine at this frequency, only adjusted in magnitude and phase: Phasors tolerate addition. If they are close in phase, they are constructive. If they are 
         far apart in phase, they are destructive. Instead of using geometry, we'll convert functions into their Phasors and then perform addition, before returning to the time-domain:
         <p id="complexaddend1">eqn</p>
@@ -312,9 +331,29 @@
         <p id="complexresult">eqn</p>
         <canvas id="canvasaddvoltage" width="1000" height="250"></canvas> 
         <br><canvas id="canvasaddvectors" width="250" height="250"></canvas>
-        <button onclick="animatecomplex()">Animate</button><button onclick="stopanimatecomplex(false)">Stop</button><button onclick="stopanimatecomplex(true)">Reset</button>
+        <br><button onclick="animatecomplex()">Animate</button><button onclick="stopanimatecomplex(false)">Stop</button><button onclick="stopanimatecomplex(true)">Reset</button>
+        <br>A Voltage (or Current) Phasor is not itself a time-based value, but if we rotate the Phasors about the origin, then the Real components of the Complex Phasors
+        represent the value that would be seen on the graph of \(v(t)\) just above. The animation demonstrates that because the two voltage sources operate at the same
+        frequency, their Phasor sum will also "rotate" at that frequency. In fact, for any number of sinusoids (not just two) of the same frequency, their sum will be a single
+        sinusoid at that frequency.
+        <hr />
+        <h4>Phasor Multiplication</h4>
+        Word of warning: we do <strong>not</strong> multiply two voltage phasors together, nor two current, nor a voltage and a current. Why? Linearity.
+        When we multiply our function by a <strong>constant</strong> the calculus is unaffected:
+        \[ \int 2cos(x) \,dx = 2\int cos(x) \,dx\]
+        \[\frac{d}{dx}4cos(x)=4\frac{d}{dx}cos(x)\]
+        However, if we attempt to take the product of two functions, the calculus can be wildly different.
+        For trigonmetric functions, the frequencies will also change.
+        \[\frac{d}{dx}[cos(x)]=-sin(x)\]
+        \[\frac{d}{dx}[cos(x)\times cos(x)]=-2sin(x)\times cos(x)=-sin(2x)\]
+        The multiplication we can do is of the form \(V=I Z\) where \(Z\) is the Impedance of a Resistor, Capacitor, or Inductor.
     </div>
 
+    <div class="tabcontent" id="InductorCapacitor">
+        <p>RLC FTW</p>
+
+
+    </div>
 
     <div class="tabcontent" id="commequations">
         <hr />
