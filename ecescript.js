@@ -89,8 +89,8 @@ function initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep){
     plotypixgridstep = ypix/((yend-ystart)/ygridstep)
     plotxzero = (-xstart)/(xend-xstart)*xpix;
     plotyzero = (-ystart)/(yend-ystart)*ypix;
-    plotxfirst = Math.round(plotxstart/plotxgridstep);
-    plotyfirst = Math.round(plotystart/plotygridstep);
+    plotxfirst = Math.round(plotxstart/plotxgridstep)*plotxgridstep;
+    plotyfirst = Math.round(plotystart/plotygridstep)*plotygridstep;
     plotxpixelstep = (xend-xstart)/xpix;
     plotypixelstep = (yend-ystart)/ypix;
 }
@@ -105,6 +105,22 @@ function InitPage () {
     console.log("initpage");
     document.getElementById("defaultOpen").click();
 }
+
+const tabbackgroundcolor = '#33F';
+
+function NextSection(){
+    //figure out which one is next, then call OpenBigTab
+    var tablinks, i;
+    tablinks = document.getElementsByClassName("tablink");
+    for(i = 0; i< tablinks.length-1; i++){
+        if(tablinks[i].style.backgroundColor.length > 0){
+            tablinks[i+1].onclick();
+            window.scrollTo(0, 0);
+            break;
+        }
+    }
+}
+
 function openBigTab(whichtoshow,whatelement){
     var i, tabcontent, tablinks, currentid;
     tabcontent = document.getElementsByClassName("tabcontent");
@@ -112,6 +128,10 @@ function openBigTab(whichtoshow,whatelement){
         currentid = tabcontent[i].id;
         if(currentid == whichtoshow){
             tabcontent[i].style.display = "block";
+            if(i == tabcontent.length-1){
+                document.getElementById("nextsectionbutton").disabled = true;
+            }
+            else document.getElementById("nextsectionbutton").disabled = false;
         }
         else{
             tabcontent[i].style.display = "none";
@@ -121,7 +141,7 @@ function openBigTab(whichtoshow,whatelement){
     for(i = 0; i < tablinks.length; i++){
         tablinks[i].style.backgroundColor = "";
     }
-    whatelement.style.backgroundColor = '#33F';
+    whatelement.style.backgroundColor = tabbackgroundcolor;
 }
 
 
@@ -135,6 +155,12 @@ function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue)
     return answer;
 }
 
+function GetPolar(real,imag){
+    var mag = Math.sqrt(real*real+imag*imag);
+    var phi = Math.atan2(imag,real)*180/Math.PI;
+    return [mag,phi];
+}
+
 function ChangedIC(){
     var ICfreq = GrabNumber("ICfreq","ICfreqexp",true,minnorm,maxnorm);
     var ICres  = GrabNumber("ICresistance","ICresistanceP",true,minnorm,maxnorm);
@@ -146,14 +172,135 @@ function ChangedIC(){
     NewMathAtItem(ICresexp,"ICrexp");
     var ICLexppart2 = "";
     if(ICLimp>=1000) ICLexppart2 = "=j"+MakeEngNotation(ICLimp,"\\Omega");
-    var ICLexp = "Z_L=jwL=j2\\pi f L=j2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICind,"H")+"="+
+    var ICLexp = "Z_L=j\\omega L=j2\\pi f L=j2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICind,"H")+"="+
         "j"+MakeTripleNotation(ICLimp,"\\Omega")+ICLexppart2;
     NewMathAtItem(ICLexp,"inductorimpedance");
     var ICCpart2 = "";
     if(ICCimp>=1000) ICCpart2 = "=-j"+MakeEngNotation(ICCimp,"\\Omega");
-    var ICCexp = "Z_C=\\frac{1}{jwC}=\\frac{-j}{2\\pi fC}=\\frac{-j}{2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICcap,"F")+"}="+
+    var ICCexp = "Z_C=\\frac{1}{j\\omega C}=\\frac{-j}{2\\pi fC}=\\frac{-j}{2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICcap,"F")+"}="+
         "-j"+MakeTripleNotation(ICCimp,"\\Omega")+ICCpart2;
     NewMathAtItem(ICCexp,"capacitorimpedance");
+    var cktchoice = document.getElementById("topology").value;
+    var Zeqexp = "Z_{EQ}=";
+    var Zeqreal = 0;
+    var Zeqimag = 0;
+    var Zeqimagabs = 0;
+    var ZeqPolar = new Array(2);
+    var Zeqimagsign = "+";
+    console.log("ckt choice=",cktchoice);
+    switch (cktchoice){
+        case "SRLC": 
+            Zeqreal = ICres;
+            Zeqimag = ICLimp - ICCimp;
+            Zeqimagabs = Math.abs(Zeqimag);
+            if(Zeqimag < 0) Zeqimagsign = "-";
+            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+            Zeqexp += "Z_R+Z_L+Z_C="+MakeEngNotation(ICres,"\\Omega",false,true)+"+j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"-j"+
+                MakeEngNotation(ICCimp,"\\Omega",false,true)+"=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
+                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
+            NewMathAtItem(Zeqexp,"ICzeq");
+        break;
+        case "SRC":
+            Zeqreal = ICres;
+            Zeqimag = -1*ICCimp;
+            Zeqimagabs = Math.abs(Zeqimag);
+            if(Zeqimag < 0) Zeqimagsign = "-";
+            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+            Zeqexp += "Z_R+Z_C="+MakeEngNotation(ICres,"\\Omega",false,true)+"-j"+
+                MakeEngNotation(ICCimp,"\\Omega",false,true)+"=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
+                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
+            NewMathAtItem(Zeqexp,"ICzeq");
+        break;
+        case "SRL":
+            Zeqreal = ICres;
+            Zeqimag = ICLimp;
+            Zeqimagabs = Math.abs(Zeqimag);
+            if(Zeqimag < 0) Zeqimagsign = "-";
+            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+            Zeqexp += "Z_R+Z_L="+MakeEngNotation(ICres,"\\Omega",false,true)+"+j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+
+                "=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
+                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
+            NewMathAtItem(Zeqexp,"ICzeq");
+        break;
+        case "SLC": 
+            Zeqreal = 0;
+            Zeqimag = ICLimp - ICCimp;
+            Zeqimagabs = Math.abs(Zeqimag);
+            if(Zeqimag < 0) Zeqimagsign = "-";
+            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+            Zeqexp += "Z_L+Z_C=j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"-j"+
+                MakeEngNotation(ICCimp,"\\Omega",false,true)+"=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
+                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
+            NewMathAtItem(Zeqexp,"ICzeq");
+        break;
+        case "PRLC": 
+            var Zeqw = 2*Math.PI*ICfreq;
+            var wRLmRwC = Zeqw*ICres*ICind-ICres/(Zeqw*ICcap);
+            var wRLmRwCsquared = wRLmRwC*wRLmRwC;
+            var denom  = ICind*ICind+ICcap*ICcap*wRLmRwCsquared;
+            Zeqreal = ICres*ICind*ICind/denom;
+            Zeqimag = -1*ICres*ICcap*ICind*wRLmRwC/denom;
+            Zeqimagabs = Math.abs(Zeqimag);
+            if(Zeqimag < 0) Zeqimagsign = "-";
+            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_L}+\\frac{1}{Z_C}]^{-1}=[\\frac{1}{R}+\\frac{1}{j\\omega L}+j\\omega C]^{-1}=[\\frac{1}{"
+                +MakeEngNotation(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"}+j("
+                +MakeEngNotation(ICCimp,"\\Omega",false,true)+")]^{-1}="+writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
+            NewMathAtItem(Zeqexp,"ICzeq");
+        break;
+        //case "PRC":
+        //    var 
+    }
+    var ICvoltageeqn = "v_s(t)=10cos(360^{\\circ}"+MakeEngNotation(ICfreq,"",false,true,false)+"t+0^{\\circ})V"
+        +"\\rightarrow V_S=10\\angle 0^{\\circ}V";
+    NewMathAtItem(ICvoltageeqn,"ICvoltageeqn");
+    var currentmag = 10.0/ZeqPolar[0];
+    var currentphi = -ZeqPolar[1];
+    var ICcurrenteqn = "I_S=\\frac{V_S}{Z_{EQ}}=\\frac{10\\angle 0^{\\circ}V}{"+writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega")+"}="
+        +MakeEngNotation(currentmag,"A",false,true,false,true,false)+"\\angle"+currentphi.toFixed(2)+"^{\\circ}"+MakeEngNotation(currentmag,"A",false,true,false,false,true)
+        +"\\rightarrow i_s(t)="+writeTimeBasedEng(currentmag,ICfreq,currentphi,"A");
+    NewMathAtItem(ICcurrenteqn,"ICcurrenteqn");
+    //make the chart
+    var canvas = document.getElementById("canvasICplot");
+    if (canvas == null || !canvas.getContext){
+        console.log("bad canvas");
+        return;
+    } 
+    var ctx = canvas.getContext("2d");
+    var ICperiod = 1/ICfreq;
+    var timestep = 0.5/50.0; //1 ms
+    var vmax = 12;
+    var vmin = -vmax;
+    var currenttimepk = -currentphi/(360*ICfreq);
+    var autoscaleIC = document.getElementById("autoscaleIC").checked;
+    var vertmultiplier;
+    var timeexp;
+    if(autoscaleIC){
+        timeexp = Math.log10(ICperiod);
+        timeexp = Math.round(timeexp-0.2)-1;
+        var exp = Math.log10(currentmag);
+        exp = Math.round(exp-0.5);
+        vertmultiplier = Math.pow(10,-exp);
+        document.getElementById("currentzoom").value=exp;
+        document.getElementById("timezoom").value=timeexp;
+    }
+    else{
+        vertmultiplier = Math.pow(10,-document.getElementById("currentzoom").value);
+        timeexp = document.getElementById("timezoom").value;
+    }
+    timestep = Math.pow(10,timeexp);
+    console.log("times",ICperiod,timeexp,"step",timestep);
+    initPlot(timestep*(-40),vmin,timestep*40,vmax,canvas.width,canvas.height,timestep,1);
+    showGrid(ctx,true,true,true);
+    console.log("grid done");
+    drawComplexCosine(ctx,10,0,ICfreq,"blue");
+    console.log("blue done");
+    drawComplexCosine(ctx,currentmag*vertmultiplier,currentphi,ICfreq,"red");
+    console.log("red done");
+    drawLegend(ctx,2,["Voltage","Current"],["blue","red"]);
+    drawLabeledPoint(ctx,0,10,"0s,10V",5,0);
+    drawLabeledPoint(ctx,currenttimepk,currentmag*vertmultiplier,MakeEngNotation(currenttimepk,"s",false,true)+","+MakeEngNotation(currentmag,"A",false,true),-100,-20);
+    console.log("drew a point");
 }
 
 function checkIota(input){
@@ -183,24 +330,24 @@ function ChangedComplex(){
     drawVector(ctx,creal,cimag);
     var complexsign = "+";
     if(cimag < 0)   complexsign = "-";
-    var phasetorectexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+MakeTripleNotation(ctheta)+"^{\\circ}}"+"="+
-        MakeTripleNotation(cmag)+"cos("+MakeTripleNotation(ctheta)+"^{\\circ})+j"+MakeTripleNotation(cmag)+"sin("+MakeTripleNotation(ctheta)+"^{\\circ})="+writeRectangular(creal,cimag);
+    var phasetorectexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+
+        MakeTripleNotation(cmag)+"cos("+ctheta.toFixed(2)+"^{\\circ})+j"+MakeTripleNotation(cmag)+"sin("+ctheta.toFixed(2)+"^{\\circ})="+writeRectangular(creal,cimag);
     NewMathAtItem(phasetorectexp,"phasetorect");
-    var phasorexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+MakeTripleNotation(ctheta)+"^{\\circ}}"+"="+writePhasor(cmag,ctheta);
+    var phasorexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+writePolar(cmag,ctheta);
     NewMathAtItem(phasorexp,"phasorform");
     var recttomagexp = "A=\\sqrt{Real^2+Imag^2}=\\sqrt{{"+MakeTripleNotation(creal)+"}^2+{"+MakeTripleNotation(cimag)+"}^2}="+MakeTripleNotation(cmag);
     NewMathAtItem(recttomagexp,"recttomagnitude");
     var atanarg = cimag/creal;
     var atanphi = Math.atan(atanarg)*180/Math.PI;
     var recttophaseexp = "\\phi=tan^{-1}(\\frac{"+MakeTripleNotation(cimag)+"}{"+MakeTripleNotation(creal)+"})=tan^{-1}("+MakeTripleNotation(atanarg)+")={"
-        +MakeTripleNotation(atanphi)+"}^{\\circ}\\text{ when }Real\\geq 0";
+        +atanphi.toFixed(2)+"}^{\\circ}\\text{ when }Real\\geq 0";
     NewMathAtItem(recttophaseexp,"recttophase");
     if(creal < 0){
-        var fixcomplexexp = "Real<0\\rightarrow\\phi={"+MakeTripleNotation(atanphi)+"}^{\\circ}+180^{\\circ}={"+MakeTripleNotation(atanphi+180)+"}^{\\circ}";
+        var fixcomplexexp = "Real<0\\rightarrow\\phi={"+atanphi.toFixed(2)+"}^{\\circ}+180^{\\circ}={"+(atanphi+180).toFixed(2)+"}^{\\circ}";
         NewMathAtItem(fixcomplexexp,"complexfixphase");
     }
     else{
-        NewMathAtItem("Real\\geq 0 \\rightarrow \\text{ No Change, }\\phi={"+MakeTripleNotation(atanphi)+"}^{\\circ}","complexfixphase");
+        NewMathAtItem("Real\\geq 0 \\rightarrow \\text{ No Change, }\\phi={"+atanphi.toFixed(2)+"}^{\\circ}","complexfixphase");
     }
     
     var vm1 = GrabNumber("complexvm1",0,false,0,10);
@@ -218,14 +365,14 @@ function ChangedComplex(){
     var summag = Math.sqrt(sumreal*sumreal+sumimag*sumimag);
     var sumphi = Math.atan2(sumimag,sumreal);
     var sumphideg = sumphi*180/Math.PI;
-    var complexadd1exp = "v_{s1}(t)="+MakeTripleNotation(vm1)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi1)+"}^{\\circ})V="+writePhasor(vm1,phi1)+"V";
+    var complexadd1exp = "v_{s1}(t)="+MakeTripleNotation(vm1)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi1)+"}^{\\circ})V="+writePolar(vm1,phi1)+"V";
     NewMathAtItem(complexadd1exp,"complexaddend1");
-    var complexadd2exp = "v_{s2}(t)="+MakeTripleNotation(vm2)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi2)+"}^{\\circ})V="+writePhasor(vm2,phi2)+"V";
+    var complexadd2exp = "v_{s2}(t)="+MakeTripleNotation(vm2)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi2)+"}^{\\circ})V="+writePolar(vm2,phi2)+"V";
     NewMathAtItem(complexadd2exp,"complexaddend2");
-    var complexadditionexp = writePhasor(vm1,phi1)+"V+"+writePhasor(vm2,phi2)+"V=["+writeRectangular(add1real,add1imag)+"+"
+    var complexadditionexp = writePolar(vm1,phi1)+"V+"+writePolar(vm2,phi2)+"V=["+writeRectangular(add1real,add1imag)+"+"
         +writeRectangular(add2real,add2imag)+"]V=["+writeRectangular(sumreal,sumimag)+"]V";
     NewMathAtItem(complexadditionexp,"complexaddition");
-    var complexresultexp = "["+writeRectangular(sumreal,sumimag)+"]V="+writePhasor(summag,sumphideg)+"V\\rightarrow v_{sum}(t)="+
+    var complexresultexp = "["+writeRectangular(sumreal,sumimag)+"]V="+writePolar(summag,sumphideg)+"V\\rightarrow v_{sum}(t)="+
         MakeTripleNotation(summag)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(sumphideg)+"}^{\\circ})V";
     NewMathAtItem(complexresultexp,"complexresult");
     
@@ -295,8 +442,21 @@ function writeRectangular(r,i){
     return MakeTripleNotation(r)+complexsign+"j"+prefix+MakeTripleNotation(i)+suffix;
 }
 
-function writePhasor(cmag,ctheta){
+function writePolar(cmag,ctheta){
     return MakeTripleNotation(cmag)+"\\angle{"+MakeTripleNotation(ctheta)+"}^{\\circ}";
+}
+function writePolarEng(cmag,ctheta,units){
+    var firstpart = MakeEngNotation(cmag,units,false,true,false,true,false);
+    return firstpart+"\\angle{"+ctheta.toFixed(2)+"}^{\\circ}"+MakeEngNotation(cmag,"\\Omega",false,true,false,false,true);
+}
+
+function writeTimeBasedEng(mag,freq,phase,units){
+    var phasesign;
+    var phaseabs = Math.abs(phase);
+    if(phase>=0) phasesign = "+";
+    else phasesign = "-";
+    return MakeEngNotation(mag,units,false,true,false,true,false)+"cos(360^{\\circ}"+MakeEngNotation(freq,"",false,true,false,true,true)+"t"+
+        phasesign+phaseabs.toFixed(2)+"^{\\circ})"+MakeEngNotation(mag,units,false,true,false,false,true);
 }
 
 function drawVector(ctx,r,i,x=0,y=0,color="red"){
@@ -329,6 +489,25 @@ function drawMyRLCCkt(){
     //do nothing :D
 }
 
+function drawLegend(ctx,number,names,colors){
+    ctx.font = "20px Helvetica";
+    ctx.textAlign = "left";
+    for(var index = 0; index < number; index++){
+        ctx.fillStyle = colors[index];
+        ctx.fillText(names[index],10,24+index*24);
+    }
+}
+
+function drawLabeledPoint(ctx,xpos,ypos,labeltext,xoffset,yoffset){
+    var xpix = plotxzero+xpos*plotxfact;
+    var ypix = plotyzero-ypos*plotyfact;
+    ctx.font = "20px Helvetica";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "left";
+    ctx.fillRect(xpix-2,ypix-2,5,5);
+    ctx.fillText(labeltext,xpix+xoffset,ypix+yoffset+7);
+}
+
 function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
     //initPlot has to have been already done
     ctx.fillStyle="#77dddd";
@@ -339,6 +518,7 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
         ctx.strokeStyle = "gray";
         //start at the first xgridstep value above xstart. e.g. -4.5 start at -4. round up to next value by finding: xstart/xgridstep = 4
         var px;
+        console.log("first",plotxfirst,"end",plotxend,"gridstep",plotxgridstep,"start",plotxstart,"factor",plotxfact)
         for(var x = plotxfirst; x <= plotxend; x+= plotxgridstep){
             px = (x-plotxstart)*plotxfact;
             ctx.moveTo(px,0);   ctx.lineTo(px,plotpixh);
@@ -1075,6 +1255,8 @@ function MakeEngNotation(value, units, prependequals = false, forceoutput = fals
     var prefix = " ";
     var precision = 4; //if going to millions of meters, increase precision to keep digits from turning into sci notation
     switch(t_exp){
+        case -24:   prefix = "y";   break;
+        case -21:   prefix = "z";   break;
         case -18:   prefix = "a";   break;
         case -15:   prefix = "f";   break;
         case -12:   prefix = "p";   break;
@@ -1087,7 +1269,10 @@ function MakeEngNotation(value, units, prependequals = false, forceoutput = fals
         case 9:     prefix = "G";   break;
         case 12:    prefix = "T";   break;
         case 15:    prefix = "P";   break;
-        default: break;
+        case 18:    prefix = "E";   break;
+        case 21:    prefix = "Z";   break;
+        case 24:    prefix = "Y";   break;
+        default: prefix = "?"; break;
     }
     if(units == "m"){ //don't go above km for distances
         if(t_exp >= 3){

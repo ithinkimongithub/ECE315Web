@@ -353,51 +353,90 @@
         <p>Our passive circuit components are the resistor (R), inductor (L), and capacitor (C). Using the same form as Ohm's Law, we introduce 
             the concept of impedance which quantifies the relationship between \(V\) and \(I\) in the term \(Z\), a complex number.
         </p>
-        \[\text{Generally: }V=I\times Z\]
-        \[\text{Resistor: }v_R(t)=i(t)R\rightarrow Z_R=R\rightarrow V=RI\]
-        \[\text{Inductor: }v_L(t)=L\frac{di}{dt}\rightarrow Z_L=jwL\rightarrow V=jwLI\]
-        \[\text{Capacitor: }i_C(t)=C\frac{dv}{dt}\rightarrow Z_C=\frac{1}{jwC}\rightarrow V=\frac{I}{jwC}\rightarrow I=jwCV\]
+        \[\text{Resistor: }v_R(t)=i(t)R\rightarrow Z_R=R\]
+        \[\text{Inductor: }v_L(t)=L\frac{di}{dt}\rightarrow Z_L=j\omega L\]
+        \[\text{Capacitor: }i_C(t)=C\frac{dv}{dt}\rightarrow Z_C=\frac{1}{j\omega C}\]
+        \[\text{where: }\omega=2\pi f\]
         Let's see what kind of impedance values that typical inductors and capacitors take on with different frequencies:
-        <br>Frequency: <input type="number" id="ICfreq" min="1" max="999" value="1" step="any" onchange="ChangedIC()">
+        <br>Frequency: <input type="number" id="ICfreq" min="1" max="999" value="60" step="any" onchange="ChangedIC()">
         <select id="ICfreqexp" onchange="ChangedIC()">
-            <option value="0">Hz</option>
-            <option value="3" selected>kHz</option>
+            <option value="0" selected>Hz</option>
+            <option value="3" >kHz</option>
             <option value="6">MHz</option>
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
-        <br>Resistance: <input type="number" id="ICresistance" min="1" max="999" value="2.2" step="any" onchange="ChangedCircuits()">
-        <select id="ICresistanceP" onchange="ChangedCircuits()">
+        <br>Resistance: <input type="number" id="ICresistance" min="1" max="999" value="50" step="any" onchange="ChangedIC()">
+        <select id="ICresistanceP" onchange="ChangedIC()">
             <option value="-3">m&#8486;</option>
-            <option value="0">&#8486;</option>
-            <option value="3" selected>k&#8486;</option>
+            <option value="0" selected>&#8486;</option>
+            <option value="3">k&#8486;</option>
             <option value="6">M&#8486;</option>
             <option value="9">G&#8486;</option>
         </select>
-        <br>Inductance: <input type="number" id="inductorvalue" min="1" max="999" value="300" step="any" onchange="ChangedIC()">
+        <br>Inductance: <input type="number" id="inductorvalue" min="1" max="999" value="142" step="any" onchange="ChangedIC()">
         <select id="inductorvalueexp" onchange="ChangedIC()">
             <option value="-6">&#181;H</option>
             <option value="-3" selected>mH</option>
             <option value="0">H</option>
         </select>
-        <br>Capacitance: <input type="number" id="capacitancevalue" min="1" max="999" value="47" step="any" onchange="ChangedIC()">
+        <br>Capacitance: <input type="number" id="capacitancevalue" min="1" max="999" value="160" step="any" onchange="ChangedIC()">
         <select id="capacitancevalueexp" onchange="ChangedIC()">
             <option value="-12">pF</option>
-            <option value="-9" selected>nF</option>
-            <option value="-6">&#181;F</option>
+            <option value="-9" >nF</option>
+            <option value="-6"selected>&#181;F</option>
             <option value="-3" >mF</option>
             <option value="0">F</option>
         </select>
         <p id="ICrexp">eqn</p>
         <p id="inductorimpedance">eqn</p>
         <p id="capacitorimpedance">eqn</p>
-        <p>Let's build a circuit using your values. Choose a topology:
+        <p>Let's build a circuit using your values and plot \(v_s(t)\) and \(i_s(t)\). Choose a topology:
             <select id="topology" onchange="ChangedIC()">
-                <option value="1" selected>Series RLC</option>
-                <option value="2">Parallel RLC</option>
+                <option value="SRLC" selected >Series RLC</option>
+                <option value="SRC">Series RC</option>
+                <option value="SRL">Series RL</option>
+                <option value="SLC">Series LC</option>
+                <option value="PRLC">Parallel RLC</option>
+                <option value="PRC">Parallel RC</option>
+                <option value="PRL">Parallel RL</option>
+                <option value="PLC">Parallel LC</option>
             </select>
         </p>
-        <br><canvas id="canvascustomckt" width="400" height="200"></canvas>
+        <p id="ICzeq">Zeq eqn</p>
+        <p id="ICvoltageeqn">Veqn</p>
+        <p id="ICcurrenteqn">Ieqn</p>
+        Current per grid square <select id="currentzoom" onchange="ChangedIC()">
+            <option value=5>100 kA</option>
+            <option value=4>10 kA</option>
+            <option value=3>1 kA</option>
+            <option value=2>100 A</option>
+            <option value=1>10 A</option>
+            <option value=0>1 A</option>
+            <option value=-1 selected>100 mA</option>
+            <option value=-2>10 mA</option>
+            <option value=-3>1 mA</option>
+            <option value=-4>100 &#181;A</option>
+        </select>
+        Time per grid square <select id="timezoom" onchange="ChangedIC()">
+            <option value=-12>1 ps</option>
+            <option value=-11>10 ps</option>
+            <option value=-10>100 ps</option>
+            <option value=-9>1 ns</option>
+            <option value=-8>10 ns</option>
+            <option value=-7>100 ns</option>
+            <option value=-6>1 &#181;s</option>
+            <option value=-5>10 &#181;s</option>
+            <option value=-4>100 &#181;s</option>
+            <option value=-3 selected>1 ms</option>
+            <option value=-2>10 ms</option>
+            <option value=-1>100 ms</option>
+            <option value=0>1 s</option>
+        </select>
+        <label for="accept">
+            <input type="checkbox" id="autoscaleIC" name="accept" value="yes" checked onchange="ChangedIC()">  Auto Scale 
+         </label><br>    
+        <canvas id="canvasICplot" width="1000" height="250"></canvas> 
     </div>
 
     <div class="tabcontent" id="commequations">
@@ -767,7 +806,7 @@
         <hr />
         COMING SOON!
     </div>
-
+    <button id="nextsectionbutton" onclick="NextSection()">Next Section</button>
     <hr />
     Equation styling from <a href="https://www.mathjax.org">MathJax</a>
     <div style="font-size:10px;">
