@@ -101,6 +101,7 @@ function InitPage () {
     ChangedInput(); //Need to initially populate equations
     ChangedRadar(); //Need to initially populate equations
     ChangedComplex();
+    ChangedIC();
     console.log("initpage");
     document.getElementById("defaultOpen").click();
 }
@@ -132,6 +133,27 @@ function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue)
         answer *= Math.pow(10,parseFloat(document.getElementById(exponenthtml).value));
     }
     return answer;
+}
+
+function ChangedIC(){
+    var ICfreq = GrabNumber("ICfreq","ICfreqexp",true,minnorm,maxnorm);
+    var ICres  = GrabNumber("ICresistance","ICresistanceP",true,minnorm,maxnorm);
+    var ICind  = GrabNumber("inductorvalue","inductorvalueexp",true,minnorm,maxnorm);
+    var ICcap  = GrabNumber("capacitancevalue","capacitancevalueexp",true,minnorm,maxnorm);
+    var ICLimp = Math.PI*2*ICfreq*ICind;
+    var ICCimp = 1/(Math.PI*2*ICfreq*ICcap);
+    var ICresexp = "Z_R=R="+MakeEngNotation(ICres,"\\Omega",false,true);
+    NewMathAtItem(ICresexp,"ICrexp");
+    var ICLexppart2 = "";
+    if(ICLimp>=1000) ICLexppart2 = "=j"+MakeEngNotation(ICLimp,"\\Omega");
+    var ICLexp = "Z_L=jwL=j2\\pi f L=j2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICind,"H")+"="+
+        "j"+MakeTripleNotation(ICLimp,"\\Omega")+ICLexppart2;
+    NewMathAtItem(ICLexp,"inductorimpedance");
+    var ICCpart2 = "";
+    if(ICCimp>=1000) ICCpart2 = "=-j"+MakeEngNotation(ICCimp,"\\Omega");
+    var ICCexp = "Z_C=\\frac{1}{jwC}=\\frac{-j}{2\\pi fC}=\\frac{-j}{2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICcap,"F")+"}="+
+        "-j"+MakeTripleNotation(ICCimp,"\\Omega")+ICCpart2;
+    NewMathAtItem(ICCexp,"capacitorimpedance");
 }
 
 function checkIota(input){
@@ -301,6 +323,10 @@ function drawComplexCosine(ctx, A, phi, freq,color){
     }
     ctx.stroke();
     ctx.closePath();
+}
+
+function drawMyRLCCkt(){
+    //do nothing :D
 }
 
 function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
