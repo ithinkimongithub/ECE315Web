@@ -44,8 +44,8 @@
     <button class="tablink" onclick="openBigTab('Efficiency',this)">Efficiency</button>
     <br>
     <button class="tablink" onclick="openBigTab('ComplexNumbers',this)">Complex Numbers</button>
-    <button class="tablink" onclick="openBigTab('InductorCapacitor',this)" id="defaultOpen">Inductor Capacitor</button>
-    <button class="tablink" onclick="openBigTab('AnalogFilter',this)">Analog Filter</button>
+    <button class="tablink" onclick="openBigTab('InductorCapacitor',this)" >Inductor Capacitor</button>
+    <button class="tablink" onclick="openBigTab('AnalogFilter',this)" id="defaultOpen">Analog Filter</button>
     <button class="tablink" onclick="openBigTab('TransducerInterface',this)">Transducer Interface</button>
     <button class="tablink" onclick="openBigTab('ADC',this)">ADC</button>
     <br>
@@ -60,8 +60,8 @@
         <!--<img src="static/CircuitOneR.PNG" alt="One Resistor Circuit" height="300">-->
         <p>Ohm's Law says that the current through a resistor is directly proportional to the applied voltage: \[V=I\times R\]</p>
         <p>Commonly, voltage and resistance are defined and we are computing the current: \[I=\frac{V}{R}\]</p>
-        Voltage: <input type="number" id="virvoltage" min="1" max="999" value="12" step="any" onchange="ChangedCircuits()">
-        <select id="selectvvir" onchange="ChangedCircuits()">
+        Voltage: <input type="number" id="virvoltage" min="1" max="999" value="12" step="any" onchange="ChangedDC()">
+        <select id="selectvvir" onchange="ChangedDC()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
             <option value="-3">mV</option>
@@ -70,8 +70,8 @@
             <option value="6">MV</option>
         </select>
         <br>
-        Resistance: <input type="number" id="virresistance" min="1" max="999" value="100" step="any" onchange="ChangedCircuits()">
-        <select id="selectrvir" onchange="ChangedCircuits()">
+        Resistance: <input type="number" id="virresistance" min="1" max="999" value="100" step="any" onchange="ChangedDC()">
+        <select id="selectrvir" onchange="ChangedDC()">
             <option value="-3">m&#8486;</option>
             <option value="0" selected>&#8486;</option>
             <option value="3">k&#8486;</option>
@@ -81,8 +81,8 @@
         <p id="virequation">eqn</p>
         <hr />
         <p>Power is the product of voltage and current: \[P=V\times I\]</p>
-        Voltage: <input type="number" id="pvivoltage" min="1" max="999" value="12" step="any" onchange="ChangedCircuits()">
-        <select id="selectvpvi" onchange="ChangedCircuits()">
+        Voltage: <input type="number" id="pvivoltage" min="1" max="999" value="12" step="any" onchange="ChangedDC()">
+        <select id="selectvpvi" onchange="ChangedDC()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
             <option value="-3">mV</option>
@@ -91,8 +91,8 @@
             <option value="6">MV</option>
         </select>
         <br>
-        Current: <input type="number" id="pvicurrent" min="1" max="999" value="120" step="any" onchange="ChangedCircuits()">
-        <select id="selectipvi" onchange="ChangedCircuits()">
+        Current: <input type="number" id="pvicurrent" min="1" max="999" value="120" step="any" onchange="ChangedDC()">
+        <select id="selectipvi" onchange="ChangedDC()">
             <option value="-9">nA</option>
             <option value="-6">&#181;A</option>
             <option value="-3" selected>mA</option>
@@ -105,32 +105,32 @@
         <P>The next section uses the following DC circuit and an intermediate step for showing an \(R_{EQ}\):</P>
         <img src="static/CircuitThreeR.png" alt="Three-Resistor Circuit" height="300">
         <img src="static/CircuitThreeReq.png" alt="Three-Resistor Circuit EQ" height="300"><br>
-        \(R_A\)=<input type="number" id="kvlra" min="1" max="999" value="1.7" step="any" onchange="ChangedCircuits()">
-        <select id="selectkvlra" onchange="ChangedCircuits()">
+        \(R_A\)=<input type="number" id="kvlra" min="1" max="999" value="1.7" step="any" onchange="ChangedDC()">
+        <select id="selectkvlra" onchange="ChangedDC()">
             <option value="-3">m&#8486;</option>
             <option value="0">&#8486;</option>
             <option value="3" selected>k&#8486;</option>
             <option value="6">M&#8486;</option>
             <option value="9">G&#8486;</option>
         </select><br>
-        \(R_B\)=<input type="number" id="kvlrb" min="1" max="999" value="3.3" step="any" onchange="ChangedCircuits()">
-        <select id="selectkvlrb" onchange="ChangedCircuits()">
+        \(R_B\)=<input type="number" id="kvlrb" min="1" max="999" value="3.3" step="any" onchange="ChangedDC()">
+        <select id="selectkvlrb" onchange="ChangedDC()">
             <option value="-3">m&#8486;</option>
             <option value="0">&#8486;</option>
             <option value="3" selected>k&#8486;</option>
             <option value="6">M&#8486;</option>
             <option value="9">G&#8486;</option>
         </select><br>
-        \(R_C\)=<input type="number" id="kvlrc" min="1" max="999" value="330" step="any" onchange="ChangedCircuits()">
-        <select id="selectkvlrc" onchange="ChangedCircuits()">
+        \(R_C\)=<input type="number" id="kvlrc" min="1" max="999" value="330" step="any" onchange="ChangedDC()">
+        <select id="selectkvlrc" onchange="ChangedDC()">
             <option value="-3">m&#8486;</option>
             <option value="0" selected>&#8486;</option>
             <option value="3">k&#8486;</option>
             <option value="6">M&#8486;</option>
             <option value="9">G&#8486;</option>
         </select><br>
-        \(V_S\)=<input type="number" id="kvlv" min="1" max="999" value="12" step="any" onchange="ChangedCircuits()">
-        <select id="selectkvlv" onchange="ChangedCircuits()">
+        \(V_S\)=<input type="number" id="kvlv" min="1" max="999" value="12" step="any" onchange="ChangedDC()">
+        <select id="selectkvlv" onchange="ChangedDC()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
             <option value="-3">mV</option>
@@ -439,12 +439,80 @@
         <canvas id="canvasICplot" width="1000" height="250"></canvas> 
     </div>
 
+    <div class="tabcontent" id="AnalogFilter">
+        <p>Combinations of Resistors, Capacitors, and Inductors can be used as filters based upon their frequency response. We will consider
+            the source to the input, and one of the components will be the output. Thus the filter's behavior at any single frequency can be
+            computed using a ratio of the output voltage to the input voltage as such:
+        </p>
+        \[Gain=\frac{V_o}{V_i}\]
+        <!--
+        <p>Typically, \(Gain\) can be computed by creating a voltage divider. For example, an RC filter will have \(Gain\):</p>
+        \[Gain=\frac{Z_C}{Z_R+Z_C}=\frac{\frac{1}{j\omega C}}{R+\frac{1}{j\omega C}}
+            =\frac{\frac{1}{j\omega C}}{R+\frac{1}{j\omega C}}\times\frac{j\omega C}{j\omega C} =\frac{1}{1+j\omega RC}\]
+        \[\frac{1}{1+j\omega RC}=\frac{1\angle 0}{\sqrt{1^2+\omega^2 R^2 C^2}\angle tan^{-1}(\frac{\omega R C}{1})}
+            =\frac{1}{\sqrt{1+\omega^2R^2C^2}}\angle -tan^{-1}(\frac{\omega R C}{1})=\frac{1}{\sqrt{1+\omega^2R^2C^2}}\angle tan^{-1}(-\omega R C)\]
+        <p>We know that the second device in the name RC is "C" so the capacitor will be the output component. This is because its ground
+            terminal will be shared with the input's ground terminal, which follows the rule of maintaining a common ground. It is not always 
+            necessary, but a common ground should be used whenever possible.
+            <br>For series filters (RC, CR, LR, RL), the steps to creating this expression for gain (seen above) are as follows:
+            <br>1. Create the ratio of impedances in the form \(Gain=\frac{Z_{2}}{Z_1+Z_2}\)
+            <br>2. Multiply through by the reciprocal of \(Z_2\) because it appears twice in the expression.
+                Result is now \(Gain=\frac{1}{\frac{Z_1}{Z_2}+1}\)
+            <br>3. Change the numerator into its Polar form: \(1\angle 0\).
+            <br>4. Change the denominator into its Polar form: \(\sqrt{1+[Imag]^2}\angle tan^{-1}({Imag})\)
+            <br>5. The resultant quotient is: \(\frac{1}{\sqrt{1+[Imag]^2}}\angle tan^{-1}(-[Imag])\) where \([Imag]\) is the 
+            imaginary component of \(1+\frac{Z_1}{Z_2}\). Its Real component is just \(1\) and is thus omitted from \(tan^{-1}\).
+        </p>-->
+        <br>Frequency: <input type="number" id="ICfreq" min="1" max="999" value="60" step="any" onchange="ChangedFilter()">
+        <select id="ICfreqexp" onchange="ChangedFilter()">
+            <option value="0" selected>Hz</option>
+            <option value="3" >kHz</option>
+            <option value="6">MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br>Resistance: <input type="number" id="ICresistance" min="1" max="999" value="50" step="any" onchange="ChangedFilter()">
+        <select id="ICresistanceP" onchange="ChangedFilter()">
+            <option value="-3">m&#8486;</option>
+            <option value="0" selected>&#8486;</option>
+            <option value="3">k&#8486;</option>
+            <option value="6">M&#8486;</option>
+            <option value="9">G&#8486;</option>
+        </select>
+        <br>Inductance: <input type="number" id="inductorvalue" min="1" max="999" value="142" step="any" onchange="ChangedFilter()">
+        <select id="inductorvalueexp" onchange="ChangedFilter()">
+            <option value="-6">&#181;H</option>
+            <option value="-3" selected>mH</option>
+            <option value="0">H</option>
+        </select>
+        <br>Capacitance: <input type="number" id="capacitancevalue" min="1" max="999" value="160" step="any" onchange="ChangedFilter()">
+        <select id="capacitancevalueexp" onchange="ChangedFilter()">
+            <option value="-12">pF</option>
+            <option value="-9" >nF</option>
+            <option value="-6"selected>&#181;F</option>
+            <option value="-3" >mF</option>
+            <option value="0">F</option>
+        </select>
+        <p>Let's build a circuit using your values and plot \(v_s(t)\) and \(i_s(t)\). Choose a topology:
+            <select id="topology" onchange="ChangedFilter()">
+                <option value="SRLC" selected >Series RLC</option>
+                <option value="SRC">Series RC</option>
+                <option value="SRL">Series RL</option>
+                <option value="SLC">Series LC</option>
+                <option value="PRLC">Parallel RLC</option>
+                <option value="PRC">Parallel RC</option>
+                <option value="PRL">Parallel RL</option>
+                <option value="PLC">Parallel LC</option>
+            </select>
+        </p>
+    </div>
+
     <div class="tabcontent" id="commequations">
         <hr />
         <p>The wavelength of a radio transmission can be computed using the speed of light \(c\) and the radio frequency \(f\):</p>
         <a>Frequency: </a>
-        <input type="number" id="commfreqarg" min="1" max="999" value="300" step="any" onchange="ChangedInput()">
-        <select id="commfreqexp" onchange="ChangedInput()">
+        <input type="number" id="commfreqarg" min="1" max="999" value="300" step="any" onchange="ChangedComm()">
+        <select id="commfreqexp" onchange="ChangedComm()">
             <option value="0">Hz</option>
             <option value="3">kHz</option>
             <option value="6" selected>MHz</option>
@@ -458,56 +526,56 @@
         <p>The monopole antenna achieves an ideal gain \(G=3.24\) at it's ideal length, one-quarter wavelength: \(L={\lambda \over 4}\) </p>
         <p>The dipole antenna achieves an ideal gain \(G=1.64\) at it's ideal length, one-half wavelength: \(L={\lambda \over 2}\)</p>
         <a>Transmitter:</a>
-        <select id="transmittertype" onchange="ChangedInput()">
+        <select id="transmittertype" onchange="ChangedComm()">
             <option value="1">Dipole</option>
             <option value="2">Monopole</option>
             <option value="3">Parabolic</option>
             <option value="4"selected>Unspecified</option>
         </select><br>
         <a id="txlengthtext">Radius (not diameter): </a>
-        <input type="number" id="txantennalength" min="1" max="999" value="1" step="any" onchange="ChangedInput()">
-        <select id="txantennaexp" onchange="ChangedInput()">
+        <input type="number" id="txantennalength" min="1" max="999" value="1" step="any" onchange="ChangedComm()">
+        <select id="txantennaexp" onchange="ChangedComm()">
             <option value="-3">mm</option>
             <option value="0" selected>m</option>
             <option value="3">km</option>
         </select>
         <br>
         <a id="txetatext">Reflective Efficiency (max 1.0): </a>
-        <input type="number" id="txdisheta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedInput()">
+        <input type="number" id="txdisheta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedComm()">
         <br>
-        <a>Gain:</a><input disabled type="number" id="txgain" value="2" step="any" onchange="ChangedInput()">
+        <a>Gain:</a><input disabled type="number" id="txgain" value="2" step="any" onchange="ChangedComm()">
         <br><br>
         <a>Receiver:</a>
-        <select id="receivertype" onchange="ChangedInput()">
+        <select id="receivertype" onchange="ChangedComm()">
             <option value="1">Dipole</option>
             <option value="2">Monopole</option>
             <option value="3" selected>Parabolic</option>
             <option value="4">Unspecified</option>
         </select><br>
         <a id="rxlengthtext">Radius (not diameter): </a>
-        <input type="number" id="rxantennalength" min="1" max="999" value="1" step="any" onchange="ChangedInput()">
-        <select id="rxantennaexp" onchange="ChangedInput()">
+        <input type="number" id="rxantennalength" min="1" max="999" value="1" step="any" onchange="ChangedComm()">
+        <select id="rxantennaexp" onchange="ChangedComm()">
             <option value="-3">mm</option>
             <option value="0" selected>m</option>
             <option value="3">km</option>
         </select>
         <br>
         <a id="rxetatext">Reflective Efficiency (max 1.0): </a>
-        <input type="number" id="rxdisheta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedInput()">
+        <input type="number" id="rxdisheta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedComm()">
         <br>
-        <a>Gain:</a><input disabled type="number" id="rxgain" value="1" step="any" onchange="ChangedInput()">
+        <a>Gain:</a><input disabled type="number" id="rxgain" value="1" step="any" onchange="ChangedComm()">
         <hr />
         <p>The Friis equation for propagation computes power received \(P_R\) based upon power transmitted \(P_T\),
             transmitter gain \(G_T\), receiver gain \(G_R\), wavelength \(\lambda\), and range \(R\).</p>
         <p>Range, \(R\) =
-        <input type="number" id="friisrange" value="100" min ="0" max="99999" step="any" onchange="ChangedInput()">
-        <select id="friisrangeexp" onchange="ChangedInput()">
+        <input type="number" id="friisrange" value="100" min ="0" max="99999" step="any" onchange="ChangedComm()">
+        <select id="friisrangeexp" onchange="ChangedComm()">
             <option value="0">m</option>
             <option value="3" selected>km</option>
         </select></p>
         <p>Transmitter Power, \(P_T\) =
-            <input type="number" id="powertransmitted" value="100" min ="0" max="99999" step="any" onchange="ChangedInput()">
-            <select id="powertransmittedexp" onchange="ChangedInput()">
+            <input type="number" id="powertransmitted" value="100" min ="0" max="99999" step="any" onchange="ChangedComm()">
+            <select id="powertransmittedexp" onchange="ChangedComm()">
                 <option value="-3">mW</option>
                 <option value="0" selected>W</option>
                 <option value="3">kW</option>
@@ -517,8 +585,8 @@
         <hr />
         <p>Often, it is necessary to solve for a maximum range \(R_{Max}\) (which we'll name \(R_{Friis}\)) based upon a minimum receive power \(P_{Rmin}\).</p>
            <a>Minimum Receive Power, \(P_{Rmin}\) =</a>
-           <input type="number" id="prminvalue" value="4" min ="0" max="99999" step="any" onchange="ChangedInput()">
-           <select id="prminexp" onchange="ChangedInput()">
+           <input type="number" id="prminvalue" value="4" min ="0" max="99999" step="any" onchange="ChangedComm()">
+           <select id="prminexp" onchange="ChangedComm()">
             <option value="-18">aW</option>
             <option value="-15">fW</option>
             <option value="-12">pW</option>
@@ -531,11 +599,11 @@
         <hr />
         <p>For a given height \(h\) in feet, the radio-distance to the horizon \(R_{LOS}\) is computed in miles: \(R_{LOS}=\sqrt{2h}\). But when both Tx and Rx are elevated: \(R_{LOS}=\sqrt{2h_1}+\sqrt{2h_2}\)</p>
         <a>Transmitter height above ground: </a>
-        <input type="number" id="txheight" value="5000" min="0" max="500000" value="1000" step="any" onchange="ChangedInput()">
+        <input type="number" id="txheight" value="5000" min="0" max="500000" value="1000" step="any" onchange="ChangedComm()">
         <a>ft. Distance to horizon is: </a><a id="txrlosmi">0</a><a> miles, </a><a id="txrloskm">0</a><a> km.</a>
         <br>
         <a>Receiver height above ground: </a>
-        <input type="number" id="rxheight" value="3000" min="0" max="500000" value="1000" step="any" onchange="ChangedInput()">
+        <input type="number" id="rxheight" value="3000" min="0" max="500000" value="1000" step="any" onchange="ChangedComm()">
         <a>ft. Distance to horizon is: </a><a id="rxrlosmi">0</a><a> miles, </a><a id="rxrloskm">0</a><a> km.</a>
         <br><br>
         <a>Whenever a comparison is made, convert \(R_{LOS}\) to kilometers:</a>
@@ -555,8 +623,8 @@
         <a>Gain Pattern: </a><button onclick="ChangeGainArc(1)">Tighter</button><button onclick="ChangeGainArc(-1)">Wider</button><br>
         
         
-        <a>Frequency: </a><input type="number" id="lowerfreq" min="1" max="999" value="300" step="any" onchange="ChangeLowerInput()">
-        <select id="lowerfreqexp" onchange="ChangeLowerInput()">
+        <a>Frequency: </a><input type="number" id="lowerfreq" min="1" max="999" value="300" step="any" onchange="ChangedCommPicture()">
+        <select id="lowerfreqexp" onchange="ChangedCommPicture()">
             <option value="0">Hz</option>
             <option value="3">kHz</option>
             <option value="6" selected>MHz</option>
@@ -565,56 +633,56 @@
         </select>
         <br>
         <a>Transmitter:</a>
-        <select id="lowertxtype" onchange="ChangeLowerInput()">
+        <select id="lowertxtype" onchange="ChangedCommPicture()">
             <option value="1">Dipole</option>
             <option value="2">Monopole</option>
             <option value="3" selected>Parabolic</option>
             <option value="4">Unspecified</option>
         </select><br>
         <a id="lowertxtext">Radius (not diameter): </a>
-        <input type="number" id="lowertxlength" min="1" max="999" value="1" step="any" onchange="ChangeLowerInput()">
-        <select id="lowertxexp" onchange="ChangeLowerInput()">
+        <input type="number" id="lowertxlength" min="1" max="999" value="1" step="any" onchange="ChangedCommPicture()">
+        <select id="lowertxexp" onchange="ChangedCommPicture()">
             <option value="-3">mm</option>
             <option value="0" selected>m</option>
             <option value="3">km</option>
         </select>
         <br>
         <a id="lowertxetatext">Reflective Efficiency (max 1.0): </a>
-        <input type="number" id="lowertxeta" min="0" max="1" value="0.7" step="0.01" onchange="ChangeLowerInput()">
+        <input type="number" id="lowertxeta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedCommPicture()">
         <br>
-        <a>Gain:</a><input disabled type="number" id="lowertxgain" value="1" step="any" onchange="ChangeLowerInput()">
+        <a>Gain:</a><input disabled type="number" id="lowertxgain" value="1" step="any" onchange="ChangedCommPicture()">
         <br>
         <a>Receiver:</a>
-        <select id="lowerrxtype" onchange="ChangeLowerInput()">
+        <select id="lowerrxtype" onchange="ChangedCommPicture()">
             <option value="1">Dipole</option>
             <option value="2">Monopole</option>
             <option value="3" selected>Parabolic</option>
             <option value="4">Unspecified</option>
         </select><br>
         <a id="lowerrxtext">Radius (not diameter): </a>
-        <input type="number" id="lowerrxlength" min="1" max="999" value="1" step="any" onchange="ChangeLowerInput()">
-        <select id="lowerrxexp" onchange="ChangeLowerInput()">
+        <input type="number" id="lowerrxlength" min="1" max="999" value="1" step="any" onchange="ChangedCommPicture()">
+        <select id="lowerrxexp" onchange="ChangedCommPicture()">
             <option value="-3">mm</option>
             <option value="0" selected>m</option>
             <option value="3">km</option>
         </select>
         <br>
         <a id="lowerrxetatext">Reflective Efficiency (max 1.0): </a>
-        <input type="number" id="lowerrxeta" min="0" max="1" value="0.7" step="0.01" onchange="ChangeLowerInput()">
+        <input type="number" id="lowerrxeta" min="0" max="1" value="0.7" step="0.01" onchange="ChangedCommPicture()">
         <br>
-        <a>Gain:</a><input disabled type="number" id="lowerrxgain" value="1" step="any" onchange="ChangeLowerInput()">
+        <a>Gain:</a><input disabled type="number" id="lowerrxgain" value="1" step="any" onchange="ChangedCommPicture()">
         <br>
         <a>Transmitter Power, \(P_T\) =
-            <input type="number" id="lowerpowertrans" value="100" min ="0" max="99999" step="any" onchange="ChangeLowerInput()">
-            <select id="lowerpowertransexp" onchange="ChangeLowerInput()">
+            <input type="number" id="lowerpowertrans" value="100" min ="0" max="99999" step="any" onchange="ChangedCommPicture()">
+            <select id="lowerpowertransexp" onchange="ChangedCommPicture()">
                 <option value="-3">mW</option>
                 <option value="0" selected>W</option>
                 <option value="3">kW</option>
                 <option value="6">MW</option>
             </select></a>
         <a>Minimum Receive Power, \(P_{Rmin}\) =</a>
-            <input type="number" id="lowerprmin" value="4" min ="0" max="99999" step="any" onchange="ChangeLowerInput()">
-            <select id="lowerprminexp" onchange="ChangeLowerInput()">
+            <input type="number" id="lowerprmin" value="4" min ="0" max="99999" step="any" onchange="ChangedCommPicture()">
+            <select id="lowerprminexp" onchange="ChangedCommPicture()">
              <option value="-18">aW</option>
              <option value="-15">fW</option>
              <option value="-12">pW</option>
@@ -625,9 +693,9 @@
          </select></a>
          <br>
          <a>Transmitter height above ground: </a>
-        <input type="number" id="lowertxheight" value="5000" min="0" max="500000" value="1000" step="100" onchange="ChangeLowerInput()">
+        <input type="number" id="lowertxheight" value="5000" min="0" max="500000" value="1000" step="100" onchange="ChangedCommPicture()">
         <a>Receiver height above ground: </a>
-        <input type="number" id="lowerrxheight" value="3000" min="0" max="500000" value="1000" step="100" onchange="ChangeLowerInput()">
+        <input type="number" id="lowerrxheight" value="3000" min="0" max="500000" value="1000" step="100" onchange="ChangedCommPicture()">
         <a>Graphics will be skewed when both heights are \(0ft\).</a>
         <br>
 
@@ -746,8 +814,8 @@
         <hr />
         <p>The computations for \(R_{MAX}\) only help to determine whether a RADAR could detect a target.
             Actual range-finding is done by using the pulse's round-trip travel time and its known speed, \(c\).</p>
-            <a>2-way travel time: \(t\) = <input type="number" id="radartime" value="1" onchange="ChangedRadar()" min="1" max="999">
-                <select id="radartimeexp" onchange="ChangedRadar()">
+            <a>2-way travel time: \(t\) = <input type="number" id="radartime" value="1" onchange="ChangedDoppler()" min="1" max="999">
+                <select id="radartimeexp" onchange="ChangedDoppler()">
                     <option value="-12">ps</option>
                     <option value="-9">ns</option>
                     <option value="-6">&#181;s</option>
@@ -756,8 +824,8 @@
                 </select></a><br>
         <p id="radartimedistanceeqn">eqn</p>
         <p>Of course, if you are measuring the time from just transmitter to receiver, do not divide by 2.</p>
-            <a>1-way travel time: \(t\) = <input type="number" id="radiotime" value="1" onchange="ChangedRadar()" min="1" max="999">
-                <select id="radiotimeexp" onchange="ChangedRadar()">
+            <a>1-way travel time: \(t\) = <input type="number" id="radiotime" value="1" onchange="ChangedDoppler()" min="1" max="999">
+                <select id="radiotimeexp" onchange="ChangedDoppler()">
                     <option value="-12">ps</option>
                     <option value="-9">ns</option>
                     <option value="-6">&#181;s</option>
@@ -770,24 +838,24 @@
             decrease. The sign can be entered as a negative velocity, by placing a '-' in place of \(\pm\)), or using a value of \(\theta\)
             that makes \(cos(\theta)\) negative. Choose one method.
         </p>
-        <a>Frequency (original), \(f_0\) = <input type="number" id="radarFzero" value="2" onchange="ChangedRadar()" min="1" max="999">
-            <select id="radarFzeroexp" onchange="ChangedRadar()">
+        <a>Frequency (original), \(f_0\) = <input type="number" id="radarFzero" value="2" onchange="ChangedDoppler()" min="1" max="999">
+            <select id="radarFzeroexp" onchange="ChangedDoppler()">
                 <option value="0">Hz</option>
                 <option value="3">kHz</option>
                 <option value="6">MHz</option>
                 <option value="9" selected>GHz</option>
                 <option value="12">THz</option>
             </select></a><br>
-        <a>velocity, \(v\) = <input type="number" id="radarvelocity" value="100" onchange="ChangedRadar()" min="1" max="999999"></a>\(m/s\)<br>
-        <a>angle, \(\theta\) = <input type="number" id="radarangle" value="0" onchange="ChangedRadar()" min="0" max="360"></a>&#176;<br>
-        <a>To/From \(\pm\)</a><select id="radartowards" onchange="ChangedRadar()">
+        <a>velocity, \(v\) = <input type="number" id="radarvelocity" value="100" onchange="ChangedDoppler()" min="1" max="999999"></a>\(m/s\)<br>
+        <a>angle, \(\theta\) = <input type="number" id="radarangle" value="0" onchange="ChangedDoppler()" min="0" max="360"></a>&#176;<br>
+        <a>To/From \(\pm\)</a><select id="radartowards" onchange="ChangedDoppler()">
         <option value="1" selected>Towards '+'</option>
         <option value="-1">Away   '-'</option></select>
         <p id="radarreturnfrequency">eqn</p>
         <p id="radarreturnshift">eqn</p>
         <a>In practice, a RADAR system will be used to compute velocity from the Doppler shift:</a><br>
-        <a>Doppler Shift, \(\Delta f\) = <input type="number" id="radarShift" value="1.333" onchange="ChangedRadar()" min="1" max="999">
-            <select id="radarShiftexp" onchange="ChangedRadar()">
+        <a>Doppler Shift, \(\Delta f\) = <input type="number" id="radarShift" value="1.333" onchange="ChangedDoppler()" min="1" max="999">
+            <select id="radarShiftexp" onchange="ChangedDoppler()">
                 <option value="-3">mHz</option>
                 <option value="0">Hz</option>
                 <option value="3" selected>kHz</option>
@@ -806,7 +874,7 @@
         <hr />
         COMING SOON!
     </div>
-    
+
     <button id="nextsectionbutton" onclick="NextSection()">Next Section</button>
     <hr />
     Equation styling from <a href="https://www.mathjax.org">MathJax</a>

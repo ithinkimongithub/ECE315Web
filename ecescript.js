@@ -96,13 +96,13 @@ function initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep){
 }
 //******************************************* TABS ***************************************************************/
 function InitPage () {
-    ChangedAC();
-    ChangedCircuits();
-    ChangedInput(); //Need to initially populate equations
-    ChangedRadar(); //Need to initially populate equations
-    ChangedComplex();
-    ChangedIC();
-    console.log("initpage");
+    //ChangedAC();
+    //ChangedCircuits();
+    //ChangedComm(); //Need to initially populate equations
+    //ChangedRadar(); //Need to initially populate equations
+    //ChangedComplex();
+    //ChangedIC();
+    //console.log("initpage");
     document.getElementById("defaultOpen").click();
 }
 
@@ -127,7 +127,7 @@ function openBigTab(whichtoshow,whatelement){
     for(i = 0; i < tabcontent.length; i++){
         currentid = tabcontent[i].id;
         if(currentid == whichtoshow){
-            tabcontent[i].style.display = "block";
+            tabcontent[i].style.display = "block";;
             if(i == tabcontent.length-1){
                 document.getElementById("nextsectionbutton").disabled = true;
             }
@@ -140,8 +140,29 @@ function openBigTab(whichtoshow,whatelement){
     tablinks = document.getElementsByClassName("tablink");
     for(i = 0; i < tablinks.length; i++){
         tablinks[i].style.backgroundColor = "";
+        if(whatelement == tablinks[i]) ChangedContent(i); 
     }
     whatelement.style.backgroundColor = tabbackgroundcolor;
+}
+
+function ChangedContent(whichtype){
+    switch(whichtype){
+        case 0  : ChangedDC();           break;
+        case 1  : ChangedAC();              break;
+        case 2  : ChangedTransmission();    break;
+        case 3  : ChangedDistribution();    break;
+        case 4  : ChangedEfficiency();      break;
+        case 5  : ChangedComplex();         break;
+        case 6  : ChangedIC();              break;
+        case 7  : ChangedFilter();          break;
+        case 8  : ChangedTransducer();      break;
+        case 9  : ChangedADC();             break;
+        case 10 : ChangedComm();            break;
+        case 11 : ChangedCommPicture();     break;
+        case 12 : ChangedRadar();           break;
+        case 13 : ChangedDoppler();         break;
+        case 14 : ChangedJamming();         break;
+    }
 }
 
 
@@ -159,6 +180,12 @@ function GetPolar(real,imag){
     var mag = Math.sqrt(real*real+imag*imag);
     var phi = Math.atan2(imag,real)*180/Math.PI;
     return [mag,phi];
+}
+
+function ChangedFilter(){
+
+
+    
 }
 
 function ChangedIC(){
@@ -551,7 +578,7 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
     } 
 }
 
-function ChangedCircuits(){
+function ChangedDC(){
     EnforceNumericalHTML("virvoltage",minnorm,maxnorm);
     var virv = document.getElementById("virvoltage").value * Math.pow(10,document.getElementById("selectvvir").value);
     EnforceNumericalHTML("virresistance",minnorm,maxnorm);
@@ -924,7 +951,8 @@ function ChangedRadar(){
     }
     document.getElementById("winnermessage").innerHTML = finalmsg;
     //"RADAR detections occurs at up to <b>"+MakeEngNotation(bestradar,"m")+"</b>. The clear-sky 
-
+}
+function ChangedDoppler(){
     var rttt = GrabNumber("radartime","radartimeexp",true,minnorm,maxnorm);
     var rangetotarget = 0.5*SOL*rttt;
     var radardistanceexp = "R=\\frac{c t}{2}=\\frac{3\\times10^8m/s\\times"+MakeTripleNotation(rttt,"s")
@@ -1031,7 +1059,7 @@ function ComputeDishGain(radius, wavelength, eta){
     if(eta <= 0) return 0;
     return eta*(TWOPI*radius)*(TWOPI*radius)/(wavelength*wavelength);
 }
-function ChangedInput(){
+function ChangedComm(){
     //1. look at the frequency and compute wavelength for it.
     EnforceNumericalHTML("commfreqarg",minnorm,maxnorm);
     var newarg = document.getElementById("commfreqarg").value;
@@ -1213,7 +1241,7 @@ function ChangedInput(){
     }
     NewMathAtItem(commexpression,"rcommeqn");
 
-    ChangeLowerInput(true);
+    ChangedCommPicture(true);
 
     UpdateCanvas(); //go to the drawing function
 
@@ -1334,7 +1362,7 @@ function MakeEngNotation(value, units, prependequals = false, forceoutput = fals
     }
     return output;
 }
-function ChangeLowerInput(pullfromupperhalf=false){
+function ChangedCommPicture(pullfromupperhalf=false){
     //if pullfromupperhalf == true, then we will not call "ChangedInput()" and instead pull data from above to here
     //else, this was a button click in the lower half and we will push all data from the lower to the upper half (values only, not visibility)
     if(pullfromupperhalf == true){
@@ -1411,7 +1439,7 @@ function ChangeLowerInput(pullfromupperhalf=false){
         document.getElementById("rxgain").value = document.getElementById("lowerrxgain").value;
         
         //call for the top-down flow
-        ChangedInput();
+        ChangedComm();
     }
 }
 
