@@ -463,7 +463,7 @@
             <br>5. The resultant quotient is: \(\frac{1}{\sqrt{1+[Imag]^2}}\angle tan^{-1}(-[Imag])\) where \([Imag]\) is the 
             imaginary component of \(1+\frac{Z_1}{Z_2}\). Its Real component is just \(1\) and is thus omitted from \(tan^{-1}\).
         </p>-->
-        <br>Frequency: <input type="number" id="FilterFreq0" min="1" max="999" value="35" step="any" onchange="ChangedFilter()">
+        <br>Frequency: <input type="number" id="FilterFreq0" min="1" max="999" value="400" step="any" onchange="ChangedFilter()">
         <select id="FilterFreq0P" onchange="ChangedFilter()">
             <option value="0" selected>Hz</option>
             <option value="3" >kHz</option>
@@ -474,8 +474,8 @@
         <br>Resistance: <input type="number" id="FilterR" min="1" max="999" value="10" step="any" onchange="ChangedFilter()">
         <select id="FilterRP" onchange="ChangedFilter()">
             <option value="-3">m&#8486;</option>
-            <option value="0" selected>&#8486;</option>
-            <option value="3">k&#8486;</option>
+            <option value="0" >&#8486;</option>
+            <option value="3" selected>k&#8486;</option>
             <option value="6">M&#8486;</option>
             <option value="9">G&#8486;</option>
         </select>
@@ -485,20 +485,20 @@
             <option value="-3" selected>mH</option>
             <option value="0">H</option>
         </select>
-        <br>Capacitance: <input type="number" id="FilterC" min="1" max="999" value="100" step="any" onchange="ChangedFilter()">
+        <br>Capacitance: <input type="number" id="FilterC" min="1" max="999" value="40" step="any" onchange="ChangedFilter()">
         <select id="FilterCP" onchange="ChangedFilter()">
             <option value="-12">pF</option>
-            <option value="-9" >nF</option>
-            <option value="-6"selected>&#181;F</option>
+            <option value="-9"selected >nF</option>
+            <option value="-6">&#181;F</option>
             <option value="-3" >mF</option>
             <option value="0">F</option>
         </select>
         <br>Choose a topology and we'll create expressions for Gain:
             <select id="Filtertopology" onchange="ChangedFilter()">
                 <option value="SRLC"  >Series RLC</option>
-                <option value="SRC">Series RC</option>
+                <option value="SRC" selected>Series RC</option>
                 <option value="SCR">Series CR</option>
-                <option value="SRL" selected>Series RL</option>
+                <option value="SRL" >Series RL</option>
                 <option value="SLR" >Series LR</option>
                 <option value="SLC">Series LC</option>
                 <option value="SCL">Series CL</option>
@@ -535,7 +535,12 @@
             <option value="-12">0.000000000001</option>
             <option value="-15">0.000000000000001</option>
         </select>
-        <br><canvas id="canvasBODE" width="1000" height="500"></canvas> 
+        <br><canvas id="canvasBODE" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
+        <br><button id="BodeLeftDec" onclick="BodeSlew(-10)">Decade Left</button>
+        <button id="BodeLeft" onclick="BodeSlew(-1)">Step Left</button>
+        <button id="BodeRight" onclick="BodeSlew(1)">Step Right</button>
+        <button id="BodeRightDec" onclick="BodeSlew(10)">Decade Right</button>
+        <hr />
     </div>
 
     <div class="tabcontent" id="commequations">

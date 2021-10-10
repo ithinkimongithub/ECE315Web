@@ -72,7 +72,50 @@ function checkIota(input){
     return input;
 }
 /********************************************* WRITING FUNCTIONS *******************************************************/
-function writeTriple(value,units="",makedoppler=false){
+function writeTripleString(value,units="",db=false,decade=true,dbprec=2){ //when in decade mode, only return 10^x
+    var putinnegativesign = "";
+    var absvalue = Math.abs(value);
+    if(value < 0){
+        putinnegativesign = "-"; 
+    }
+    var exp = Math.log10(absvalue);
+    if(db){ //this will be dB for a Voltage ratio (hence the x 20)
+        if(value <= 0) return "-inf";
+        var dbresult = 20*Math.log10(value);
+        return dbresult.toFixed(dbprec)+" dB";
+    }
+    else if(decade){
+        var d_exp = Math.round(exp);
+        return "10^"+d_exp.toFixed(0);
+    }
+    else{
+        if(value == 0) return "0"+units;
+        var precision = 4;
+        var triplets = Math.round(exp/3.0-0.5);
+        var t_exp = 3*triplets;
+        var argument = absvalue / Math.pow(10,t_exp);
+        var argstring = argument.toPrecision(precision);
+        argument = parseFloat(argstring);
+        //then check if argument is 1000 due to some precision in the log and rounding
+        if(argument >= 1000){
+            t_exp += 3;
+            argument = absvalue / Math.pow(10,t_exp);
+            argstring = argument.toPrecision(precision);
+        }
+        else if(argument < 1){
+            t_exp -= 3;
+            argument = absvalue / Math.pow(10,t_exp);
+            argstring = argument.toPrecision(precision);
+        }
+        if(t_exp == 0){
+            return putinnegativesign+argstring+units;
+        }
+        else{
+            return putinnegativesign+argstring+"x"+"10^"+t_exp+units;
+        }
+    }
+}
+function writeTripleLatex(value,units="",makedoppler=false){
     if(value == 0) return "0"+units;
     var putinnegativesign = "";
     var absvalue = Math.abs(value);
@@ -115,7 +158,7 @@ function writeRectangular(r,i){
         prefix = "(";
         suffix = ")";
     }
-    return writeTriple(r)+complexsign+"j"+prefix+writeTriple(i)+suffix;
+    return writeTripleLatex(r)+complexsign+"j"+prefix+writeTripleLatex(i)+suffix;
 }
 
 function writeEng(value, units, prependequals = false, forceoutput = false, dopplerfreq = false, outputnumber = true, outputunits = true){
@@ -204,13 +247,13 @@ function writeComplexRectEng(real,imag,units){
 }
 
 function writePolarBasic(cmag,ctheta){
-    return cmag.toFixed(3)+"\\angle{"+writeTriple(ctheta)+"}^{\\circ}";
+    return cmag.toFixed(3)+"\\angle{"+writeTripleLatex(ctheta)+"}^{\\circ}";
 }
 
 function writePolarEng(cmag,ctheta,units,decimal=false,db=false){
     var firstpart,secondpart;
     if(decimal==true){
-        firstpart = writeTriple(cmag,"");
+        firstpart = writeTripleLatex(cmag,"");
         secondpart = units;
     }
     else{
@@ -365,8 +408,8 @@ function ChangedDC(){
     EnforceNumericalHTML("virresistance",minnorm,maxnorm);
     var virr = document.getElementById("virresistance").value * Math.pow(10,document.getElementById("selectrvir").value);
     var viri = virv/virr;
-    var virexpression = "I=\\frac{V}{R}=\\frac{"+writeTriple(virv,"V")+"}{"+
-                        writeTriple(virr,"\\Omega")+"}="+writeTriple(viri,"A")+writeEng(viri,"A",true,false,false);
+    var virexpression = "I=\\frac{V}{R}=\\frac{"+writeTripleLatex(virv,"V")+"}{"+
+                        writeTripleLatex(virr,"\\Omega")+"}="+writeTripleLatex(viri,"A")+writeEng(viri,"A",true,false,false);
     NewMathAtItem(virexpression,"virequation");
 
     EnforceNumericalHTML("pvivoltage",minnorm,maxnorm);
@@ -374,8 +417,8 @@ function ChangedDC(){
     EnforceNumericalHTML("pvicurrent",minnorm,maxnorm);
     var pvii = document.getElementById("pvicurrent").value * Math.pow(10,document.getElementById("selectipvi").value);
     var pvip = pviv*pvii;
-    var pviexpression = "P=V \\times I="+writeTriple(pviv,"V")+"\\times"+
-                        writeTriple(pvii,"A")+"="+writeTriple(pvip,"W")+writeEng(pvip,"W",true,false,false);
+    var pviexpression = "P=V \\times I="+writeTripleLatex(pviv,"V")+"\\times"+
+                        writeTripleLatex(pvii,"A")+"="+writeTripleLatex(pvip,"W")+writeEng(pvip,"W",true,false,false);
     NewMathAtItem(pviexpression,"pviequation");
 
     EnforceNumericalHTML("kvlra",minnorm,maxnorm);
@@ -388,46 +431,87 @@ function ChangedDC(){
     var kvlv = document.getElementById("kvlv").value * Math.pow(10,document.getElementById("selectkvlv").value);
     var kvlrbc = 1.0/(1.0/kvlrb + 1.0/kvlrc);
     var kvlrbcexp = "R_{BC}=\\frac{1}{\\frac{1}{R_B}+\\frac{1}{R_C}}=\\frac{1}{\\frac{1}{"
-        +writeTriple(kvlrb,"\\Omega")+"}+\\frac{1}{"
-        +writeTriple(kvlrc,"\\Omega")+"}}="
-        +writeTriple(kvlrbc,"\\Omega")+writeEng(kvlrbc,"\\Omega",true,false,false);
+        +writeTripleLatex(kvlrb,"\\Omega")+"}+\\frac{1}{"
+        +writeTripleLatex(kvlrc,"\\Omega")+"}}="
+        +writeTripleLatex(kvlrbc,"\\Omega")+writeEng(kvlrbc,"\\Omega",true,false,false);
     NewMathAtItem(kvlrbcexp,"resistanceparallel");
     var kvlrabc = kvlra + kvlrbc;
     var kvlrabcexp = "R_{ABC}=R_A+R_{BC}="
-        +writeTriple(kvlra,"\\Omega")+"+"+writeTriple(kvlrbc,"\\Omega")+"="
-        +writeTriple(kvlrabc,"\\Omega")+writeEng(kvlrabc,"\\Omega",true,false,false);
+        +writeTripleLatex(kvlra,"\\Omega")+"+"+writeTripleLatex(kvlrbc,"\\Omega")+"="
+        +writeTripleLatex(kvlrabc,"\\Omega")+writeEng(kvlrabc,"\\Omega",true,false,false);
     NewMathAtItem(kvlrabcexp,"resistanceseries");
     var kvli = kvlv / kvlrabc;
-    var kvliexp = "I_S=\\frac{V_S}{R_{EQ}}=\\frac{"+writeTriple(kvlv,"V")+"}{"+writeTriple(kvlrabc,"\\Omega")+"}="
-        +writeTriple(kvli,"A")+writeEng(kvli,"A",true,false,false);
+    var kvliexp = "I_S=\\frac{V_S}{R_{EQ}}=\\frac{"+writeTripleLatex(kvlv,"V")+"}{"+writeTripleLatex(kvlrabc,"\\Omega")+"}="
+        +writeTripleLatex(kvli,"A")+writeEng(kvli,"A",true,false,false);
     NewMathAtItem(kvliexp,"kvlohms");
     var kvlib = kvli*kvlrc/(kvlrb+kvlrc);
     var kvlibexp = "I_B=\\frac{R_C}{R_B+R_C}\\times I_S=\\frac{"
-        +writeTriple(kvlrc,"\\Omega")+"}{"+writeTriple(kvlrb,"\\Omega")+"+"+writeTriple(kvlrc,"\\Omega")+"}\\times"
-        +writeTriple(kvli,"A")+"="+writeTriple(kvlib,"A")+writeEng(kvlib,"A",true,false,false);
+        +writeTripleLatex(kvlrc,"\\Omega")+"}{"+writeTripleLatex(kvlrb,"\\Omega")+"+"+writeTripleLatex(kvlrc,"\\Omega")+"}\\times"
+        +writeTripleLatex(kvli,"A")+"="+writeTripleLatex(kvlib,"A")+writeEng(kvlib,"A",true,false,false);
     NewMathAtItem(kvlibexp,"currentdividerb");
     var kvlic = kvli*kvlrb/(kvlrb+kvlrc);
     var kvlicexp = "I_C=\\frac{R_B}{R_B+R_C}\\times I_S=\\frac{"
-        +writeTriple(kvlrb,"\\Omega")+"}{"+writeTriple(kvlrb,"\\Omega")+"+"+writeTriple(kvlrc,"\\Omega")+"}\\times"
-        +writeTriple(kvli,"A")+"="+writeTriple(kvlic,"A")+writeEng(kvlic,"A",true,false,false);
+        +writeTripleLatex(kvlrb,"\\Omega")+"}{"+writeTripleLatex(kvlrb,"\\Omega")+"+"+writeTripleLatex(kvlrc,"\\Omega")+"}\\times"
+        +writeTripleLatex(kvli,"A")+"="+writeTripleLatex(kvlic,"A")+writeEng(kvlic,"A",true,false,false);
     NewMathAtItem(kvlicexp,"currentdividerc");
     var kvlvc = kvlic*kvlrc;
     var kvlvb = kvlib*kvlrb;
-    var kvliverifyb = "V_B=I_B\\times R_B="+writeTriple(kvlib,"A")+"\\times"+writeTriple(kvlrb,"\\Omega")+"="+writeEng(kvlvb,"V",false,true,false);
-    var kvliverifyc = "V_C=I_C\\times R_C="+writeTriple(kvlic,"A")+"\\times"+writeTriple(kvlrc,"\\Omega")+"="+writeEng(kvlvc,"V",false,true,false);
+    var kvliverifyb = "V_B=I_B\\times R_B="+writeTripleLatex(kvlib,"A")+"\\times"+writeTripleLatex(kvlrb,"\\Omega")+"="+writeEng(kvlvb,"V",false,true,false);
+    var kvliverifyc = "V_C=I_C\\times R_C="+writeTripleLatex(kvlic,"A")+"\\times"+writeTripleLatex(kvlrc,"\\Omega")+"="+writeEng(kvlvc,"V",false,true,false);
     NewMathAtItem(kvliverifyb,"currentdividerverifyb");
     NewMathAtItem(kvliverifyc,"currentdividerverifyc");
     var kvlvbc = kvlv*kvlrbc/kvlrabc;
-    var kvlvdexp = "V_{BC}=\\frac{R_{BC}}{R_{EQ}}\\times V_{S}=\\frac{"+writeTriple(kvlrbc,"\\Omega")+"}{"+writeTriple(kvlrabc,"\\Omega")+"}\\times"
-        +writeTriple(kvlv,"V")+"="+writeTriple(kvlvbc,"V")+writeEng(kvlvbc,"V",true,false,false);
+    var kvlvdexp = "V_{BC}=\\frac{R_{BC}}{R_{EQ}}\\times V_{S}=\\frac{"+writeTripleLatex(kvlrbc,"\\Omega")+"}{"+writeTripleLatex(kvlrabc,"\\Omega")+"}\\times"
+        +writeTripleLatex(kvlv,"V")+"="+writeTripleLatex(kvlvbc,"V")+writeEng(kvlvbc,"V",true,false,false);
     NewMathAtItem(kvlvdexp,"voltagedivider");
     var kvlva = kvlv - kvlvb;
-    var kvlkvlexp = "V_A=V_S-V_B="+writeTriple(kvlv,"V")+"-"+writeTriple(kvlvb,"V")+"="
-        +writeTriple(kvlva,"V")+writeEng(kvlva,"V",true,false,false);
+    var kvlkvlexp = "V_A=V_S-V_B="+writeTripleLatex(kvlv,"V")+"-"+writeTripleLatex(kvlvb,"V")+"="
+        +writeTripleLatex(kvlva,"V")+writeEng(kvlva,"V",true,false,false);
     NewMathAtItem(kvlkvlexp,"kvlkvl");
     var kvlisum = kvlib + kvlic;
-    var kclexp = "I_B+I_C="+writeTriple(kvlib,"A")+"+"+writeTriple(kvlic,"A")+"="+writeTriple(kvlisum,"A")+writeEng(kvlisum,"A",true,false,false);
+    var kclexp = "I_B+I_C="+writeTripleLatex(kvlib,"A")+"+"+writeTripleLatex(kvlic,"A")+"="+writeTripleLatex(kvlisum,"A")+writeEng(kvlisum,"A",true,false,false);
     NewMathAtItem(kclexp,"kclkcl");
+}
+
+function GetResponse(R,L,C,w,topo){
+    var helper, denom;
+    var mag = 1;
+    var phi = 0;
+    switch(topo){
+        case "SRLC":
+            helper = 1.0-w*w*C*L;
+            denom = helper*helper+w*w*R*R*C*C;
+            mag = 1.0/Math.sqrt(denom);
+            phi = 180/Math.PI*Math.atan2(w*R*C,helper);
+        break;
+        case "SRC":
+            mag = 1.0/Math.sqrt(1+w*w*R*R*C*C);
+            phi = 180/Math.PI*Math.atan2(w*R*C,1);
+        break;
+        case "SCR":
+            mag = 1.0/Math.sqrt(1+1/(w*w*R*R*C*C));
+            phi = 180/Math.PI*Math.atan2(-1/(w*R*C),1);
+        break;
+        case "SRL":
+            mag = 1.0/Math.sqrt(1+R*R/(w*w*L*L));
+            phi = 180/Math.PI*Math.atan2(-R/(w*L),1);
+        break;
+        case "SLR":
+            mag = 1.0/Math.sqrt(1+w*w*L*L/(R*R));
+            phi = 180/Math.PI*Math.atan2(w*L/R,1);
+        break ;
+        case "SLC":
+            mag = 1-(w*w*L*C);
+            phi = 180/Math.PI*Math.atan2(0,mag);
+            mag = Math.abs(mag);
+        break;
+        case "SCL":
+            mag = 1-1.0/(w*w*L*C);
+            phi = 180/Math.PI*Math.atan2(0,mag);
+            mag = Math.abs(mag);
+        break;
+    }
+    return [mag,phi];
 }
 
 function ChangedFilter(){
@@ -444,58 +528,59 @@ function ChangedFilter(){
     var GPolar = new Array(2);
     var gainexp, gainexpline2;
     omega = 2*Math.PI*f0;
+    GPolar = GetResponse(R,L,C,omega,topo);
     switch(topo){
         case "SRLC":
-            helper = 1.0-omega*omega*C*L;
-            denom = helper*helper+omega*omega*R*R*C*C;
-            Greal = helper/denom;
-            Gimag = -omega*R*C/denom;
-            GPolar[0] = 1.0/Math.sqrt(denom);
-            GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,helper);
+            //helper = 1.0-omega*omega*C*L;
+            //denom = helper*helper+omega*omega*R*R*C*C;
+            //Greal = helper/denom;
+            //Gimag = -omega*R*C/denom;
+            //GPolar[0] = 1.0/Math.sqrt(denom);
+            //GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,helper);
             gainexp = "Gain=\\frac{Z_C}{Z_R+Z_L+Z_C}=\\frac{1}{(1-\\omega^2CL)+j\\omega RC}"+
             "=\\frac{(1-\\omega^2CL)-j\\omega RC}{(1-\\omega^2CL)^2+\\omega^2R^2C^2}=";
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{(1-\\omega^2CL)^2+\\omega^2R^2C^2}}";
         break;
         case "SRC":
             gainexp = "Gain=\\frac{Z_C}{Z_C+Z_R}=\\frac{1}{1+\\frac{Z_R}{Z_C}}=\\frac{1}{1+j\\omega RC}=";
-            GPolar[0] = 1.0/Math.sqrt(1+omega*omega*R*R*C*C);
-            GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,1);
+            //GPolar[0] = 1.0/Math.sqrt(1+omega*omega*R*R*C*C);
+            //GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\omega RC)^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{1}{RC}\\rightarrow"+
             " f_{co}=\\frac{1}{2\\pi RC}="+writeEng(1/(2*Math.PI*R*C),"Hz",false,true);
         break;
         case "SCR":
             gainexp = "Gain=\\frac{Z_R}{Z_R+Z_C}=\\frac{1}{1+\\frac{Z_C}{Z_R}}=\\frac{1}{1-j\\frac{1}{\\omega RC}}=";
-            GPolar[0] = 1.0/Math.sqrt(1+1/(omega*omega*R*R*C*C));
-            GPolar[1] = 180/Math.PI*Math.atan2(-1/(omega*R*C),1);
+            //GPolar[0] = 1.0/Math.sqrt(1+1/(omega*omega*R*R*C*C));
+            //GPolar[1] = 180/Math.PI*Math.atan2(-1/(omega*R*C),1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+\\frac{1}{(\\omega RC)^2}}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{1}{RC}\\rightarrow"+
             " f_{co}=\\frac{1}{2\\pi RC}="+writeEng(1/(2*Math.PI*R*C),"Hz",false,true);
         break;
         case "SRL":
             gainexp = "Gain=\\frac{Z_L}{Z_L+Z_R}=\\frac{1}{1+\\frac{Z_R}{Z_L}}=\\frac{1}{1-j\\frac{R}{\\omega L}}=";
-            GPolar[0] = 1.0/Math.sqrt(1+R*R/(omega*omega*L*L));
-            GPolar[1] = 180/Math.PI*Math.atan2(-R/(omega*L),1);
+            //GPolar[0] = 1.0/Math.sqrt(1+R*R/(omega*omega*L*L));
+            //GPolar[1] = 180/Math.PI*Math.atan2(-R/(omega*L),1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\frac{R}{\\omega L})^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{R}{L}\\rightarrow"+
             " f_{co}=\\frac{R}{2\\pi L}="+writeEng(R/(2*Math.PI*L),"Hz",false,true);
         break;
         case "SLR":
             gainexp = "Gain=\\frac{Z_R}{Z_R+Z_L}=\\frac{1}{1+\\frac{Z_L}{Z_R}}=\\frac{1}{1+j\\frac{\\omega L}{R}}=";
-            GPolar[0] = 1.0/Math.sqrt(1+omega*omega*L*L/(R*R));
-            GPolar[1] = 180/Math.PI*Math.atan2(omega*L/R,1);
+            //GPolar[0] = 1.0/Math.sqrt(1+omega*omega*L*L/(R*R));
+            //GPolar[1] = 180/Math.PI*Math.atan2(omega*L/R,1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\frac{\\omega L}{R})^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{R}{L}\\rightarrow"+
             " f_{co}=\\frac{R}{2\\pi L}="+writeEng(R/(2*Math.PI*L),"Hz",false,true);
         break;
         case "SLC":
             gainexp = "Gain=\\frac{Z_C}{Z_C+Z_L}=\\frac{1}{1+\\frac{Z_L}{Z_C}}=\\frac{1}{1+j^2\\omega^2 LC}=";
-            GPolar[0] = 1-(omega*omega*L*C);
-            GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
-            GPolar[0] = Math.abs(GPolar[0]);
+            //GPolar[0] = 1-(omega*omega*L*C);
+            //GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
+            //GPolar[0] = Math.abs(GPolar[0]);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\omega^2LC)^2}}";
         break;
         case "SCL":
             gainexp = "Gain=\\frac{Z_L}{Z_L+Z_C}=\\frac{1}{1+\\frac{Z_C}{Z_L}}=\\frac{1}{1+j^2\\frac{1}{\\omega^2 LC}}=";
-            GPolar[0] = 1-1.0/(omega*omega*L*C);
-            GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
-            GPolar[0] = Math.abs(GPolar[0]);
+            //GPolar[0] = 1-1.0/(omega*omega*L*C);
+            //GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
+            //GPolar[0] = Math.abs(GPolar[0]);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+\\frac{1}{(\\omega^2LC)^2}}}";
         break;
     }
@@ -507,8 +592,9 @@ function ChangedFilter(){
     var canvas = document.getElementById("canvasBODE");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     var ctx = canvas.getContext("2d");
-    initPlot(f1,ymin,f2,ymax,canvas.width,canvas.height-30,(f2-f1)/40,(ymax-ymin)/20,true, 100, 30);
+    initPlot(f1,ymin,f2,ymax,canvas.width,canvas.height,(f2-f1)/40,(ymax-ymin)/20,true, 100,100,30,30);
     showGrid(ctx,true,false,true);
+    FillFrequencyResponse(R,L,C,topo);
     PlotFrequencyResponse(ctx,R,L,C,topo);
 }
 
@@ -523,13 +609,13 @@ function ChangedIC(){
     NewMathAtItem(ICresexp,"ICrexp");
     var ICLexppart2 = "";
     if(ICLimp>=1000) ICLexppart2 = "=j"+writeEng(ICLimp,"\\Omega");
-    var ICLexp = "Z_L=j\\omega L=j2\\pi f L=j2\\pi"+writeTriple(ICfreq,"Hz")+"\\times"+writeTriple(ICind,"H")+"="+
-        "j"+writeTriple(ICLimp,"\\Omega")+ICLexppart2;
+    var ICLexp = "Z_L=j\\omega L=j2\\pi f L=j2\\pi"+writeTripleLatex(ICfreq,"Hz")+"\\times"+writeTripleLatex(ICind,"H")+"="+
+        "j"+writeTripleLatex(ICLimp,"\\Omega")+ICLexppart2;
     NewMathAtItem(ICLexp,"inductorimpedance");
     var ICCpart2 = "";
     if(ICCimp>=1000) ICCpart2 = "=-j"+writeEng(ICCimp,"\\Omega");
-    var ICCexp = "Z_C=\\frac{1}{j\\omega C}=\\frac{-j}{2\\pi fC}=\\frac{-j}{2\\pi"+writeTriple(ICfreq,"Hz")+"\\times"+writeTriple(ICcap,"F")+"}="+
-        "-j"+writeTriple(ICCimp,"\\Omega")+ICCpart2;
+    var ICCexp = "Z_C=\\frac{1}{j\\omega C}=\\frac{-j}{2\\pi fC}=\\frac{-j}{2\\pi"+writeTripleLatex(ICfreq,"Hz")+"\\times"+writeTripleLatex(ICcap,"F")+"}="+
+        "-j"+writeTripleLatex(ICCimp,"\\Omega")+ICCpart2;
     NewMathAtItem(ICCexp,"capacitorimpedance");
     var cktchoice = document.getElementById("topology").value;
     var Zeqexp = "Z_{EQ}=";
@@ -679,16 +765,16 @@ function ChangedComplex(){
     drawVector(ctx,creal,cimag);
     var complexsign = "+";
     if(cimag < 0)   complexsign = "-";
-    var phasetorectexp = "Ae^{j\\theta}="+writeTriple(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+
-        writeTriple(cmag)+"cos("+ctheta.toFixed(2)+"^{\\circ})+j"+writeTriple(cmag)+"sin("+ctheta.toFixed(2)+"^{\\circ})="+writeRectangular(creal,cimag);
+    var phasetorectexp = "Ae^{j\\theta}="+writeTripleLatex(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+
+        writeTripleLatex(cmag)+"cos("+ctheta.toFixed(2)+"^{\\circ})+j"+writeTripleLatex(cmag)+"sin("+ctheta.toFixed(2)+"^{\\circ})="+writeRectangular(creal,cimag);
     NewMathAtItem(phasetorectexp,"phasetorect");
-    var phasorexp = "Ae^{j\\theta}="+writeTriple(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+writePolarBasic(cmag,ctheta);
+    var phasorexp = "Ae^{j\\theta}="+writeTripleLatex(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+writePolarBasic(cmag,ctheta);
     NewMathAtItem(phasorexp,"phasorform");
-    var recttomagexp = "A=\\sqrt{Real^2+Imag^2}=\\sqrt{{"+writeTriple(creal)+"}^2+{"+writeTriple(cimag)+"}^2}="+writeTriple(cmag);
+    var recttomagexp = "A=\\sqrt{Real^2+Imag^2}=\\sqrt{{"+writeTripleLatex(creal)+"}^2+{"+writeTripleLatex(cimag)+"}^2}="+writeTripleLatex(cmag);
     NewMathAtItem(recttomagexp,"recttomagnitude");
     var atanarg = cimag/creal;
     var atanphi = Math.atan(atanarg)*180/Math.PI;
-    var recttophaseexp = "\\phi=tan^{-1}(\\frac{"+writeTriple(cimag)+"}{"+writeTriple(creal)+"})=tan^{-1}("+writeTriple(atanarg)+")={"
+    var recttophaseexp = "\\phi=tan^{-1}(\\frac{"+writeTripleLatex(cimag)+"}{"+writeTripleLatex(creal)+"})=tan^{-1}("+writeTripleLatex(atanarg)+")={"
         +atanphi.toFixed(2)+"}^{\\circ}\\text{ when }Real\\geq 0";
     NewMathAtItem(recttophaseexp,"recttophase");
     if(creal < 0){
@@ -783,7 +869,7 @@ function animatecomplex(){
 function ChangedAC(){
     var acperiod = GrabNumber("ACperiod","selectACperiod",true,minnorm,maxnorm);
     var acfreq   = 1/acperiod;
-    var acperiodexp = "f=\\frac{1}{T}=\\frac{1}{"+writeTriple(acperiod,"s")+"}="+writeTriple(acfreq,"Hz")+writeEng(acfreq,"Hz",true,false,false);
+    var acperiodexp = "f=\\frac{1}{T}=\\frac{1}{"+writeTripleLatex(acperiod,"s")+"}="+writeTripleLatex(acfreq,"Hz")+writeEng(acfreq,"Hz",true,false,false);
     NewMathAtItem(acperiodexp,"periodfrequency");
     var acvmax = GrabNumber("ACVmax","selectACVmax",true,-maxnorm,maxnorm);
     var acvmin = GrabNumber("ACVmin","selectACVmin",true,-maxnorm,maxnorm);
@@ -806,36 +892,36 @@ function ChangedAC(){
     var acvbexp, acvmexp, acrmsexp, acrmsiexp, acvexp,aciexp,acpaveexp,acderive;
     if(acvmax > acvmin){
         DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq,rmsr);
-        acvmexp = "V_m=\\frac{V_{Max}-V_{Min}}{2}=\\frac{"+writeTriple(acvmax,"V")+"-"+includepar1+writeTriple(acvmin,"V")+includepar2+"}{2}="
-            +writeTriple(acvm,"V")+writeEng(acvm,"V",true,false,false);
-        acvbexp = "V_B=\\frac{V_{Max}+V_{Min}}{2}=\\frac{"+writeTriple(acvmax,"V")+"+"+includepar1+writeTriple(acvmin,"V")+includepar2+"}{2}="
-            +writeTriple(acvb,"V")+writeEng(acvb,"V",true,false,false);
+        acvmexp = "V_m=\\frac{V_{Max}-V_{Min}}{2}=\\frac{"+writeTripleLatex(acvmax,"V")+"-"+includepar1+writeTripleLatex(acvmin,"V")+includepar2+"}{2}="
+            +writeTripleLatex(acvm,"V")+writeEng(acvm,"V",true,false,false);
+        acvbexp = "V_B=\\frac{V_{Max}+V_{Min}}{2}=\\frac{"+writeTripleLatex(acvmax,"V")+"+"+includepar1+writeTripleLatex(acvmin,"V")+includepar2+"}{2}="
+            +writeTripleLatex(acvb,"V")+writeEng(acvb,"V",true,false,false);
         acvexp = "v_s(t)=";
         aciexp = "i_s(t)=\\frac{v_s(t)}{R_{EQ}}=";
         acrmsexp = "V_{S,RMS}=\\sqrt{V_B^2+\\frac{V_m^2}{2}}=";
         acrmsiexp= "I_{S,RMS}=\\sqrt{I_B^2+\\frac{I_m^2}{2}}=";
-        acpaveexp = "P_{AVE}=I_{RMS}V_{RMS}="+writeTriple(acvrms,"V_{RMS}")+"\\times "+writeTriple(acirms,"A_{RMS}")
-            +"="+writeTriple(acpave,"W")+writeEng(acpave,"W",true,false,false);
+        acpaveexp = "P_{AVE}=I_{RMS}V_{RMS}="+writeTripleLatex(acvrms,"V_{RMS}")+"\\times "+writeTripleLatex(acirms,"A_{RMS}")
+            +"="+writeTripleLatex(acpave,"W")+writeEng(acpave,"W",true,false,false);
         acderive = "=";
         if(acvb == 0){
-            acrmsexp += "\\frac{V_m}{\\sqrt{2}}=\\frac{"+writeTriple(acvm,"V")+"}{\\sqrt{2}}=";
-            acrmsiexp+= "\\frac{I_m}{\\sqrt{2}}=\\frac{"+writeTriple(acim,"A")+"}{\\sqrt{2}}=";
+            acrmsexp += "\\frac{V_m}{\\sqrt{2}}=\\frac{"+writeTripleLatex(acvm,"V")+"}{\\sqrt{2}}=";
+            acrmsiexp+= "\\frac{I_m}{\\sqrt{2}}=\\frac{"+writeTripleLatex(acim,"A")+"}{\\sqrt{2}}=";
         }
         else{
             acvexp += writeEng(acvb,"V",false,true,false)+"+";
             aciexp += writeEng(acib,"A",false,true,false)+"+";
-            acrmsexp += "\\sqrt{("+writeTriple(acvb,"V")+")^2+\\frac{("+writeTriple(acvm,"V")+")^2}{2}}=";
-            acrmsiexp+= "\\sqrt{("+writeTriple(acib,"A")+")^2+\\frac{("+writeTriple(acim,"A")+")^2}{2}}=";
-            acderive += writeTriple(acvb,"V")+"\\times"+writeTriple(acib,"A")+"+";
+            acrmsexp += "\\sqrt{("+writeTripleLatex(acvb,"V")+")^2+\\frac{("+writeTripleLatex(acvm,"V")+")^2}{2}}=";
+            acrmsiexp+= "\\sqrt{("+writeTripleLatex(acib,"A")+")^2+\\frac{("+writeTripleLatex(acim,"A")+")^2}{2}}=";
+            acderive += writeTripleLatex(acvb,"V")+"\\times"+writeTripleLatex(acib,"A")+"+";
         }
         acvexp += writeEng(acvm,"V",false,true,false,true,false)+"cos(360^\\circ\\times "+writeEng(acfreq,"Hz",false,true,false)+"\\times t+"
-            +writeTriple(acphi,"^\\circ",false,true,false)+")"+writeEng(acvm,"V",false,true,false,false,true);
+            +writeTripleLatex(acphi,"^\\circ",false,true,false)+")"+writeEng(acvm,"V",false,true,false,false,true);
         aciexp += writeEng(acim,"A",false,true,false,true,false)+"cos(360^\\circ\\times "+writeEng(acfreq,"Hz",false,true,false)+"\\times t+"
-            +writeTriple(acphi,"^\\circ",false,true,false)+")"+writeEng(acim,"A",false,true,false,false,true);
-        acrmsexp += writeTriple(acvrms,"V_{RMS}")+writeEng(acvrms,"V_{RMS}",true,false,false);
-        acrmsiexp+= writeTriple(acirms,"A_{RMS}")+writeEng(acirms,"A_{RMS}",true,false,false);
-        acderive += "\\frac{" +writeTriple(acvm,"V")+"\\times"+writeTriple(acim,"A")+"}{2}="
-            +writeTriple(acpavevi,"W")+writeEng(acpavevi,"W",true,false,false);
+            +writeTripleLatex(acphi,"^\\circ",false,true,false)+")"+writeEng(acim,"A",false,true,false,false,true);
+        acrmsexp += writeTripleLatex(acvrms,"V_{RMS}")+writeEng(acvrms,"V_{RMS}",true,false,false);
+        acrmsiexp+= writeTripleLatex(acirms,"A_{RMS}")+writeEng(acirms,"A_{RMS}",true,false,false);
+        acderive += "\\frac{" +writeTripleLatex(acvm,"V")+"\\times"+writeTripleLatex(acim,"A")+"}{2}="
+            +writeTripleLatex(acpavevi,"W")+writeEng(acpavevi,"W",true,false,false);
     }
     else{
         var acerror = "\\text {Error: } V_{Max}\\ngtr V_{Min}";
@@ -848,8 +934,8 @@ function ChangedAC(){
         acpaveexp = acerror;
         acderive = acerror;
     }
-    var acohmsexp = "I_{S,RMS}=\\frac{V_{S,RMS}}{R_{EQ}}=\\frac{"+writeTriple(acvrms,"V_{RMS}")+"}{"+writeTriple(rmsr,"\\Omega")+"}="
-        +writeTriple(acirms,"A_{RMS}")+writeEng(acirms,"A_{RMS}",true,false,false);
+    var acohmsexp = "I_{S,RMS}=\\frac{V_{S,RMS}}{R_{EQ}}=\\frac{"+writeTripleLatex(acvrms,"V_{RMS}")+"}{"+writeTripleLatex(rmsr,"\\Omega")+"}="
+        +writeTripleLatex(acirms,"A_{RMS}")+writeEng(acirms,"A_{RMS}",true,false,false);
     NewMathAtItem(acvmexp,"vmderived");
     NewMathAtItem(acvbexp,"vbderived");
     NewMathAtItem(acrmsexp,"acrms");
@@ -875,33 +961,33 @@ function ChangedRadar(){
     var range = document.getElementById("radarrange").value * Math.pow(10,document.getElementById("radarrangeexp").value);
     var lambda = SOL/freq;
     var pr = pt*gr*gr*rcs*lambda*lambda/(FOURPICUBE*range*range*range*range);
-    var radarexpression = "P_R=P_T G^2 RCS \\frac{\\lambda^2}{(4\\pi)^3 R^4}="+writeTriple(pt,"W")+"\\times "+
-                            gsquaredtext+"\\times "+writeTriple(rcs,"m^2 ")+ "\\frac{("+writeTriple(lambda,"m")+")^2}{(4\\pi)^3("+
-                            writeTriple(range,"m")+")^4}="+writeTriple(pr,"W")+writeEng(pr,"W",true,false);
+    var radarexpression = "P_R=P_T G^2 RCS \\frac{\\lambda^2}{(4\\pi)^3 R^4}="+writeTripleLatex(pt,"W")+"\\times "+
+                            gsquaredtext+"\\times "+writeTripleLatex(rcs,"m^2 ")+ "\\frac{("+writeTripleLatex(lambda,"m")+")^2}{(4\\pi)^3("+
+                            writeTripleLatex(range,"m")+")^4}="+writeTripleLatex(pr,"W")+writeEng(pr,"W",true,false);
     NewMathAtItem(radarexpression,"radarpreqn");
     EnforceNumericalHTML("radarprmin",minnorm,maxnorm);
     var prminradar = parseFloat(document.getElementById("radarprmin").value) * Math.pow(10,document.getElementById("radarprminexp").value);
     var radarrmax = Math.sqrt(Math.sqrt(pt/prminradar*gr*gr*rcs*lambda*lambda/FOURPICUBE));
     var radarrmaxexpression = "R_{Radar}=R_{Max}=\\sqrt[4]{\\frac{P_T}{P_R}G^2 RCS \\frac{\\lambda^2}{(4\\pi)^3}}=\\sqrt[4]{\\frac{"+
-                                writeTriple(pt,"W")+"}{"+writeTriple(prminradar,"W")+"}"+gsquaredtext+"\\times "+writeTriple(rcs,"m^2 ")+
-                                "\\frac{("+writeTriple(lambda,"m")+")^2}{(4\\pi)^3}}="+writeTriple(radarrmax,"m")+writeEng(radarrmax,"m",true,false);
+                                writeTripleLatex(pt,"W")+"}{"+writeTripleLatex(prminradar,"W")+"}"+gsquaredtext+"\\times "+writeTripleLatex(rcs,"m^2 ")+
+                                "\\frac{("+writeTripleLatex(lambda,"m")+")^2}{(4\\pi)^3}}="+writeTripleLatex(radarrmax,"m")+writeEng(radarrmax,"m",true,false);
     NewMathAtItem(radarrmaxexpression,"radarrmaxeqn");
     EnforceNumericalHTML("radarPRF",minnorm,maxnorm);
     var prf = parseFloat(document.getElementById("radarPRF").value)*Math.pow(10,document.getElementById("radarPRFexp").value);
     var pri = 1/prf;
     var rumax = 0.5*SOL*pri;
-    var rumaxexpression = "R_U=\\frac{c}{2\\times PRF}=\\frac{3\\times 10^8 m/s}{2 \\times"+writeTriple(prf,"Hz")+"}="+writeTriple(rumax,"m")+writeEng(rumax,"m",true,false);
+    var rumaxexpression = "R_U=\\frac{c}{2\\times PRF}=\\frac{3\\times 10^8 m/s}{2 \\times"+writeTripleLatex(prf,"Hz")+"}="+writeTripleLatex(rumax,"m")+writeEng(rumax,"m",true,false);
     NewMathAtItem(rumaxexpression,"radarrueqn");
     EnforceNumericalHTML("radarpw",minnorm,maxnorm);
     var pw = parseFloat(document.getElementById("radarpw").value)*Math.pow(10,document.getElementById("radarpwexp").value);
     var deltar = 0.5*SOL*pw;
-    var deltarexpression = "\\Delta R=\\frac{c \\tau}{2}=\\frac{3\\times 10^8 m/s\\times"+writeTriple(pw,"s")+"}{2}="+writeTriple(deltar,"m")+writeEng(deltar,"m",true,false);
+    var deltarexpression = "\\Delta R=\\frac{c \\tau}{2}=\\frac{3\\times 10^8 m/s\\times"+writeTripleLatex(pw,"s")+"}{2}="+writeTripleLatex(deltar,"m")+writeEng(deltar,"m",true,false);
     NewMathAtItem(deltarexpression,"radarresolutioneqn");
     var grwr = GrabNumber("rwrgain","null",false,mingain,maxgain);
     var rwrprmin = GrabNumber("rwrprmin","rwrprminexp",true,minnorm,maxnorm);
     var rwrrange = lambda/(FOURPI)*Math.sqrt(pt/rwrprmin*grwr*gr);
-    var rwrrangeexpression = "R_{RWR}=R_{Max}=\\frac{\\lambda}{4\\pi}\\sqrt{\\frac{P_T}{P_R}G_T G_R}=\\frac{"+writeTriple(lambda,"m")+"}{4\\pi}\\sqrt{\\frac{"+writeTriple(pt,"W")+"}{"+
-                                writeTriple(rwrprmin,"W")+"}"+gr.toString()+"\\times "+grwr.toString()+"}="+writeTriple(rwrrange,"m")+writeEng(rwrrange,"m",true,false);
+    var rwrrangeexpression = "R_{RWR}=R_{Max}=\\frac{\\lambda}{4\\pi}\\sqrt{\\frac{P_T}{P_R}G_T G_R}=\\frac{"+writeTripleLatex(lambda,"m")+"}{4\\pi}\\sqrt{\\frac{"+writeTripleLatex(pt,"W")+"}{"+
+                                writeTripleLatex(rwrprmin,"W")+"}"+gr.toString()+"\\times "+grwr.toString()+"}="+writeTripleLatex(rwrrange,"m")+writeEng(rwrrange,"m",true,false);
     NewMathAtItem(rwrrangeexpression,"radarrwreqn");
     var rheight = GrabNumber("radarheight","null",false,minvertical,maxvertical);
     var theight = GrabNumber("targetheight","null",false,minvertical,maxvertical);
@@ -967,15 +1053,15 @@ function ChangedRadar(){
 function ChangedDoppler(){
     var rttt = GrabNumber("radartime","radartimeexp",true,minnorm,maxnorm);
     var rangetotarget = 0.5*SOL*rttt;
-    var radardistanceexp = "R=\\frac{c t}{2}=\\frac{3\\times10^8m/s\\times"+writeTriple(rttt,"s")
-                            +"}{2}="+writeTriple(rangetotarget,"m")+
+    var radardistanceexp = "R=\\frac{c t}{2}=\\frac{3\\times10^8m/s\\times"+writeTripleLatex(rttt,"s")
+                            +"}{2}="+writeTripleLatex(rangetotarget,"m")+
                             writeEng(rangetotarget,"m",true,false);
     NewMathAtItem(radardistanceexp,"radartimedistanceeqn");
 
     var onewaytraveltime = GrabNumber("radiotime","radiotimeexp",true,minnorm,maxnorm);
     var onewayrange = SOL*onewaytraveltime;
-    var radiotimedistanceeqn = "R=c t=3\\times10^8m/s\\times"+writeTriple(onewaytraveltime,"s")
-                            +"="+writeTriple(onewayrange,"m")+
+    var radiotimedistanceeqn = "R=c t=3\\times10^8m/s\\times"+writeTripleLatex(onewaytraveltime,"s")
+                            +"="+writeTripleLatex(onewayrange,"m")+
                             writeEng(onewayrange,"m",true,false);
     NewMathAtItem(radiotimedistanceeqn,"radiotimedistanceeqn");
 
@@ -988,19 +1074,19 @@ function ChangedDoppler(){
     if(tofrom < 0) tofromtext = "-";
     var freturn = fzero*(1+tofrom*2*velocity*Math.cos(angleinrads)/SOL);
     var fshift = freturn - fzero;
-    var freturnexpression = "f_{R}=f_0[1\\pm\\frac{2v\\times cos(\\theta)}{c}]="+writeTriple(fzero,"Hz")+
-        "[1"+tofromtext+"\\frac{2\\times"+writeTriple(velocity,"m/s")+"\\times cos("+dopplerangle.toString()+
-        "^\\circ)}{3\\times10^8m/s}="+writeTriple(freturn,"Hz",true)+writeEng(freturn,"Hz",true,false,true);
+    var freturnexpression = "f_{R}=f_0[1\\pm\\frac{2v\\times cos(\\theta)}{c}]="+writeTripleLatex(fzero,"Hz")+
+        "[1"+tofromtext+"\\frac{2\\times"+writeTripleLatex(velocity,"m/s")+"\\times cos("+dopplerangle.toString()+
+        "^\\circ)}{3\\times10^8m/s}="+writeTripleLatex(freturn,"Hz",true)+writeEng(freturn,"Hz",true,false,true);
     NewMathAtItem(freturnexpression,"radarreturnfrequency");
-    var returnshift = "\\Delta f=f_R-f_0="+writeTriple(fshift,"Hz")+writeEng(fshift,"Hz",true,false);
+    var returnshift = "\\Delta f=f_R-f_0="+writeTripleLatex(fshift,"Hz")+writeEng(fshift,"Hz",true,false);
     NewMathAtItem(returnshift,"radarreturnshift");
 
     var fshiftgiven = GrabNumber("radarShift","radarShiftexp",true,-maxnorm,maxnorm);
     var compvelocity = SOL/2*fshiftgiven/(fzero*Math.cos(angleinrads));
     var velocityexpression = "v=\\frac{c(f_R-f_0)}{2f_0cos(\\theta)}="+"\\frac{c\\times\\Delta f}{2f_0cos(\\theta)}="+
-                "\\frac{3\\times10^8m/s\\times"+writeTriple(fshiftgiven,"Hz")+
-                "}{2\\times"+writeTriple(fzero,"Hz")+"\\times cos("+dopplerangle.toString()+"^\\circ)}="+
-                writeTriple(compvelocity,"m/s");
+                "\\frac{3\\times10^8m/s\\times"+writeTripleLatex(fshiftgiven,"Hz")+
+                "}{2\\times"+writeTripleLatex(fzero,"Hz")+"\\times cos("+dopplerangle.toString()+"^\\circ)}="+
+                writeTripleLatex(compvelocity,"m/s");
     NewMathAtItem(velocityexpression,"radarcomputevelocity");
 }
 
@@ -1025,35 +1111,43 @@ var plotxdecades;
 var plotydecades;
 var plotxpixperdecade;
 var plotypixperdecade;
-var plotxoffset, plotyoffset;
-function initPlot(xmin,ymin,xmax,ymax,pixelwidth,pixelheight,xgridstep,ygridstep,logged=false,xoffset,yoffset){
+var plotleft, plotbottom;
+var plotright, plottop;
+const ArrayLength = 1920;
+var plotdatax = new Array(ArrayLength);
+var plotdatay = new Array(ArrayLength);
+var plotdataypix = new Array(ArrayLength);
+
+function initPlot(xmin,ymin,xmax,ymax,pixelwidth,pixelheight,xgridstep,ygridstep,logged=false,left=0,right=0,top=0,bottom=0){
     //grids will get stretched unless you make the spans squared' up
-    plotxoffset = xoffset;
-    plotyoffset = yoffset;
+    plotleft = left;
+    plotright = right;
+    plottop = top;
+    plotbottom = bottom;
     if(xgridstep <= 0) plotxgridstep = 1;
     if(ygridstep <= 0) plotygridstep = 1;
     if(xmax <= xmin || xmin == 0 || xmax == 0) return;
     if(ymax <= ymin || ymin == 0 || ymax == 0) return;
-    plotxstart = xmin; //translates to pixel 0
+    plotxstart = xmin; //translates to pixel pixxoffset
     plotystart = ymin;
     plotxend = xmax;
     plotyend = ymax;
     plotxspan = xmax-xmin;
     plotyspan = ymax-ymin;
-    plotpixw = pixelwidth;
-    plotpixh = pixelheight;
+    plotpixw = pixelwidth-plotleft-plotright;
+    plotpixh = pixelheight-plotbottom-plottop;
     plotxfact = pixelwidth/plotxspan;
     plotyfact = pixelheight/plotyspan;
     plotxgridstep = xgridstep;
     plotygridstep = ygridstep;
-    plotxpixgridstep = pixelwidth/((xmax-xmin)/xgridstep)
-    plotypixgridstep = pixelheight/((ymax-ymin)/ygridstep)
-    plotxzero = (-xmin)/(xmax-xmin)*pixelwidth;
-    plotyzero = (-ymin)/(ymax-ymin)*pixelheight;
+    plotxpixgridstep = plotxfact/xgridstep;
+    plotypixgridstep = plotyfact/ygridstep;
+    plotxzero = (-xmin)/(plotxspan)*pixelwidth+left;
+    plotyzero = (-ymin)/(plotyspan)*pixelheight+top;
     plotxfirst = Math.round(plotxstart/plotxgridstep)*plotxgridstep;
     plotyfirst = Math.round(plotystart/plotygridstep)*plotygridstep;
-    plotxpixelstep = (xmax-xmin)/pixelwidth;
-    plotypixelstep = (ymax-ymin)/pixelheight;
+    plotxpixelstep = (plotxspan)/plotpixw;
+    plotypixelstep = (plotyspan)/plotpixh;
     plotislog = logged;
     if(plotislog){
         plotxdecades = Math.log10(xmax/xmin);
@@ -1062,46 +1156,130 @@ function initPlot(xmin,ymin,xmax,ymax,pixelwidth,pixelheight,xgridstep,ygridstep
         plotypixperdecade = plotpixh/plotydecades;
         plotxlogleft = Math.log10(xmin);
         plotylogtop  = Math.log10(ymax);
-        plotxpixelstep = Math.pow(10,1/(plotxpixperdecade)); //use as a multiplier not an adder
+        plotxpixelstep = Math.pow(10,1/(plotxpixperdecade+1)); //use as a multiplier not an adder
         //then grid lines will be placed on decades (x10) change which are evenly spaced
     }
 }
 
-function PlotFrequencyResponse(ctx, R, L, C, topo){
-    var omega, mag, phase, denom, helper, x, y, px, py, xstep;
+var currentplotindex=0;
+
+function BodeSlew(option){
+    var xf, nf, df, i, upper = -1;
+    if(option == 1 || option == -1){
+        currentplotindex = currentplotindex + option;
+    }
+    else{
+        switch(option){
+            case 10:    
+                xf = plotdatax[currentplotindex];
+                nf = 10.0*xf;
+                for(i = currentplotindex; i < plotpixw; i++){
+                    if(plotdatax[i] > nf){
+                        upper = i;
+                        break;
+                    }
+                }
+                if(upper == -1){  //not found
+                    currentplotindex = plotpixw;
+                }
+            break;
+            case -10:    
+                xf = plotdatax[currentplotindex];
+                nf = xf/10.0;
+                for(i = currentplotindex; i > 0; i--){
+                    if(plotdatax[i] < nf){
+                        upper = i+1;
+                        break;
+                    }
+                }
+                if(upper == -1){  //not found
+                    currentplotindex = 0;
+                }
+            break;
+        }
+        if(upper > -1){
+            var a,b;
+            a = Math.abs(plotdatax[upper-1]/nf-1);
+            b = Math.abs(plotdatax[upper]/nf-1);
+            if(a<b) currentplotindex = upper-1;
+            else currentplotindex = upper;
+        }
+    }
+    if(currentplotindex >= plotpixw) currentplotindex = plotpixw-1;
+    if(currentplotindex < 0) currentplotindex = 0;
+    LabelFrequencyResponse(null,true); ;
+}
+
+function LabelFrequencyResponse(event,manual=false){
+    var canvas = document.getElementById("canvasBODE");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    var ctx = canvas.getContext("2d");
+    var rect = canvas.getBoundingClientRect();
+    showGrid(ctx,true,false,true);
+    PlotFrequencyResponse(ctx);
+    var px, ix;
+    if(manual){
+        ix = currentplotindex;
+        px = ix + plotleft;
+    }
+    else{
+        px = event.clientX - rect.left;
+        ix = px-plotleft;
+        currentplotindex = px-plotleft;
+    }
+    
+    var py = plotdataypix[ix]+plottop;
+    console.log("px",px,"py",py);
+    var x = plotdatax[ix];
+    var y = plotdatay[ix];
+    ctx.font = "15px Helvetica";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "right";
+    console.log(px,py);
+    ctx.fillRect(px-2,py-2,5,5);
+    var labeltext1 = writeEng(x,"Hz",false,true);
+    var labeltext2 = writeTripleString(y,"",false,false);
+    var search = labeltext2.search('x');
+    console.log("search",search,"text",labeltext2);
+    var exptext = "";
+    if(search > -1){
+        exptext = labeltext2.substr(search+4,labeltext2.length);
+        labeltext2 = labeltext2.substr(0,search+3);
+    }
+    ctx.fillText(labeltext1,px+30,py+30);
+    ctx.fillText(labeltext2,px+30,py+50);
+    ctx.fillText(writeTripleString(y,"",true,false),px+30,py+70);
+    //ctx.fillText("10",plotleft-15,py+5);
+    ctx.textAlign = "left";
+    ctx.font = "10px Helvetica";
+    ctx.fillText(exptext,px+30,py+40);
+}
+
+function FillFrequencyResponse(R,L,C,topo){
+    var omega, x, y, px, py, ix,iy;
+    var gain = new Array(2);
+    for(x = plotxstart; x <= plotxend; x*= plotxpixelstep){
+        omega = 2*Math.PI*x;
+        gain = GetResponse(R,L,C,omega,topo);
+        y = gain[0];
+        px = (Math.log10(x)-plotxlogleft)*plotxpixperdecade;
+        py = (plotylogtop-Math.log10(y))*plotypixperdecade;
+        ix = parseInt(px);
+        iy = parseInt(py);
+        plotdatax[ix] = x;
+        plotdatay[ix] = y;
+        plotdataypix[ix] = py;
+    }
+}
+
+function PlotFrequencyResponse(ctx){
+    var ix,px, py;
     ctx.beginPath();
     ctx.lineWidth = 2;
     ctx.strokeStyle = "black";
-    for(x = plotxstart; x <= plotxend; x*= plotxpixelstep){
-        omega = 2*Math.PI*x;
-        switch(topo){
-            case "SRLC":
-                helper = 1.0-omega*omega*C*L;
-                denom = helper*helper+omega*omega*R*R*C*C;
-                y = 1.0/Math.sqrt(denom);
-            break;
-            case "SRC":
-                y = 1.0/Math.sqrt(1+omega*omega*R*R*C*C);
-            break;
-            case "SCR":
-                y = 1.0/Math.sqrt(1+1/(omega*omega*R*R*C*C));
-            break;
-            case "SRL":
-                y = 1.0/Math.sqrt(1+R*R/(omega*omega*L*L));
-            break;
-            case "SLR":
-                y = 1.0/Math.sqrt(1+(omega*omega*L*L)/(R*R));
-            break;
-            case "SLC":
-                y = Math.abs(1.0/(1-omega*omega*L*C));
-            break;
-            case "SCL":
-                y =  Math.abs(1.0/(1-1/(omega*omega*L*C)));
-            break;
-        }
-        px = plotxoffset+(Math.log10(x)-plotxlogleft)*plotxpixperdecade;
-        py = (plotylogtop-Math.log10(y))*plotypixperdecade;
-        ctx.lineTo(px,py);
+    for(ix = 0; ix < plotpixw; ix++){
+        py = plotdataypix[ix];
+        ctx.lineTo(ix+plotleft,py+plottop);
     }
     ctx.stroke();
     ctx.closePath();
@@ -1158,32 +1336,47 @@ function drawLabeledPoint(ctx,xpos,ypos,labeltext,xoffset,yoffset){
 
 function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
     //initPlot has to have been already done
+    ctx.fillStyle="#dddddd";
+    ctx.fillRect(0,0,plotpixw+plotleft+plotright,plotpixh+plotbottom+plotbottom);
     ctx.fillStyle="#77dddd";
-    ctx.fillRect(plotxoffset,0,plotpixw,plotpixh);
+    ctx.fillRect(plotleft,plottop,plotpixw,plotpixh);
     var px, py, x, y;
     if(gridsquares){
         ctx.beginPath();
         ctx.lineWidth = 1;
         ctx.strokeStyle = "gray";
+        ctx.font = "15px Helvetica";
+        ctx.fillStyle = "black";
+        ctx.textAlign = "left";
         //start at the first xgridstep value above xstart. e.g. -4.5 start at -4. round up to next value by finding: xstart/xgridstep = 4
         if(plotislog){
             for(x = plotxstart; x <= plotxend; x*= 10){
-                px = plotxoffset + (Math.log10(x)-Math.log10(plotxstart))*plotxpixperdecade;
-                ctx.moveTo(px,0);   ctx.lineTo(px,plotpixh);
+                px = plotleft + (Math.log10(x)-Math.log10(plotxstart))*plotxpixperdecade;
+                ctx.moveTo(px,plottop);   ctx.lineTo(px,plotpixh+plottop);
+                ctx.fillText(writeEng(x,"Hz",false,true),px-5,plotpixh+plottop+20);
             }
             for(y = plotystart; y <= plotyend; y*= 10){
-                py = (plotpixh-(Math.log10(y)-Math.log10(plotystart))*plotypixperdecade);
-                ctx.moveTo(plotxoffset,py);   ctx.lineTo(plotpixw,py);
+                py = plottop+(plotpixh-(Math.log10(y)-Math.log10(plotystart))*plotypixperdecade);
+                ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
+                //ctx.fillText(writeEng(y,"",false,true),10,py-5);
+                ctx.textAlign = "right";
+                ctx.font = "15px Helvetica";
+                ctx.fillText("10",plotleft-15,py+5);
+                ctx.textAlign = "left";
+                ctx.font = "10px Helvetica";
+                ctx.fillText(Math.log10(y).toFixed(0),plotleft-15,py-5);
+                ctx.font = "15px Helvetica";
+                ctx.fillText(writeTripleString(y,"",true,false,0),5,py+5);
             }
         }
         else{
             for(x = plotxfirst; x <= plotxend; x+= plotxgridstep){
-                px = (x-plotxstart)*plotxfact;
-                ctx.moveTo(px,0);   ctx.lineTo(px,plotpixh);
+                px = plotleft+(x-plotxstart)*plotxfact;
+                ctx.moveTo(px,plottop);   ctx.lineTo(px,plotpixh+plottop);
             }
             for(y = plotyfirst; y <= plotyend; y+= plotygridstep){
-                py = (y-plotystart)*plotyfact;
-                ctx.moveTo(0,py);   ctx.lineTo(plotpixw,py);
+                py = plotright+(y-plotystart)*plotyfact;
+                ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
             }
         }
         ctx.stroke();
@@ -1193,8 +1386,15 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
         ctx.beginPath();
         ctx.lineWidth = 2;
         ctx.strokeStyle = "black"; 
-        ctx.moveTo(0,plotyzero);    ctx.lineTo(plotpixw,plotyzero);  // X axis
-        ctx.moveTo(plotxzero,0);    ctx.lineTo(plotxzero,plotpixh);  // Y axis
+        if(plotislog){
+            //?
+        }
+        else{
+            
+            ctx.moveTo(0,plotyzero);    ctx.lineTo(plotpixw,plotyzero);  // X axis
+            ctx.moveTo(plotxzero,0);    ctx.lineTo(plotxzero,plotpixh);  // Y axis
+            
+        }
         ctx.stroke();
         ctx.closePath();
     } 
@@ -1443,13 +1643,13 @@ function ChangedComm(){
     EnforceNumericalHTML("powertransmitted",minnorm,maxnorm);
     friis_p_t = document.getElementById("powertransmitted").value * Math.pow(10,document.getElementById("powertransmittedexp").value);
     var pt, gt, gr, rr, ll,pr,prneat;
-    pt = writeTriple(friis_p_t,"W");
-    gt = writeTriple(gain_tx);
-    gr = writeTriple(gain_rx);
-    ll = writeTriple(wavelength,"m");
-    rr = writeTriple(friis_range,"m");
+    pt = writeTripleLatex(friis_p_t,"W");
+    gt = writeTripleLatex(gain_tx);
+    gr = writeTripleLatex(gain_rx);
+    ll = writeTripleLatex(wavelength,"m");
+    rr = writeTripleLatex(friis_range,"m");
     friis_p_r = friis_p_t*gain_tx*gain_rx*wavelength*wavelength/(FOURPI*FOURPI*friis_range*friis_range);
-    pr = writeTriple(friis_p_r,"W");
+    pr = writeTripleLatex(friis_p_r,"W");
     prneat = writeEng(friis_p_r,"W",false,true);
     var friisexpression = "P_R=P_T G_T G_R {\\lambda^2 \\over (4 \\pi R)^2}="
                            +pt+"\\times "+gt+"\\times "+gr+"\\frac{("+ll+")^2}{(4\\pi \\times "+rr+")^2}="
@@ -1459,9 +1659,9 @@ function ChangedComm(){
     //5. Compute R_max
     EnforceNumericalHTML("prminvalue",minnorm,maxnorm);
     friis_p_r_min = document.getElementById("prminvalue").value * Math.pow(10,document.getElementById("prminexp").value);
-    var prmin = writeTriple(friis_p_r_min,"W");
+    var prmin = writeTripleLatex(friis_p_r_min,"W");
     friis_r_max = wavelength/(FOURPI)*Math.sqrt(friis_p_t/friis_p_r_min*gain_tx*gain_rx);
-    var rmaxtriple = writeTriple(friis_r_max,"m");
+    var rmaxtriple = writeTripleLatex(friis_r_max,"m");
     var rmaxeng = writeEng(friis_r_max,"m",true,false);
     var rmaxexpression = "R_{Friis}=R_{Max}={\\lambda \\over 4 \\pi}\\sqrt{{P_T \\over P_{Rmin}}G_T G_R}="+
                          "\\frac{"+ll+"}{4\\pi}\\sqrt{\\frac{"+pt+"}{"+prmin+"}"+gt+"\\times "+gr+"}="+
