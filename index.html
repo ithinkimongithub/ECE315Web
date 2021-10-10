@@ -463,48 +463,79 @@
             <br>5. The resultant quotient is: \(\frac{1}{\sqrt{1+[Imag]^2}}\angle tan^{-1}(-[Imag])\) where \([Imag]\) is the 
             imaginary component of \(1+\frac{Z_1}{Z_2}\). Its Real component is just \(1\) and is thus omitted from \(tan^{-1}\).
         </p>-->
-        <br>Frequency: <input type="number" id="ICfreq" min="1" max="999" value="60" step="any" onchange="ChangedFilter()">
-        <select id="ICfreqexp" onchange="ChangedFilter()">
+        <br>Frequency: <input type="number" id="FilterFreq0" min="1" max="999" value="35" step="any" onchange="ChangedFilter()">
+        <select id="FilterFreq0P" onchange="ChangedFilter()">
             <option value="0" selected>Hz</option>
             <option value="3" >kHz</option>
             <option value="6">MHz</option>
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
-        <br>Resistance: <input type="number" id="ICresistance" min="1" max="999" value="50" step="any" onchange="ChangedFilter()">
-        <select id="ICresistanceP" onchange="ChangedFilter()">
+        <br>Resistance: <input type="number" id="FilterR" min="1" max="999" value="10" step="any" onchange="ChangedFilter()">
+        <select id="FilterRP" onchange="ChangedFilter()">
             <option value="-3">m&#8486;</option>
             <option value="0" selected>&#8486;</option>
             <option value="3">k&#8486;</option>
             <option value="6">M&#8486;</option>
             <option value="9">G&#8486;</option>
         </select>
-        <br>Inductance: <input type="number" id="inductorvalue" min="1" max="999" value="142" step="any" onchange="ChangedFilter()">
-        <select id="inductorvalueexp" onchange="ChangedFilter()">
+        <br>Inductance: <input type="number" id="FilterL" min="1" max="999" value="200" step="any" onchange="ChangedFilter()">
+        <select id="FilterLP" onchange="ChangedFilter()">
             <option value="-6">&#181;H</option>
             <option value="-3" selected>mH</option>
             <option value="0">H</option>
         </select>
-        <br>Capacitance: <input type="number" id="capacitancevalue" min="1" max="999" value="160" step="any" onchange="ChangedFilter()">
-        <select id="capacitancevalueexp" onchange="ChangedFilter()">
+        <br>Capacitance: <input type="number" id="FilterC" min="1" max="999" value="100" step="any" onchange="ChangedFilter()">
+        <select id="FilterCP" onchange="ChangedFilter()">
             <option value="-12">pF</option>
             <option value="-9" >nF</option>
             <option value="-6"selected>&#181;F</option>
             <option value="-3" >mF</option>
             <option value="0">F</option>
         </select>
-        <p>Let's build a circuit using your values and plot \(v_s(t)\) and \(i_s(t)\). Choose a topology:
-            <select id="topology" onchange="ChangedFilter()">
-                <option value="SRLC" selected >Series RLC</option>
+        <br>Choose a topology and we'll create expressions for Gain:
+            <select id="Filtertopology" onchange="ChangedFilter()">
+                <option value="SRLC"  >Series RLC</option>
                 <option value="SRC">Series RC</option>
-                <option value="SRL">Series RL</option>
+                <option value="SCR">Series CR</option>
+                <option value="SRL" selected>Series RL</option>
+                <option value="SLR" >Series LR</option>
                 <option value="SLC">Series LC</option>
-                <option value="PRLC">Parallel RLC</option>
-                <option value="PRC">Parallel RC</option>
-                <option value="PRL">Parallel RL</option>
-                <option value="PLC">Parallel LC</option>
+                <option value="SCL">Series CL</option>
             </select>
-        </p>
+        <p id="FilterGain">FilterGain</p>
+        <p id="FilterGainFinish">FilterGainFinish</p>
+        And plot this Gain over a range of frequencies (both axes on logarithmic scale):
+        <br>Start Frequency: <input type="number" id="FilterFreq1" min="1" max="999" value="1" step="any" onchange="ChangedFilter()">
+        <select id="FilterFreq1P" onchange="ChangedFilter()">
+            <option value="0" selected>Hz</option>
+            <option value="3" >kHz</option>
+            <option value="6">MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br>Stop Frequency: <input type="number" id="FilterFreq2" min="1" max="999" value="1" step="any" onchange="ChangedFilter()">
+        <select id="FilterFreq2P" onchange="ChangedFilter()">
+            <option value="0" >Hz</option>
+            <option value="3" >kHz</option>
+            <option value="6"selected>MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br>Max Gain: <select id="BodeMaxP" onchange="ChangedFilter()">
+            <option value="3">1000.0</option>
+            <option value="2">100.0</option>
+            <option value="1" selected>10.</option>
+            <option value="0">1.0</option>
+        </select>
+        <br>Min Gain: <select id="BodeMinP" onchange="ChangedFilter()">
+            <option value="-3" >0.001</option>
+            <option value="-6" >0.000001</option>
+            <option value="-9" selected>0.000000001</option>
+            <option value="-12">0.000000000001</option>
+            <option value="-15">0.000000000000001</option>
+        </select>
+        <br><canvas id="canvasBODE" width="1000" height="500"></canvas> 
     </div>
 
     <div class="tabcontent" id="commequations">

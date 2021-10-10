@@ -57,52 +57,181 @@ const maxRCS = Math.pow(10, 12);
 const minangle = -360;
 const maxangle = 360;
 var multiplier; //for remembering scale :(
-//******************************************** PLOT VARS *********************************************************/
-var plotxstart, plotxend;
-var plotystart, plotyend;
-var plotxspan, plotyspan;
-var plotxfirst, plotyfirst;
-var plotpixw, plotpixh;
-var plotxgridstep; //logical size, not pixel size
-var plotygridstep;
-var plotxzero; //pixel location of x=0
-var plotyzero;
-var plotgridstep, plotxpixgridstep, plotypixgridstep;
-var plotctx;
-var plotxfact, plotyfact;
-var plotxpixelstep, plotypixelstep;
-function initPlot(xstart,ystart,xend,yend,xpix,ypix,xgridstep,ygridstep){
-    //grids will get stretched unless you make the spans squared' up
-    plotxstart = xstart; //translates to pixel 0
-    plotystart = ystart;
-    plotxend = xend;
-    plotyend = yend;
-    plotxspan = xend-xstart;
-    plotyspan = yend-ystart;
-    plotpixw = xpix;
-    plotpixh = ypix;
-    plotxfact = xpix/plotxspan;
-    plotyfact = ypix/plotyspan;
-    plotxgridstep = xgridstep;
-    plotygridstep = ygridstep;
-    plotxpixgridstep = xpix/((xend-xstart)/xgridstep)
-    plotypixgridstep = ypix/((yend-ystart)/ygridstep)
-    plotxzero = (-xstart)/(xend-xstart)*xpix;
-    plotyzero = (-ystart)/(yend-ystart)*ypix;
-    plotxfirst = Math.round(plotxstart/plotxgridstep)*plotxgridstep;
-    plotyfirst = Math.round(plotystart/plotygridstep)*plotygridstep;
-    plotxpixelstep = (xend-xstart)/xpix;
-    plotypixelstep = (yend-ystart)/ypix;
+//********************************************  MATH *********************************************************/
+
+function GetPolar(real,imag){
+    var mag = Math.sqrt(real*real+imag*imag);
+    var phi = Math.atan2(imag,real)*180/Math.PI;
+    return [mag,phi];
 }
-//******************************************* TABS ***************************************************************/
+
+const IOTA = Math.pow(10,-24);
+
+function checkIota(input){
+    if(Math.abs(input) < IOTA) return 0;
+    return input;
+}
+/********************************************* WRITING FUNCTIONS *******************************************************/
+function writeTriple(value,units="",makedoppler=false){
+    if(value == 0) return "0"+units;
+    var putinnegativesign = "";
+    var absvalue = Math.abs(value);
+    if(value < 0){
+        putinnegativesign = "-"; 
+    }
+    var exp = Math.log(absvalue) / Math.log(10);
+    var precision = 4;
+    if(makedoppler == true) precision = exp + 1;
+    var triplets = Math.round(exp/3.0-0.5);
+    var t_exp = 3*triplets;
+    var argument = absvalue / Math.pow(10,t_exp);
+    var argstring = argument.toPrecision(precision);
+    argument = parseFloat(argstring);
+    //then check if argument is 1000 due to some precision in the log and rounding
+    if(argument >= 1000){
+        t_exp += 3;
+        argument = absvalue / Math.pow(10,t_exp);
+        argstring = argument.toPrecision(precision);
+    }
+    else if(argument < 1){
+        t_exp -= 3;
+        argument = absvalue / Math.pow(10,t_exp);
+        argstring = argument.toPrecision(precision);
+    }
+    if(t_exp == 0){
+        return putinnegativesign+argstring+units;
+    }
+    else{
+        return putinnegativesign+argstring+"\\times "+"10^{"+t_exp+"}"+units;
+    }
+}
+
+function writeRectangular(r,i){
+    var complexsign = "+";
+    if(i < 0)   complexsign = "-";
+    var prefix = "";
+    var suffix = "";
+    if(i >= 1000 || i <= -1000){
+        prefix = "(";
+        suffix = ")";
+    }
+    return writeTriple(r)+complexsign+"j"+prefix+writeTriple(i)+suffix;
+}
+
+function writeEng(value, units, prependequals = false, forceoutput = false, dopplerfreq = false, outputnumber = true, outputunits = true){
+    var absvalue = Math.abs(value);
+    var sign = "";
+    if(value < 0) sign = "-";
+    var exp = 0;
+    if(value != 0)
+        exp = Math.log(absvalue) / Math.log(10);
+    var triplets = Math.round(exp/3.0-0.5);
+    var t_exp = 3*triplets;
+    var argument = absvalue / Math.pow(10,t_exp);
+    var roundedarg = argument.toPrecision(precision);
+    if(roundedarg=="1000"){
+        t_exp += 3;
+        argument = absvalue / Math.pow(10,t_exp);
+    }
+    var prefix = " ";
+    var precision = 4; //if going to millions of meters, increase precision to keep digits from turning into sci notation
+    switch(t_exp){
+        case -24:   prefix = "y";   break;
+        case -21:   prefix = "z";   break;
+        case -18:   prefix = "a";   break;
+        case -15:   prefix = "f";   break;
+        case -12:   prefix = "p";   break;
+        case -9:    prefix = "n";   break;
+        case -6:    prefix = "\\mu ";   break; //debugging micro? make sure to have a space after as in "\\mu " not "\\mu"
+        case -3:    prefix = "m";   break;
+        case 0:     prefix = " ";   break;
+        case 3:     prefix = "k";   break;
+        case 6:     prefix = "M";   break;
+        case 9:     prefix = "G";   break;
+        case 12:    prefix = "T";   break;
+        case 15:    prefix = "P";   break;
+        case 18:    prefix = "E";   break;
+        case 21:    prefix = "Z";   break;
+        case 24:    prefix = "Y";   break;
+        default: prefix = "?"; break;
+    }
+    if(units == "m"){ //don't go above km for distances
+        if(t_exp >= 3){
+            t_exp = 3;
+            prefix = "k";
+            precision = exp;
+        }
+    }
+    if(t_exp == 0 && forceoutput == false){
+        return "";
+    }
+    if(dopplerfreq == true){
+        precision = exp + 2;
+    }
+    var output = "";
+    if(outputnumber == true){
+        if(prependequals){ //outputnumber and output units allow splitting the answer to throw in the cosine in between for AC signals
+            output = "=";
+        }
+        output += sign;
+        output += argument.toPrecision(precision);
+    }
+    if(outputunits == true){
+        output += prefix+units;
+    }
+    return output;
+}
+
+function writeComplexRectEng(real,imag,units){
+    var sign = "+";
+    var realabs = Math.abs(real);
+    var imagabs = Math.abs(imag);
+    if (imag < 0)
+        sign = "-";
+    if (realabs < IOTA){
+        if(imagabs < IOTA){
+            return "0"+units;
+        }
+        else{
+            if (imag > 0) sign = "";
+            return sign+"j"+writeEng(imagabs,units,false,true);
+        }
+    }
+    if(imagabs < IOTA){
+        return writeEng(real,units,false,true);
+    }
+    return "["+writeEng(real,"",false,true)+sign+"j"+writeEng(imagabs,"",false,true)+"]"+units;
+}
+
+function writePolarBasic(cmag,ctheta){
+    return cmag.toFixed(3)+"\\angle{"+writeTriple(ctheta)+"}^{\\circ}";
+}
+
+function writePolarEng(cmag,ctheta,units,decimal=false,db=false){
+    var firstpart,secondpart;
+    if(decimal==true){
+        firstpart = writeTriple(cmag,"");
+        secondpart = units;
+    }
+    else{
+        firstpart = writeEng(cmag,units,false,true,false,true,false);
+        secondpart = writeEng(cmag,units,false,true,false,false,true);
+    }
+    return firstpart+"\\angle{"+ctheta.toFixed(2)+"}^{\\circ}"+secondpart;
+}
+
+function writeTimeBasedEng(mag,freq,phase,units){
+    var phasesign;
+    var phaseabs = Math.abs(phase);
+    if(phase>=0) phasesign = "+";
+    else phasesign = "-";
+    return writeEng(mag,units,false,true,false,true,false)+"cos(360^{\\circ}"+writeEng(freq,"",false,true,false,true,true)+"t"+
+        phasesign+phaseabs.toFixed(2)+"^{\\circ})"+writeEng(mag,units,false,true,false,false,true);
+}
+
+//******************************************* TABS AND HTML ***************************************************************/
+
 function InitPage () {
-    //ChangedAC();
-    //ChangedCircuits();
-    //ChangedComm(); //Need to initially populate equations
-    //ChangedRadar(); //Need to initially populate equations
-    //ChangedComplex();
-    //ChangedIC();
-    //console.log("initpage");
     document.getElementById("defaultOpen").click();
 }
 
@@ -165,8 +294,6 @@ function ChangedContent(whichtype){
     }
 }
 
-
-//******************************************* CHANGE FUNCTION ****************************************************/
 function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue){
     EnforceNumericalHTML(argumenthtml,minvalue,maxvalue);
     var answer = parseFloat(document.getElementById(argumenthtml).value);
@@ -176,16 +303,213 @@ function GrabNumber(argumenthtml,exponenthtml,includeexponent,minvalue,maxvalue)
     return answer;
 }
 
-function GetPolar(real,imag){
-    var mag = Math.sqrt(real*real+imag*imag);
-    var phi = Math.atan2(imag,real)*180/Math.PI;
-    return [mag,phi];
+function NewMathAtItem(mathexpression, htmlitem){
+    var input = mathexpression;
+    var output = document.getElementById(htmlitem);
+    output.innerHTML = '';
+    MathJax.texReset();
+    var options = MathJax.getMetricsFor(output);
+    //options.display = display.checked;
+    MathJax.tex2chtmlPromise(input, options).then(function (node) {
+      //
+      //  The promise returns the typeset node, which we add to the output
+      //  Then update the document to include the adjusted CSS for the
+      //    content of the new equation.
+      //
+      output.appendChild(node);
+      MathJax.startup.document.clear();
+      MathJax.startup.document.updateDocument();
+    }).catch(function (err) {
+      //
+      //  If there was an error, put the message into the output instead
+      //
+      output.appendChild(document.createElement('pre')).appendChild(document.createTextNode(err.message));
+    }).then(function () {
+      //
+      //  Error or not, re-enable the display and render buttons
+      //
+      //button.disabled = display.disabled = false;
+    });
+}
+
+//generic, enforce numerical entries
+function EnforceNumericalHTML(entryitem, min, max){
+    var current = document.getElementById(entryitem).value;
+    if(isNaN(current)) current = 0;
+    if(current < min) current = min;
+    if(current > max) current = max;
+    document.getElementById(entryitem).value = current;
+}
+
+//generic, ChangedInput (go through all)
+function SetLengthHTML(length, arghtml, exphtml){
+    if(length > 1000){
+        document.getElementById(exphtml).value="3";
+        document.getElementById(arghtml).value = length/1000.0;
+    }
+    else if(length > 1){
+        document.getElementById(exphtml).value="0";
+        document.getElementById(arghtml).value = length;
+    }
+    else{
+        document.getElementById(exphtml).value="-3";
+        document.getElementById(arghtml).value = length*1000.0;
+    }
+}
+
+//******************************************* CHANGE FUNCTIONS ****************************************************/
+
+function ChangedDC(){
+    EnforceNumericalHTML("virvoltage",minnorm,maxnorm);
+    var virv = document.getElementById("virvoltage").value * Math.pow(10,document.getElementById("selectvvir").value);
+    EnforceNumericalHTML("virresistance",minnorm,maxnorm);
+    var virr = document.getElementById("virresistance").value * Math.pow(10,document.getElementById("selectrvir").value);
+    var viri = virv/virr;
+    var virexpression = "I=\\frac{V}{R}=\\frac{"+writeTriple(virv,"V")+"}{"+
+                        writeTriple(virr,"\\Omega")+"}="+writeTriple(viri,"A")+writeEng(viri,"A",true,false,false);
+    NewMathAtItem(virexpression,"virequation");
+
+    EnforceNumericalHTML("pvivoltage",minnorm,maxnorm);
+    var pviv = document.getElementById("pvivoltage").value * Math.pow(10,document.getElementById("selectvpvi").value);
+    EnforceNumericalHTML("pvicurrent",minnorm,maxnorm);
+    var pvii = document.getElementById("pvicurrent").value * Math.pow(10,document.getElementById("selectipvi").value);
+    var pvip = pviv*pvii;
+    var pviexpression = "P=V \\times I="+writeTriple(pviv,"V")+"\\times"+
+                        writeTriple(pvii,"A")+"="+writeTriple(pvip,"W")+writeEng(pvip,"W",true,false,false);
+    NewMathAtItem(pviexpression,"pviequation");
+
+    EnforceNumericalHTML("kvlra",minnorm,maxnorm);
+    EnforceNumericalHTML("kvlrb",minnorm,maxnorm);
+    EnforceNumericalHTML("kvlrc",minnorm,maxnorm);
+    EnforceNumericalHTML("kvlv",minnorm,maxnorm);
+    var kvlra = document.getElementById("kvlra").value * Math.pow(10,document.getElementById("selectkvlra").value);
+    var kvlrb = document.getElementById("kvlrb").value * Math.pow(10,document.getElementById("selectkvlrb").value);
+    var kvlrc = document.getElementById("kvlrc").value * Math.pow(10,document.getElementById("selectkvlrc").value);
+    var kvlv = document.getElementById("kvlv").value * Math.pow(10,document.getElementById("selectkvlv").value);
+    var kvlrbc = 1.0/(1.0/kvlrb + 1.0/kvlrc);
+    var kvlrbcexp = "R_{BC}=\\frac{1}{\\frac{1}{R_B}+\\frac{1}{R_C}}=\\frac{1}{\\frac{1}{"
+        +writeTriple(kvlrb,"\\Omega")+"}+\\frac{1}{"
+        +writeTriple(kvlrc,"\\Omega")+"}}="
+        +writeTriple(kvlrbc,"\\Omega")+writeEng(kvlrbc,"\\Omega",true,false,false);
+    NewMathAtItem(kvlrbcexp,"resistanceparallel");
+    var kvlrabc = kvlra + kvlrbc;
+    var kvlrabcexp = "R_{ABC}=R_A+R_{BC}="
+        +writeTriple(kvlra,"\\Omega")+"+"+writeTriple(kvlrbc,"\\Omega")+"="
+        +writeTriple(kvlrabc,"\\Omega")+writeEng(kvlrabc,"\\Omega",true,false,false);
+    NewMathAtItem(kvlrabcexp,"resistanceseries");
+    var kvli = kvlv / kvlrabc;
+    var kvliexp = "I_S=\\frac{V_S}{R_{EQ}}=\\frac{"+writeTriple(kvlv,"V")+"}{"+writeTriple(kvlrabc,"\\Omega")+"}="
+        +writeTriple(kvli,"A")+writeEng(kvli,"A",true,false,false);
+    NewMathAtItem(kvliexp,"kvlohms");
+    var kvlib = kvli*kvlrc/(kvlrb+kvlrc);
+    var kvlibexp = "I_B=\\frac{R_C}{R_B+R_C}\\times I_S=\\frac{"
+        +writeTriple(kvlrc,"\\Omega")+"}{"+writeTriple(kvlrb,"\\Omega")+"+"+writeTriple(kvlrc,"\\Omega")+"}\\times"
+        +writeTriple(kvli,"A")+"="+writeTriple(kvlib,"A")+writeEng(kvlib,"A",true,false,false);
+    NewMathAtItem(kvlibexp,"currentdividerb");
+    var kvlic = kvli*kvlrb/(kvlrb+kvlrc);
+    var kvlicexp = "I_C=\\frac{R_B}{R_B+R_C}\\times I_S=\\frac{"
+        +writeTriple(kvlrb,"\\Omega")+"}{"+writeTriple(kvlrb,"\\Omega")+"+"+writeTriple(kvlrc,"\\Omega")+"}\\times"
+        +writeTriple(kvli,"A")+"="+writeTriple(kvlic,"A")+writeEng(kvlic,"A",true,false,false);
+    NewMathAtItem(kvlicexp,"currentdividerc");
+    var kvlvc = kvlic*kvlrc;
+    var kvlvb = kvlib*kvlrb;
+    var kvliverifyb = "V_B=I_B\\times R_B="+writeTriple(kvlib,"A")+"\\times"+writeTriple(kvlrb,"\\Omega")+"="+writeEng(kvlvb,"V",false,true,false);
+    var kvliverifyc = "V_C=I_C\\times R_C="+writeTriple(kvlic,"A")+"\\times"+writeTriple(kvlrc,"\\Omega")+"="+writeEng(kvlvc,"V",false,true,false);
+    NewMathAtItem(kvliverifyb,"currentdividerverifyb");
+    NewMathAtItem(kvliverifyc,"currentdividerverifyc");
+    var kvlvbc = kvlv*kvlrbc/kvlrabc;
+    var kvlvdexp = "V_{BC}=\\frac{R_{BC}}{R_{EQ}}\\times V_{S}=\\frac{"+writeTriple(kvlrbc,"\\Omega")+"}{"+writeTriple(kvlrabc,"\\Omega")+"}\\times"
+        +writeTriple(kvlv,"V")+"="+writeTriple(kvlvbc,"V")+writeEng(kvlvbc,"V",true,false,false);
+    NewMathAtItem(kvlvdexp,"voltagedivider");
+    var kvlva = kvlv - kvlvb;
+    var kvlkvlexp = "V_A=V_S-V_B="+writeTriple(kvlv,"V")+"-"+writeTriple(kvlvb,"V")+"="
+        +writeTriple(kvlva,"V")+writeEng(kvlva,"V",true,false,false);
+    NewMathAtItem(kvlkvlexp,"kvlkvl");
+    var kvlisum = kvlib + kvlic;
+    var kclexp = "I_B+I_C="+writeTriple(kvlib,"A")+"+"+writeTriple(kvlic,"A")+"="+writeTriple(kvlisum,"A")+writeEng(kvlisum,"A",true,false,false);
+    NewMathAtItem(kclexp,"kclkcl");
 }
 
 function ChangedFilter(){
-
-
-    
+    var f0 = GrabNumber("FilterFreq0","FilterFreq0P",true,minnorm,maxnorm);
+    var R = GrabNumber("FilterR","FilterRP",true,minnorm,maxnorm);
+    var L = GrabNumber("FilterL","FilterLP",true,minnorm,maxnorm);
+    var C = GrabNumber("FilterC","FilterCP",true,minnorm,maxnorm);
+    var f1 = GrabNumber("FilterFreq1","FilterFreq1P",true,minnorm,maxnorm);
+    var f2 = GrabNumber("FilterFreq2","FilterFreq2P",true,minnorm,maxnorm);
+    var topo = document.getElementById("Filtertopology").value;
+    var ymin=Math.pow(10,document.getElementById("BodeMinP").value);
+    var ymax=Math.pow(10,document.getElementById("BodeMaxP").value);
+    var Greal, Gimag,denom,helper,omega;
+    var GPolar = new Array(2);
+    var gainexp, gainexpline2;
+    omega = 2*Math.PI*f0;
+    switch(topo){
+        case "SRLC":
+            helper = 1.0-omega*omega*C*L;
+            denom = helper*helper+omega*omega*R*R*C*C;
+            Greal = helper/denom;
+            Gimag = -omega*R*C/denom;
+            GPolar[0] = 1.0/Math.sqrt(denom);
+            GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,helper);
+            gainexp = "Gain=\\frac{Z_C}{Z_R+Z_L+Z_C}=\\frac{1}{(1-\\omega^2CL)+j\\omega RC}"+
+            "=\\frac{(1-\\omega^2CL)-j\\omega RC}{(1-\\omega^2CL)^2+\\omega^2R^2C^2}=";
+            gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{(1-\\omega^2CL)^2+\\omega^2R^2C^2}}";
+        break;
+        case "SRC":
+            gainexp = "Gain=\\frac{Z_C}{Z_C+Z_R}=\\frac{1}{1+\\frac{Z_R}{Z_C}}=\\frac{1}{1+j\\omega RC}=";
+            GPolar[0] = 1.0/Math.sqrt(1+omega*omega*R*R*C*C);
+            GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,1);
+            gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\omega RC)^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{1}{RC}\\rightarrow"+
+            " f_{co}=\\frac{1}{2\\pi RC}="+writeEng(1/(2*Math.PI*R*C),"Hz",false,true);
+        break;
+        case "SCR":
+            gainexp = "Gain=\\frac{Z_R}{Z_R+Z_C}=\\frac{1}{1+\\frac{Z_C}{Z_R}}=\\frac{1}{1-j\\frac{1}{\\omega RC}}=";
+            GPolar[0] = 1.0/Math.sqrt(1+1/(omega*omega*R*R*C*C));
+            GPolar[1] = 180/Math.PI*Math.atan2(-1/(omega*R*C),1);
+            gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+\\frac{1}{(\\omega RC)^2}}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{1}{RC}\\rightarrow"+
+            " f_{co}=\\frac{1}{2\\pi RC}="+writeEng(1/(2*Math.PI*R*C),"Hz",false,true);
+        break;
+        case "SRL":
+            gainexp = "Gain=\\frac{Z_L}{Z_L+Z_R}=\\frac{1}{1+\\frac{Z_R}{Z_L}}=\\frac{1}{1-j\\frac{R}{\\omega L}}=";
+            GPolar[0] = 1.0/Math.sqrt(1+R*R/(omega*omega*L*L));
+            GPolar[1] = 180/Math.PI*Math.atan2(-R/(omega*L),1);
+            gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\frac{R}{\\omega L})^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{R}{L}\\rightarrow"+
+            " f_{co}=\\frac{R}{2\\pi L}="+writeEng(R/(2*Math.PI*L),"Hz",false,true);
+        break;
+        case "SLR":
+            gainexp = "Gain=\\frac{Z_R}{Z_R+Z_L}=\\frac{1}{1+\\frac{Z_L}{Z_R}}=\\frac{1}{1+j\\frac{\\omega L}{R}}=";
+            GPolar[0] = 1.0/Math.sqrt(1+omega*omega*L*L/(R*R));
+            GPolar[1] = 180/Math.PI*Math.atan2(omega*L/R,1);
+            gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\frac{\\omega L}{R})^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{R}{L}\\rightarrow"+
+            " f_{co}=\\frac{R}{2\\pi L}="+writeEng(R/(2*Math.PI*L),"Hz",false,true);
+        break;
+        case "SLC":
+            gainexp = "Gain=\\frac{Z_C}{Z_C+Z_L}=\\frac{1}{1+\\frac{Z_L}{Z_C}}=\\frac{1}{1+j^2\\omega^2 LC}=";
+            GPolar[0] = 1-(omega*omega*L*C);
+            GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
+            GPolar[0] = Math.abs(GPolar[0]);
+            gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\omega^2LC)^2}}";
+        break;
+        case "SCL":
+            gainexp = "Gain=\\frac{Z_L}{Z_L+Z_C}=\\frac{1}{1+\\frac{Z_C}{Z_L}}=\\frac{1}{1+j^2\\frac{1}{\\omega^2 LC}}=";
+            GPolar[0] = 1-1.0/(omega*omega*L*C);
+            GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
+            GPolar[0] = Math.abs(GPolar[0]);
+            gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+\\frac{1}{(\\omega^2LC)^2}}}";
+        break;
+    }
+    if(GPolar[0] >= 0.01){
+        gainexp+=writePolarBasic(GPolar[0],GPolar[1]);
+    }else gainexp+=writePolarEng(GPolar[0],GPolar[1],"",true,false);
+    NewMathAtItem(gainexp,"FilterGain");
+    NewMathAtItem(gainexpline2,"FilterGainFinish");
+    var canvas = document.getElementById("canvasBODE");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    var ctx = canvas.getContext("2d");
+    initPlot(f1,ymin,f2,ymax,canvas.width,canvas.height-30,(f2-f1)/40,(ymax-ymin)/20,true, 100, 30);
+    showGrid(ctx,true,false,true);
+    PlotFrequencyResponse(ctx,R,L,C,topo);
 }
 
 function ChangedIC(){
@@ -195,17 +519,17 @@ function ChangedIC(){
     var ICcap  = GrabNumber("capacitancevalue","capacitancevalueexp",true,minnorm,maxnorm);
     var ICLimp = Math.PI*2*ICfreq*ICind;
     var ICCimp = 1/(Math.PI*2*ICfreq*ICcap);
-    var ICresexp = "Z_R=R="+MakeEngNotation(ICres,"\\Omega",false,true);
+    var ICresexp = "Z_R=R="+writeEng(ICres,"\\Omega",false,true);
     NewMathAtItem(ICresexp,"ICrexp");
     var ICLexppart2 = "";
-    if(ICLimp>=1000) ICLexppart2 = "=j"+MakeEngNotation(ICLimp,"\\Omega");
-    var ICLexp = "Z_L=j\\omega L=j2\\pi f L=j2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICind,"H")+"="+
-        "j"+MakeTripleNotation(ICLimp,"\\Omega")+ICLexppart2;
+    if(ICLimp>=1000) ICLexppart2 = "=j"+writeEng(ICLimp,"\\Omega");
+    var ICLexp = "Z_L=j\\omega L=j2\\pi f L=j2\\pi"+writeTriple(ICfreq,"Hz")+"\\times"+writeTriple(ICind,"H")+"="+
+        "j"+writeTriple(ICLimp,"\\Omega")+ICLexppart2;
     NewMathAtItem(ICLexp,"inductorimpedance");
     var ICCpart2 = "";
-    if(ICCimp>=1000) ICCpart2 = "=-j"+MakeEngNotation(ICCimp,"\\Omega");
-    var ICCexp = "Z_C=\\frac{1}{j\\omega C}=\\frac{-j}{2\\pi fC}=\\frac{-j}{2\\pi"+MakeTripleNotation(ICfreq,"Hz")+"\\times"+MakeTripleNotation(ICcap,"F")+"}="+
-        "-j"+MakeTripleNotation(ICCimp,"\\Omega")+ICCpart2;
+    if(ICCimp>=1000) ICCpart2 = "=-j"+writeEng(ICCimp,"\\Omega");
+    var ICCexp = "Z_C=\\frac{1}{j\\omega C}=\\frac{-j}{2\\pi fC}=\\frac{-j}{2\\pi"+writeTriple(ICfreq,"Hz")+"\\times"+writeTriple(ICcap,"F")+"}="+
+        "-j"+writeTriple(ICCimp,"\\Omega")+ICCpart2;
     NewMathAtItem(ICCexp,"capacitorimpedance");
     var cktchoice = document.getElementById("topology").value;
     var Zeqexp = "Z_{EQ}=";
@@ -222,18 +546,18 @@ function ChangedIC(){
         case "SRLC": 
             Zeqreal = ICres;
             Zeqimag = ICLimp - ICCimp;
-            Zeqexp += "Z_R+Z_L+Z_C="+MakeEngNotation(ICres,"\\Omega",false,true)+"+j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"-j"+
-                MakeEngNotation(ICCimp,"\\Omega",false,true);
+            Zeqexp += "Z_R+Z_L+Z_C="+writeEng(ICres,"\\Omega",false,true)+"+j"+writeEng(ICLimp,"\\Omega",false,true)+"-j"+
+                writeEng(ICCimp,"\\Omega",false,true);
         break;
         case "SRC":
             Zeqreal = ICres;
             Zeqimag = -1*ICCimp;
-            Zeqexp += "Z_R+Z_C="+MakeEngNotation(ICres,"\\Omega",false,true)+"-j"+MakeEngNotation(ICCimp,"\\Omega",false,true);
+            Zeqexp += "Z_R+Z_C="+writeEng(ICres,"\\Omega",false,true)+"-j"+writeEng(ICCimp,"\\Omega",false,true);
         break;
         case "SRL":
             Zeqreal = ICres;
             Zeqimag = ICLimp;
-            Zeqexp += "Z_R+Z_L="+MakeEngNotation(ICres,"\\Omega",false,true)+"+j"+MakeEngNotation(ICLimp,"\\Omega",false,true);
+            Zeqexp += "Z_R+Z_L="+writeEng(ICres,"\\Omega",false,true)+"+j"+writeEng(ICLimp,"\\Omega",false,true);
         break;
         case "SLC": 
             Zeqreal = 0;
@@ -241,7 +565,7 @@ function ChangedIC(){
             Zeqimagabs = Math.abs(Zeqimag);
             if(Zeqimag < 0) Zeqimagsign = "-";
             ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "Z_L+Z_C=j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"-j"+MakeEngNotation(ICCimp,"\\Omega",false,true);
+            Zeqexp += "Z_L+Z_C=j"+writeEng(ICLimp,"\\Omega",false,true)+"-j"+writeEng(ICCimp,"\\Omega",false,true);
         break;
         case "PRLC": 
             var wRLmRwC = Zeqw*ICres*ICind-ICres/(Zeqw*ICcap);
@@ -250,8 +574,8 @@ function ChangedIC(){
             Zeqreal = ICres*ICind*ICind/denom;
             Zeqimag = -1*ICres*ICcap*ICind*wRLmRwC/denom;
             Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_L}+\\frac{1}{Z_C}]^{-1}=[\\frac{1}{R}+\\frac{1}{j\\omega L}+j\\omega C]^{-1}=[\\frac{1}{"
-                +MakeEngNotation(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"}+j("
-                +MakeEngNotation(ICCimp,"\\Omega",false,true)+")]^{-1}";
+                +writeEng(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"+writeEng(ICLimp,"\\Omega",false,true)+"}+j("
+                +writeEng(ICCimp,"\\Omega",false,true)+")]^{-1}";
         break;
         case "PRC":
             var denom = ICres2rec+Zeqw2*ICcap*ICcap;
@@ -260,8 +584,8 @@ function ChangedIC(){
             Zeqimagabs = Math.abs(Zeqimag);
             if(Zeqimag < 0) Zeqimagsign = "-";
             ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_C}]^{-1}=[\\frac{1}{"+MakeEngNotation(ICres,"\\Omega",false,true)+"}-\\frac{1}{j"
-                +MakeEngNotation(ICCimp,"\\Omega",false,true)+"}]^{-1}";
+            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_C}]^{-1}=[\\frac{1}{"+writeEng(ICres,"\\Omega",false,true)+"}-\\frac{1}{j"
+                +writeEng(ICCimp,"\\Omega",false,true)+"}]^{-1}";
         break;
         case "PRL":
             var denom = ICres2+Zeqw2*ICind*ICind;
@@ -270,8 +594,8 @@ function ChangedIC(){
             Zeqimagabs = Math.abs(Zeqimag);
             if(Zeqimag < 0) Zeqimagsign = "-";
             ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_L}]^{-1}=[\\frac{1}{"+MakeEngNotation(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"
-                +MakeEngNotation(ICLimp,"\\Omega",false,true)+"}]^{-1}";
+            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_L}]^{-1}=[\\frac{1}{"+writeEng(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"
+                +writeEng(ICLimp,"\\Omega",false,true)+"}]^{-1}";
         break;
         case "PLC":
             Zeqreal = 0;
@@ -279,21 +603,21 @@ function ChangedIC(){
             Zeqimagabs = Math.abs(Zeqimag);
             if(Zeqimag < 0) Zeqimagsign = "-";
             ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "[\\frac{1}{Z_C}+\\frac{1}{Z_L}]^{-1}=[\\frac{-1}{j"+MakeEngNotation(ICCimp,"\\Omega",false,true)+"}+\\frac{1}{j"
-                +MakeEngNotation(ICLimp,"\\Omega",false,true)+"}]^{-1}";
+            Zeqexp += "[\\frac{1}{Z_C}+\\frac{1}{Z_L}]^{-1}=[\\frac{-1}{j"+writeEng(ICCimp,"\\Omega",false,true)+"}+\\frac{1}{j"
+                +writeEng(ICLimp,"\\Omega",false,true)+"}]^{-1}";
         break;
     }
     ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-    Zeqexp += "="+MakeComplexRectEng(Zeqreal,Zeqimag,"\\Omega")+"="+writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");  
+    Zeqexp += "="+writeComplexRectEng(Zeqreal,Zeqimag,"\\Omega")+"="+writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");  
     NewMathAtItem(Zeqexp,"ICzeq");
 
-    var ICvoltageeqn = "v_s(t)=10cos(360^{\\circ}"+MakeEngNotation(ICfreq,"",false,true,false)+"t+0^{\\circ})V"
+    var ICvoltageeqn = "v_s(t)=10cos(360^{\\circ}"+writeEng(ICfreq,"",false,true,false)+"t+0^{\\circ})V"
         +"\\rightarrow V_S=10\\angle 0^{\\circ}V";
     NewMathAtItem(ICvoltageeqn,"ICvoltageeqn");
     var currentmag = 10.0/ZeqPolar[0];
     var currentphi = -ZeqPolar[1];
     var ICcurrenteqn = "I_S=\\frac{V_S}{Z_{EQ}}=\\frac{10\\angle 0^{\\circ}V}{"+writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega")+"}="
-        +MakeEngNotation(currentmag,"A",false,true,false,true,false)+"\\angle"+currentphi.toFixed(2)+"^{\\circ}"+MakeEngNotation(currentmag,"A",false,true,false,false,true)
+        +writeEng(currentmag,"A",false,true,false,true,false)+"\\angle"+currentphi.toFixed(2)+"^{\\circ}"+writeEng(currentmag,"A",false,true,false,false,true)
         +"\\rightarrow i_s(t)="+writeTimeBasedEng(currentmag,ICfreq,currentphi,"A");
     NewMathAtItem(ICcurrenteqn,"ICcurrenteqn");
     //make the chart
@@ -325,24 +649,15 @@ function ChangedIC(){
         timeexp = document.getElementById("timezoom").value;
     }
     timestep = Math.pow(10,timeexp);
-    console.log("times",ICperiod,timeexp,"step",timestep);
     initPlot(timestep*(-40),vmin,timestep*40,vmax,canvas.width,canvas.height,timestep,1);
     showGrid(ctx,true,true,true);
-    console.log("grid done");
     drawComplexCosine(ctx,10,0,ICfreq,"blue");
-    console.log("blue done");
     drawComplexCosine(ctx,currentmag*vertmultiplier,currentphi,ICfreq,"red");
-    console.log("red done");
     drawLegend(ctx,2,["Voltage","Current"],["blue","red"]);
     drawLabeledPoint(ctx,0,10,"0s,10V",5,0);
-    drawLabeledPoint(ctx,currenttimepk,currentmag*vertmultiplier,MakeEngNotation(currenttimepk,"s",false,true)+","+MakeEngNotation(currentmag,"A",false,true),-100,-20);
-    console.log("drew a point");
+    drawLabeledPoint(ctx,currenttimepk,currentmag*vertmultiplier,writeEng(currenttimepk,"s",false,true)+","+writeEng(currentmag,"A",false,true),-100,-20);
 }
 
-function checkIota(input){
-    if(Math.abs(input) < Math.pow(10,-15)) return 0;
-    return input;
-}
 
 var animationangle=0;
 var animationInterval = null; 
@@ -351,8 +666,6 @@ function ChangedComplex(){
     var cmag   = GrabNumber("complexmag",0,false,0,10);
     var ctheta = GrabNumber("complextheta",0,false,-360,360);
     var cthetar = ctheta * Math.PI / 180.0;
-    console.log("theta:",ctheta);
-    console.log("cos:",Math.cos(ctheta));
     var creal = cmag*Math.cos(cthetar);
     var cimag = cmag*Math.sin(cthetar);
     var canvas = document.getElementById("canvasmagphase");
@@ -366,16 +679,16 @@ function ChangedComplex(){
     drawVector(ctx,creal,cimag);
     var complexsign = "+";
     if(cimag < 0)   complexsign = "-";
-    var phasetorectexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+
-        MakeTripleNotation(cmag)+"cos("+ctheta.toFixed(2)+"^{\\circ})+j"+MakeTripleNotation(cmag)+"sin("+ctheta.toFixed(2)+"^{\\circ})="+writeRectangular(creal,cimag);
+    var phasetorectexp = "Ae^{j\\theta}="+writeTriple(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+
+        writeTriple(cmag)+"cos("+ctheta.toFixed(2)+"^{\\circ})+j"+writeTriple(cmag)+"sin("+ctheta.toFixed(2)+"^{\\circ})="+writeRectangular(creal,cimag);
     NewMathAtItem(phasetorectexp,"phasetorect");
-    var phasorexp = "Ae^{j\\theta}="+MakeTripleNotation(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+writePolar(cmag,ctheta);
+    var phasorexp = "Ae^{j\\theta}="+writeTriple(cmag)+" e^{j "+ctheta.toFixed(2)+"^{\\circ}}"+"="+writePolarBasic(cmag,ctheta);
     NewMathAtItem(phasorexp,"phasorform");
-    var recttomagexp = "A=\\sqrt{Real^2+Imag^2}=\\sqrt{{"+MakeTripleNotation(creal)+"}^2+{"+MakeTripleNotation(cimag)+"}^2}="+MakeTripleNotation(cmag);
+    var recttomagexp = "A=\\sqrt{Real^2+Imag^2}=\\sqrt{{"+writeTriple(creal)+"}^2+{"+writeTriple(cimag)+"}^2}="+writeTriple(cmag);
     NewMathAtItem(recttomagexp,"recttomagnitude");
     var atanarg = cimag/creal;
     var atanphi = Math.atan(atanarg)*180/Math.PI;
-    var recttophaseexp = "\\phi=tan^{-1}(\\frac{"+MakeTripleNotation(cimag)+"}{"+MakeTripleNotation(creal)+"})=tan^{-1}("+MakeTripleNotation(atanarg)+")={"
+    var recttophaseexp = "\\phi=tan^{-1}(\\frac{"+writeTriple(cimag)+"}{"+writeTriple(creal)+"})=tan^{-1}("+writeTriple(atanarg)+")={"
         +atanphi.toFixed(2)+"}^{\\circ}\\text{ when }Real\\geq 0";
     NewMathAtItem(recttophaseexp,"recttophase");
     if(creal < 0){
@@ -401,15 +714,16 @@ function ChangedComplex(){
     var summag = Math.sqrt(sumreal*sumreal+sumimag*sumimag);
     var sumphi = Math.atan2(sumimag,sumreal);
     var sumphideg = sumphi*180/Math.PI;
-    var complexadd1exp = "v_{s1}(t)="+MakeTripleNotation(vm1)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi1)+"}^{\\circ})V="+writePolar(vm1,phi1)+"V";
+    var complexadd1exp = "v_{s1}(t)="+writeTimeBasedEng(vm1,100,phi1,"V")+"\\rightarrow V_{S1}="+writePolarEng(vm1,phi1,"V");
     NewMathAtItem(complexadd1exp,"complexaddend1");
-    var complexadd2exp = "v_{s2}(t)="+MakeTripleNotation(vm2)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(phi2)+"}^{\\circ})V="+writePolar(vm2,phi2)+"V";
+    var complexadd2exp = "v_{s2}(t)="+writeTimeBasedEng(vm2,100,phi2,"V")+"\\rightarrow V_{S2}="+writePolarEng(vm2,phi2,"V");
     NewMathAtItem(complexadd2exp,"complexaddend2");
-    var complexadditionexp = writePolar(vm1,phi1)+"V+"+writePolar(vm2,phi2)+"V=["+writeRectangular(add1real,add1imag)+"+"
+    var complexadditionexp = writePolarEng(vm1,phi1,"V")+"+"+writePolarEng(vm2,phi2,"V")+"=["+writeRectangular(add1real,add1imag)+"]+["
         +writeRectangular(add2real,add2imag)+"]V=["+writeRectangular(sumreal,sumimag)+"]V";
     NewMathAtItem(complexadditionexp,"complexaddition");
-    var complexresultexp = "["+writeRectangular(sumreal,sumimag)+"]V="+writePolar(summag,sumphideg)+"V\\rightarrow v_{sum}(t)="+
-        MakeTripleNotation(summag)+"cos(360^{\\circ}100t+{"+MakeTripleNotation(sumphideg)+"}^{\\circ})V";
+
+    var complexresultexp = writeComplexRectEng(sumreal,sumimag,"V")+"="+writePolarEng(summag,sumphideg,"V")+"\\rightarrow v_{sum}(t)="+
+        writeTimeBasedEng(summag,100,sumphideg,"V");
     NewMathAtItem(complexresultexp,"complexresult");
     
     canvas = document.getElementById("canvasaddvoltage");
@@ -466,33 +780,331 @@ function animatecomplex(){
     animationInterval = setInterval(animatecomplexOnce, 10);
 }
 
-function writeRectangular(r,i){
-    var complexsign = "+";
-    if(i < 0)   complexsign = "-";
-    var prefix = "";
-    var suffix = "";
-    if(i >= 1000 || i <= -1000){
-        prefix = "(";
-        suffix = ")";
+function ChangedAC(){
+    var acperiod = GrabNumber("ACperiod","selectACperiod",true,minnorm,maxnorm);
+    var acfreq   = 1/acperiod;
+    var acperiodexp = "f=\\frac{1}{T}=\\frac{1}{"+writeTriple(acperiod,"s")+"}="+writeTriple(acfreq,"Hz")+writeEng(acfreq,"Hz",true,false,false);
+    NewMathAtItem(acperiodexp,"periodfrequency");
+    var acvmax = GrabNumber("ACVmax","selectACVmax",true,-maxnorm,maxnorm);
+    var acvmin = GrabNumber("ACVmin","selectACVmin",true,-maxnorm,maxnorm);
+    var acphi =  GrabNumber("ACphi","none",false,-360,360);
+    var rmsr = GrabNumber("rmsresistance","selectrmsr",true,minnorm,maxnorm);
+    var acvm = (acvmax - acvmin)/2.0;
+    var acvb = (acvmax + acvmin)/2.0;
+    var acvrms = Math.sqrt(acvb*acvb+acvm*acvm/2);
+    var acirms = acvrms / rmsr;
+    var acpave = acvrms*acirms; 
+    var acim = acvm / rmsr;
+    var acib = acvb / rmsr;
+    var acpavevi = acvb*acib+0.5*acvm*acim;
+    var includepar1 = "";
+    var includepar2 = "";
+    if(acvmin < 0){
+        includepar1 = "(";
+        includepar2 = ")";
     }
-    return MakeTripleNotation(r)+complexsign+"j"+prefix+MakeTripleNotation(i)+suffix;
+    var acvbexp, acvmexp, acrmsexp, acrmsiexp, acvexp,aciexp,acpaveexp,acderive;
+    if(acvmax > acvmin){
+        DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq,rmsr);
+        acvmexp = "V_m=\\frac{V_{Max}-V_{Min}}{2}=\\frac{"+writeTriple(acvmax,"V")+"-"+includepar1+writeTriple(acvmin,"V")+includepar2+"}{2}="
+            +writeTriple(acvm,"V")+writeEng(acvm,"V",true,false,false);
+        acvbexp = "V_B=\\frac{V_{Max}+V_{Min}}{2}=\\frac{"+writeTriple(acvmax,"V")+"+"+includepar1+writeTriple(acvmin,"V")+includepar2+"}{2}="
+            +writeTriple(acvb,"V")+writeEng(acvb,"V",true,false,false);
+        acvexp = "v_s(t)=";
+        aciexp = "i_s(t)=\\frac{v_s(t)}{R_{EQ}}=";
+        acrmsexp = "V_{S,RMS}=\\sqrt{V_B^2+\\frac{V_m^2}{2}}=";
+        acrmsiexp= "I_{S,RMS}=\\sqrt{I_B^2+\\frac{I_m^2}{2}}=";
+        acpaveexp = "P_{AVE}=I_{RMS}V_{RMS}="+writeTriple(acvrms,"V_{RMS}")+"\\times "+writeTriple(acirms,"A_{RMS}")
+            +"="+writeTriple(acpave,"W")+writeEng(acpave,"W",true,false,false);
+        acderive = "=";
+        if(acvb == 0){
+            acrmsexp += "\\frac{V_m}{\\sqrt{2}}=\\frac{"+writeTriple(acvm,"V")+"}{\\sqrt{2}}=";
+            acrmsiexp+= "\\frac{I_m}{\\sqrt{2}}=\\frac{"+writeTriple(acim,"A")+"}{\\sqrt{2}}=";
+        }
+        else{
+            acvexp += writeEng(acvb,"V",false,true,false)+"+";
+            aciexp += writeEng(acib,"A",false,true,false)+"+";
+            acrmsexp += "\\sqrt{("+writeTriple(acvb,"V")+")^2+\\frac{("+writeTriple(acvm,"V")+")^2}{2}}=";
+            acrmsiexp+= "\\sqrt{("+writeTriple(acib,"A")+")^2+\\frac{("+writeTriple(acim,"A")+")^2}{2}}=";
+            acderive += writeTriple(acvb,"V")+"\\times"+writeTriple(acib,"A")+"+";
+        }
+        acvexp += writeEng(acvm,"V",false,true,false,true,false)+"cos(360^\\circ\\times "+writeEng(acfreq,"Hz",false,true,false)+"\\times t+"
+            +writeTriple(acphi,"^\\circ",false,true,false)+")"+writeEng(acvm,"V",false,true,false,false,true);
+        aciexp += writeEng(acim,"A",false,true,false,true,false)+"cos(360^\\circ\\times "+writeEng(acfreq,"Hz",false,true,false)+"\\times t+"
+            +writeTriple(acphi,"^\\circ",false,true,false)+")"+writeEng(acim,"A",false,true,false,false,true);
+        acrmsexp += writeTriple(acvrms,"V_{RMS}")+writeEng(acvrms,"V_{RMS}",true,false,false);
+        acrmsiexp+= writeTriple(acirms,"A_{RMS}")+writeEng(acirms,"A_{RMS}",true,false,false);
+        acderive += "\\frac{" +writeTriple(acvm,"V")+"\\times"+writeTriple(acim,"A")+"}{2}="
+            +writeTriple(acpavevi,"W")+writeEng(acpavevi,"W",true,false,false);
+    }
+    else{
+        var acerror = "\\text {Error: } V_{Max}\\ngtr V_{Min}";
+        acvbexp = acerror;
+        acvmexp = acerror;
+        acrmsexp = acerror;
+        acrmsiexp= acerror;
+        acvexp = acerror;
+        aciexp = acerror;
+        acpaveexp = acerror;
+        acderive = acerror;
+    }
+    var acohmsexp = "I_{S,RMS}=\\frac{V_{S,RMS}}{R_{EQ}}=\\frac{"+writeTriple(acvrms,"V_{RMS}")+"}{"+writeTriple(rmsr,"\\Omega")+"}="
+        +writeTriple(acirms,"A_{RMS}")+writeEng(acirms,"A_{RMS}",true,false,false);
+    NewMathAtItem(acvmexp,"vmderived");
+    NewMathAtItem(acvbexp,"vbderived");
+    NewMathAtItem(acrmsexp,"acrms");
+    NewMathAtItem(acrmsiexp,"acirms");
+    NewMathAtItem(acohmsexp,"acohms");
+    NewMathAtItem(acvexp, "acveqn");
+    NewMathAtItem(aciexp, "acieqn");
+    NewMathAtItem(acpaveexp,"acpave");
+    NewMathAtItem(acderive,"acderive")
 }
 
-function writePolar(cmag,ctheta){
-    return MakeTripleNotation(cmag)+"\\angle{"+MakeTripleNotation(ctheta)+"}^{\\circ}";
-}
-function writePolarEng(cmag,ctheta,units){
-    var firstpart = MakeEngNotation(cmag,units,false,true,false,true,false);
-    return firstpart+"\\angle{"+ctheta.toFixed(2)+"}^{\\circ}"+MakeEngNotation(cmag,"\\Omega",false,true,false,false,true);
+function ChangedRadar(){
+    EnforceNumericalHTML("radarpt",minnorm,maxnorm);
+    var pt = document.getElementById("radarpt").value * Math.pow(10,document.getElementById("radarptexp").value);
+    EnforceNumericalHTML("radargain",mingain,maxgain);
+    var gr = parseFloat(document.getElementById("radargain").value);
+    var gsquaredtext = gr.toString()+"^2";
+    EnforceNumericalHTML("radarrcs",minRCS,maxRCS);
+    var rcs = parseFloat(document.getElementById("radarrcs").value);
+    EnforceNumericalHTML("radarfreq",minnorm,maxnorm);
+    var freq = document.getElementById("radarfreq").value * Math.pow(10,document.getElementById("radarfreqexp").value);
+    EnforceNumericalHTML("radarrange",mindist,maxdist);
+    var range = document.getElementById("radarrange").value * Math.pow(10,document.getElementById("radarrangeexp").value);
+    var lambda = SOL/freq;
+    var pr = pt*gr*gr*rcs*lambda*lambda/(FOURPICUBE*range*range*range*range);
+    var radarexpression = "P_R=P_T G^2 RCS \\frac{\\lambda^2}{(4\\pi)^3 R^4}="+writeTriple(pt,"W")+"\\times "+
+                            gsquaredtext+"\\times "+writeTriple(rcs,"m^2 ")+ "\\frac{("+writeTriple(lambda,"m")+")^2}{(4\\pi)^3("+
+                            writeTriple(range,"m")+")^4}="+writeTriple(pr,"W")+writeEng(pr,"W",true,false);
+    NewMathAtItem(radarexpression,"radarpreqn");
+    EnforceNumericalHTML("radarprmin",minnorm,maxnorm);
+    var prminradar = parseFloat(document.getElementById("radarprmin").value) * Math.pow(10,document.getElementById("radarprminexp").value);
+    var radarrmax = Math.sqrt(Math.sqrt(pt/prminradar*gr*gr*rcs*lambda*lambda/FOURPICUBE));
+    var radarrmaxexpression = "R_{Radar}=R_{Max}=\\sqrt[4]{\\frac{P_T}{P_R}G^2 RCS \\frac{\\lambda^2}{(4\\pi)^3}}=\\sqrt[4]{\\frac{"+
+                                writeTriple(pt,"W")+"}{"+writeTriple(prminradar,"W")+"}"+gsquaredtext+"\\times "+writeTriple(rcs,"m^2 ")+
+                                "\\frac{("+writeTriple(lambda,"m")+")^2}{(4\\pi)^3}}="+writeTriple(radarrmax,"m")+writeEng(radarrmax,"m",true,false);
+    NewMathAtItem(radarrmaxexpression,"radarrmaxeqn");
+    EnforceNumericalHTML("radarPRF",minnorm,maxnorm);
+    var prf = parseFloat(document.getElementById("radarPRF").value)*Math.pow(10,document.getElementById("radarPRFexp").value);
+    var pri = 1/prf;
+    var rumax = 0.5*SOL*pri;
+    var rumaxexpression = "R_U=\\frac{c}{2\\times PRF}=\\frac{3\\times 10^8 m/s}{2 \\times"+writeTriple(prf,"Hz")+"}="+writeTriple(rumax,"m")+writeEng(rumax,"m",true,false);
+    NewMathAtItem(rumaxexpression,"radarrueqn");
+    EnforceNumericalHTML("radarpw",minnorm,maxnorm);
+    var pw = parseFloat(document.getElementById("radarpw").value)*Math.pow(10,document.getElementById("radarpwexp").value);
+    var deltar = 0.5*SOL*pw;
+    var deltarexpression = "\\Delta R=\\frac{c \\tau}{2}=\\frac{3\\times 10^8 m/s\\times"+writeTriple(pw,"s")+"}{2}="+writeTriple(deltar,"m")+writeEng(deltar,"m",true,false);
+    NewMathAtItem(deltarexpression,"radarresolutioneqn");
+    var grwr = GrabNumber("rwrgain","null",false,mingain,maxgain);
+    var rwrprmin = GrabNumber("rwrprmin","rwrprminexp",true,minnorm,maxnorm);
+    var rwrrange = lambda/(FOURPI)*Math.sqrt(pt/rwrprmin*grwr*gr);
+    var rwrrangeexpression = "R_{RWR}=R_{Max}=\\frac{\\lambda}{4\\pi}\\sqrt{\\frac{P_T}{P_R}G_T G_R}=\\frac{"+writeTriple(lambda,"m")+"}{4\\pi}\\sqrt{\\frac{"+writeTriple(pt,"W")+"}{"+
+                                writeTriple(rwrprmin,"W")+"}"+gr.toString()+"\\times "+grwr.toString()+"}="+writeTriple(rwrrange,"m")+writeEng(rwrrange,"m",true,false);
+    NewMathAtItem(rwrrangeexpression,"radarrwreqn");
+    var rheight = GrabNumber("radarheight","null",false,minvertical,maxvertical);
+    var theight = GrabNumber("targetheight","null",false,minvertical,maxvertical);
+    var rlos = 1610*(Math.sqrt(2*rheight)+Math.sqrt(2*theight));
+    var lospart1 = Math.sqrt(rheight*2);
+    var lospart2 = Math.sqrt(theight*2);
+    var rloseqn = "R_{LOS}=\\sqrt{2 h_1}+\\sqrt{2 h_2}=\\sqrt{2\\times "+rheight.toString()+"}+\\sqrt{2\\times "+theight.toString()+"}=("+lospart1.toPrecision(4)+"mi+"+lospart2.toPrecision(4)+"mi)"+
+                "\\times 1.61\\frac{km}{mi}="+writeEng(rlos,"m",false,true);
+    NewMathAtItem(rloseqn,"radarloseqn");
+    //now conclude with a message about the winner: 
+    //\[ Max\begin{cases} Min(R_{LOS},R_{RWR}) \\ Min(R_{LOS},R_{Radar}) \end{cases}  \]
+    //var minmaxmsg = " Max\\begin{cases} Min(R_{LOS},R_{RWR}) \\\\ Min(R_{LOS},R_{Radar}) \\end{cases}  ";
+
+    var bestradar = Math.min(rlos,radarrmax);
+    var bestrwr = Math.min(rlos,rwrrange);
+    var bestoverall = Math.max(bestradar,bestrwr);
+
+    var minmaxmsg = "Max\\begin{cases} Radar= & Min("+writeEng(rlos,"m")+","+writeEng(radarrmax,"m")+") \\\\ RWR= & Min("+
+                     writeEng(rlos,"m")+","+writeEng(rwrrange,"m")+")\\end{cases}\\Rightarrow "+
+                     "Max\\begin{cases} Radar= & "+writeEng(bestradar,"m")+"\\\\"+
+                                       "RWR=   & "+writeEng(bestrwr,"m")+"\\end{cases}\\Rightarrow "+
+                     writeEng(bestoverall,"m");
+    NewMathAtItem(minmaxmsg,"minmaxmessage");
+
+    var finalmsg ="<u>The following conclusions are true for this particular RADAR and Target: </u><br>";
+    var b_loslimitsradar = false;
+    if(rlos < radarrmax) b_loslimitsradar = true;
+    var b_loslimitsrwr = false;
+    if(rlos < rwrrange) b_loslimitsrwr = true;
+    var b_tied = false;
+    if(b_loslimitsradar == true && b_loslimitsrwr == true) b_tied = true;
+    var b_ambiguous = false;
+    if(rumax < bestradar) b_ambiguous = true;
+    var b_radarwins = false;
+    if(b_tied == false && bestradar > bestrwr) b_radarwins = true;
+
+    //Tired of coming up with a dynamic paragraph? Me too.
+    finalmsg += "<b>R<sub>RADAR</sub> = "+writeEng(radarrmax,"m",false,true)+"</b> ";
+    if(b_loslimitsradar) finalmsg += "is limited by ";
+    else finalmsg += "is not limited by ";
+    finalmsg += "<b>R<sub>LOS</sub>="+writeEng(rlos,"m")+"</b>, so the RADAR can detect these targets out to a distance of <b>R<sub>Radar-Detection</sub>="+writeEng(bestradar,"m",false,true)+".</b><br>";
+    if(b_ambiguous) finalmsg += "However targets beyond its Maximum Unambiguous Range <b>R<sub>U</sub>="+writeEng(rumax,"m",false,true)+"</b> will be ambiguously shown at incorrect ranges.<br>";
+    else finalmsg += "Its range does not extend beyond its Maximum Unabmiguous Range <b>R<sub>U</sub>="+writeEng(rumax,"m",false,true)+"</b>, so all detectable targets will be shown at the correct range.<br>";
+    finalmsg += "The Target's RWR Range <b>R<sub>RWR</sub>="+writeEng(rwrrange,"m",false,true)+"</b> ";
+    if(b_loslimitsrwr) finalmsg += "is limited by ";
+    else finalmsg += "is not limited by ";
+    finalmsg += "<b>R<sub>LOS</sub>="+writeEng(rlos,"m",false,true)+"</b>, so the RWR can detect this kind of RADAR out to a distance of <b>R<sub>RWR-Detection</sub>="+writeEng(bestrwr,"m",false,true)+".</b><br>";
+    if(b_tied) finalmsg += "Since both systems are limited by LOS there is a <b>TIE</b>";
+    else{
+        if(bestradar == bestrwr) finalmsg += "Coincidentally, both systems have equal detection ranges and there is a <b>TIE</b>";
+        else if(bestradar > bestrwr){
+            if(b_ambiguous) finalmsg += "Despite the presence of ambiguous returns, the <b>RADAR</b> system will detect the aircraft first.";
+            else finalmsg += "The <b>RADAR</b> system will detect the aircraft first, and it will do so unambiguously";
+        }
+        else{
+            finalmsg += "The <b>RWR</b> will detect the RADAR first.";
+        }
+    }
+    document.getElementById("winnermessage").innerHTML = finalmsg;
+    //"RADAR detections occurs at up to <b>"+MakeEngNotation(bestradar,"m")+"</b>. The clear-sky 
 }
 
-function writeTimeBasedEng(mag,freq,phase,units){
-    var phasesign;
-    var phaseabs = Math.abs(phase);
-    if(phase>=0) phasesign = "+";
-    else phasesign = "-";
-    return MakeEngNotation(mag,units,false,true,false,true,false)+"cos(360^{\\circ}"+MakeEngNotation(freq,"",false,true,false,true,true)+"t"+
-        phasesign+phaseabs.toFixed(2)+"^{\\circ})"+MakeEngNotation(mag,units,false,true,false,false,true);
+function ChangedDoppler(){
+    var rttt = GrabNumber("radartime","radartimeexp",true,minnorm,maxnorm);
+    var rangetotarget = 0.5*SOL*rttt;
+    var radardistanceexp = "R=\\frac{c t}{2}=\\frac{3\\times10^8m/s\\times"+writeTriple(rttt,"s")
+                            +"}{2}="+writeTriple(rangetotarget,"m")+
+                            writeEng(rangetotarget,"m",true,false);
+    NewMathAtItem(radardistanceexp,"radartimedistanceeqn");
+
+    var onewaytraveltime = GrabNumber("radiotime","radiotimeexp",true,minnorm,maxnorm);
+    var onewayrange = SOL*onewaytraveltime;
+    var radiotimedistanceeqn = "R=c t=3\\times10^8m/s\\times"+writeTriple(onewaytraveltime,"s")
+                            +"="+writeTriple(onewayrange,"m")+
+                            writeEng(onewayrange,"m",true,false);
+    NewMathAtItem(radiotimedistanceeqn,"radiotimedistanceeqn");
+
+    var fzero = GrabNumber("radarFzero","radarFzeroexp",true,minnorm,maxnorm);
+    var velocity = GrabNumber("radarvelocity","",false,-SOL,SOL);
+    var dopplerangle = GrabNumber("radarangle","",false,minangle,maxangle);
+    var angleinrads = dopplerangle*PI/180;
+    var tofrom = parseFloat(document.getElementById("radartowards").value);
+    var tofromtext = "+";
+    if(tofrom < 0) tofromtext = "-";
+    var freturn = fzero*(1+tofrom*2*velocity*Math.cos(angleinrads)/SOL);
+    var fshift = freturn - fzero;
+    var freturnexpression = "f_{R}=f_0[1\\pm\\frac{2v\\times cos(\\theta)}{c}]="+writeTriple(fzero,"Hz")+
+        "[1"+tofromtext+"\\frac{2\\times"+writeTriple(velocity,"m/s")+"\\times cos("+dopplerangle.toString()+
+        "^\\circ)}{3\\times10^8m/s}="+writeTriple(freturn,"Hz",true)+writeEng(freturn,"Hz",true,false,true);
+    NewMathAtItem(freturnexpression,"radarreturnfrequency");
+    var returnshift = "\\Delta f=f_R-f_0="+writeTriple(fshift,"Hz")+writeEng(fshift,"Hz",true,false);
+    NewMathAtItem(returnshift,"radarreturnshift");
+
+    var fshiftgiven = GrabNumber("radarShift","radarShiftexp",true,-maxnorm,maxnorm);
+    var compvelocity = SOL/2*fshiftgiven/(fzero*Math.cos(angleinrads));
+    var velocityexpression = "v=\\frac{c(f_R-f_0)}{2f_0cos(\\theta)}="+"\\frac{c\\times\\Delta f}{2f_0cos(\\theta)}="+
+                "\\frac{3\\times10^8m/s\\times"+writeTriple(fshiftgiven,"Hz")+
+                "}{2\\times"+writeTriple(fzero,"Hz")+"\\times cos("+dopplerangle.toString()+"^\\circ)}="+
+                writeTriple(compvelocity,"m/s");
+    NewMathAtItem(velocityexpression,"radarcomputevelocity");
+}
+
+/**********************************DRAWING ON CANVAS***************************************************************/
+var plotxstart, plotxend;
+var plotystart, plotyend;
+var plotxspan, plotyspan;
+var plotxfirst, plotyfirst;
+var plotpixw, plotpixh;
+var plotxgridstep; //logical size, not pixel size
+var plotygridstep;
+var plotxzero; //pixel location of x=0
+var plotyzero;
+var plotgridstep, plotxpixgridstep, plotypixgridstep;
+var plotctx;
+var plotxfact, plotyfact;
+var plotxpixelstep, plotypixelstep;
+var plotislog;
+var plotxlogleft;
+var plotylogtop;
+var plotxdecades;
+var plotydecades;
+var plotxpixperdecade;
+var plotypixperdecade;
+var plotxoffset, plotyoffset;
+function initPlot(xmin,ymin,xmax,ymax,pixelwidth,pixelheight,xgridstep,ygridstep,logged=false,xoffset,yoffset){
+    //grids will get stretched unless you make the spans squared' up
+    plotxoffset = xoffset;
+    plotyoffset = yoffset;
+    if(xgridstep <= 0) plotxgridstep = 1;
+    if(ygridstep <= 0) plotygridstep = 1;
+    if(xmax <= xmin || xmin == 0 || xmax == 0) return;
+    if(ymax <= ymin || ymin == 0 || ymax == 0) return;
+    plotxstart = xmin; //translates to pixel 0
+    plotystart = ymin;
+    plotxend = xmax;
+    plotyend = ymax;
+    plotxspan = xmax-xmin;
+    plotyspan = ymax-ymin;
+    plotpixw = pixelwidth;
+    plotpixh = pixelheight;
+    plotxfact = pixelwidth/plotxspan;
+    plotyfact = pixelheight/plotyspan;
+    plotxgridstep = xgridstep;
+    plotygridstep = ygridstep;
+    plotxpixgridstep = pixelwidth/((xmax-xmin)/xgridstep)
+    plotypixgridstep = pixelheight/((ymax-ymin)/ygridstep)
+    plotxzero = (-xmin)/(xmax-xmin)*pixelwidth;
+    plotyzero = (-ymin)/(ymax-ymin)*pixelheight;
+    plotxfirst = Math.round(plotxstart/plotxgridstep)*plotxgridstep;
+    plotyfirst = Math.round(plotystart/plotygridstep)*plotygridstep;
+    plotxpixelstep = (xmax-xmin)/pixelwidth;
+    plotypixelstep = (ymax-ymin)/pixelheight;
+    plotislog = logged;
+    if(plotislog){
+        plotxdecades = Math.log10(xmax/xmin);
+        plotydecades = Math.log10(ymax/ymin);
+        plotxpixperdecade = plotpixw/plotxdecades;
+        plotypixperdecade = plotpixh/plotydecades;
+        plotxlogleft = Math.log10(xmin);
+        plotylogtop  = Math.log10(ymax);
+        plotxpixelstep = Math.pow(10,1/(plotxpixperdecade)); //use as a multiplier not an adder
+        //then grid lines will be placed on decades (x10) change which are evenly spaced
+    }
+}
+
+function PlotFrequencyResponse(ctx, R, L, C, topo){
+    var omega, mag, phase, denom, helper, x, y, px, py, xstep;
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "black";
+    for(x = plotxstart; x <= plotxend; x*= plotxpixelstep){
+        omega = 2*Math.PI*x;
+        switch(topo){
+            case "SRLC":
+                helper = 1.0-omega*omega*C*L;
+                denom = helper*helper+omega*omega*R*R*C*C;
+                y = 1.0/Math.sqrt(denom);
+            break;
+            case "SRC":
+                y = 1.0/Math.sqrt(1+omega*omega*R*R*C*C);
+            break;
+            case "SCR":
+                y = 1.0/Math.sqrt(1+1/(omega*omega*R*R*C*C));
+            break;
+            case "SRL":
+                y = 1.0/Math.sqrt(1+R*R/(omega*omega*L*L));
+            break;
+            case "SLR":
+                y = 1.0/Math.sqrt(1+(omega*omega*L*L)/(R*R));
+            break;
+            case "SLC":
+                y = Math.abs(1.0/(1-omega*omega*L*C));
+            break;
+            case "SCL":
+                y =  Math.abs(1.0/(1-1/(omega*omega*L*C)));
+            break;
+        }
+        px = plotxoffset+(Math.log10(x)-plotxlogleft)*plotxpixperdecade;
+        py = (plotylogtop-Math.log10(y))*plotypixperdecade;
+        ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    ctx.closePath();
 }
 
 function drawVector(ctx,r,i,x=0,y=0,color="red"){
@@ -547,22 +1159,32 @@ function drawLabeledPoint(ctx,xpos,ypos,labeltext,xoffset,yoffset){
 function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
     //initPlot has to have been already done
     ctx.fillStyle="#77dddd";
-    ctx.fillRect(0,0,plotpixw,plotpixh);
+    ctx.fillRect(plotxoffset,0,plotpixw,plotpixh);
+    var px, py, x, y;
     if(gridsquares){
         ctx.beginPath();
         ctx.lineWidth = 1;
         ctx.strokeStyle = "gray";
         //start at the first xgridstep value above xstart. e.g. -4.5 start at -4. round up to next value by finding: xstart/xgridstep = 4
-        var px;
-        console.log("first",plotxfirst,"end",plotxend,"gridstep",plotxgridstep,"start",plotxstart,"factor",plotxfact)
-        for(var x = plotxfirst; x <= plotxend; x+= plotxgridstep){
-            px = (x-plotxstart)*plotxfact;
-            ctx.moveTo(px,0);   ctx.lineTo(px,plotpixh);
+        if(plotislog){
+            for(x = plotxstart; x <= plotxend; x*= 10){
+                px = plotxoffset + (Math.log10(x)-Math.log10(plotxstart))*plotxpixperdecade;
+                ctx.moveTo(px,0);   ctx.lineTo(px,plotpixh);
+            }
+            for(y = plotystart; y <= plotyend; y*= 10){
+                py = (plotpixh-(Math.log10(y)-Math.log10(plotystart))*plotypixperdecade);
+                ctx.moveTo(plotxoffset,py);   ctx.lineTo(plotpixw,py);
+            }
         }
-        var py;
-        for(var y = plotyfirst; y <= plotyend; y+= plotygridstep){
-            py = (y-plotystart)*plotyfact;
-            ctx.moveTo(0,py);   ctx.lineTo(plotpixw,py);
+        else{
+            for(x = plotxfirst; x <= plotxend; x+= plotxgridstep){
+                px = (x-plotxstart)*plotxfact;
+                ctx.moveTo(px,0);   ctx.lineTo(px,plotpixh);
+            }
+            for(y = plotyfirst; y <= plotyend; y+= plotygridstep){
+                py = (y-plotystart)*plotyfact;
+                ctx.moveTo(0,py);   ctx.lineTo(plotpixw,py);
+            }
         }
         ctx.stroke();
         ctx.closePath();
@@ -578,77 +1200,6 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
     } 
 }
 
-function ChangedDC(){
-    EnforceNumericalHTML("virvoltage",minnorm,maxnorm);
-    var virv = document.getElementById("virvoltage").value * Math.pow(10,document.getElementById("selectvvir").value);
-    EnforceNumericalHTML("virresistance",minnorm,maxnorm);
-    var virr = document.getElementById("virresistance").value * Math.pow(10,document.getElementById("selectrvir").value);
-    var viri = virv/virr;
-    var virexpression = "I=\\frac{V}{R}=\\frac{"+MakeTripleNotation(virv,"V")+"}{"+
-                        MakeTripleNotation(virr,"\\Omega")+"}="+MakeTripleNotation(viri,"A")+MakeEngNotation(viri,"A",true,false,false);
-    NewMathAtItem(virexpression,"virequation");
-
-    EnforceNumericalHTML("pvivoltage",minnorm,maxnorm);
-    var pviv = document.getElementById("pvivoltage").value * Math.pow(10,document.getElementById("selectvpvi").value);
-    EnforceNumericalHTML("pvicurrent",minnorm,maxnorm);
-    var pvii = document.getElementById("pvicurrent").value * Math.pow(10,document.getElementById("selectipvi").value);
-    var pvip = pviv*pvii;
-    var pviexpression = "P=V \\times I="+MakeTripleNotation(pviv,"V")+"\\times"+
-                        MakeTripleNotation(pvii,"A")+"="+MakeTripleNotation(pvip,"W")+MakeEngNotation(pvip,"W",true,false,false);
-    NewMathAtItem(pviexpression,"pviequation");
-
-    EnforceNumericalHTML("kvlra",minnorm,maxnorm);
-    EnforceNumericalHTML("kvlrb",minnorm,maxnorm);
-    EnforceNumericalHTML("kvlrc",minnorm,maxnorm);
-    EnforceNumericalHTML("kvlv",minnorm,maxnorm);
-    var kvlra = document.getElementById("kvlra").value * Math.pow(10,document.getElementById("selectkvlra").value);
-    var kvlrb = document.getElementById("kvlrb").value * Math.pow(10,document.getElementById("selectkvlrb").value);
-    var kvlrc = document.getElementById("kvlrc").value * Math.pow(10,document.getElementById("selectkvlrc").value);
-    var kvlv = document.getElementById("kvlv").value * Math.pow(10,document.getElementById("selectkvlv").value);
-    var kvlrbc = 1.0/(1.0/kvlrb + 1.0/kvlrc);
-    var kvlrbcexp = "R_{BC}=\\frac{1}{\\frac{1}{R_B}+\\frac{1}{R_C}}=\\frac{1}{\\frac{1}{"
-        +MakeTripleNotation(kvlrb,"\\Omega")+"}+\\frac{1}{"
-        +MakeTripleNotation(kvlrc,"\\Omega")+"}}="
-        +MakeTripleNotation(kvlrbc,"\\Omega")+MakeEngNotation(kvlrbc,"\\Omega",true,false,false);
-    NewMathAtItem(kvlrbcexp,"resistanceparallel");
-    var kvlrabc = kvlra + kvlrbc;
-    var kvlrabcexp = "R_{ABC}=R_A+R_{BC}="
-        +MakeTripleNotation(kvlra,"\\Omega")+"+"+MakeTripleNotation(kvlrbc,"\\Omega")+"="
-        +MakeTripleNotation(kvlrabc,"\\Omega")+MakeEngNotation(kvlrabc,"\\Omega",true,false,false);
-    NewMathAtItem(kvlrabcexp,"resistanceseries");
-    var kvli = kvlv / kvlrabc;
-    var kvliexp = "I_S=\\frac{V_S}{R_{EQ}}=\\frac{"+MakeTripleNotation(kvlv,"V")+"}{"+MakeTripleNotation(kvlrabc,"\\Omega")+"}="
-        +MakeTripleNotation(kvli,"A")+MakeEngNotation(kvli,"A",true,false,false);
-    NewMathAtItem(kvliexp,"kvlohms");
-    var kvlib = kvli*kvlrc/(kvlrb+kvlrc);
-    var kvlibexp = "I_B=\\frac{R_C}{R_B+R_C}\\times I_S=\\frac{"
-        +MakeTripleNotation(kvlrc,"\\Omega")+"}{"+MakeTripleNotation(kvlrb,"\\Omega")+"+"+MakeTripleNotation(kvlrc,"\\Omega")+"}\\times"
-        +MakeTripleNotation(kvli,"A")+"="+MakeTripleNotation(kvlib,"A")+MakeEngNotation(kvlib,"A",true,false,false);
-    NewMathAtItem(kvlibexp,"currentdividerb");
-    var kvlic = kvli*kvlrb/(kvlrb+kvlrc);
-    var kvlicexp = "I_C=\\frac{R_B}{R_B+R_C}\\times I_S=\\frac{"
-        +MakeTripleNotation(kvlrb,"\\Omega")+"}{"+MakeTripleNotation(kvlrb,"\\Omega")+"+"+MakeTripleNotation(kvlrc,"\\Omega")+"}\\times"
-        +MakeTripleNotation(kvli,"A")+"="+MakeTripleNotation(kvlic,"A")+MakeEngNotation(kvlic,"A",true,false,false);
-    NewMathAtItem(kvlicexp,"currentdividerc");
-    var kvlvc = kvlic*kvlrc;
-    var kvlvb = kvlib*kvlrb;
-    var kvliverifyb = "V_B=I_B\\times R_B="+MakeTripleNotation(kvlib,"A")+"\\times"+MakeTripleNotation(kvlrb,"\\Omega")+"="+MakeEngNotation(kvlvb,"V",false,true,false);
-    var kvliverifyc = "V_C=I_C\\times R_C="+MakeTripleNotation(kvlic,"A")+"\\times"+MakeTripleNotation(kvlrc,"\\Omega")+"="+MakeEngNotation(kvlvc,"V",false,true,false);
-    NewMathAtItem(kvliverifyb,"currentdividerverifyb");
-    NewMathAtItem(kvliverifyc,"currentdividerverifyc");
-    var kvlvbc = kvlv*kvlrbc/kvlrabc;
-    var kvlvdexp = "V_{BC}=\\frac{R_{BC}}{R_{EQ}}\\times V_{S}=\\frac{"+MakeTripleNotation(kvlrbc,"\\Omega")+"}{"+MakeTripleNotation(kvlrabc,"\\Omega")+"}\\times"
-        +MakeTripleNotation(kvlv,"V")+"="+MakeTripleNotation(kvlvbc,"V")+MakeEngNotation(kvlvbc,"V",true,false,false);
-    NewMathAtItem(kvlvdexp,"voltagedivider");
-    var kvlva = kvlv - kvlvb;
-    var kvlkvlexp = "V_A=V_S-V_B="+MakeTripleNotation(kvlv,"V")+"-"+MakeTripleNotation(kvlvb,"V")+"="
-        +MakeTripleNotation(kvlva,"V")+MakeEngNotation(kvlva,"V",true,false,false);
-    NewMathAtItem(kvlkvlexp,"kvlkvl");
-    var kvlisum = kvlib + kvlic;
-    var kclexp = "I_B+I_C="+MakeTripleNotation(kvlib,"A")+"+"+MakeTripleNotation(kvlic,"A")+"="+MakeTripleNotation(kvlisum,"A")+MakeEngNotation(kvlisum,"A",true,false,false);
-    NewMathAtItem(kclexp,"kclkcl");
-}
-//******************************************* DRAW COSINE ***************************************************************/
 function showAxes(ctx,axes) {
     var x0=axes.x0, w=ctx.canvas.width;
     var y0=axes.y0, h=ctx.canvas.height;
@@ -695,7 +1246,6 @@ function DrawLabeledLine(ctx,pixel,textvalue,horizontal=true){
 }
 function VoltageToPixel(voltage,Kvalue,Bvalue){
     var result= voltage*Kvalue+Bvalue;
-    console.log("voltagetopixel",voltage,result);
     return result;
 }
 function DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq, rmsr){
@@ -759,292 +1309,15 @@ function DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq, rmsr){
     }
     ctx.stroke();
     ctxp.stroke();
-    DrawLabeledLine(ctx,VoltageToPixel(acvmax,canvasK,canvasB),MakeEngNotation(acvmax,"V",false,true,false));
-    DrawLabeledLine(ctx,VoltageToPixel(acvmin,canvasK,canvasB),MakeEngNotation(acvmin,"V",false,true,false));
-    DrawLabeledLine(ctx,VoltageToPixel(acvrms,canvasK,canvasB),MakeEngNotation(acvrms,"Vrms",false,true,false));
+    DrawLabeledLine(ctx,VoltageToPixel(acvmax,canvasK,canvasB),writeEng(acvmax,"V",false,true,false));
+    DrawLabeledLine(ctx,VoltageToPixel(acvmin,canvasK,canvasB),writeEng(acvmin,"V",false,true,false));
+    DrawLabeledLine(ctx,VoltageToPixel(acvrms,canvasK,canvasB),writeEng(acvrms,"Vrms",false,true,false));
     DrawLabeledLine(ctx,(-actau)*timeK+timeB,acphi+"\u00B0",false);
-    DrawLabeledLine(ctxp,powermax*pcanK+pcanB,"P_max="+MakeEngNotation(powermax,"W",false,true,false));
-    DrawLabeledLine(ctxp,powerave*pcanK+pcanB,"P_ave="+MakeEngNotation(powerave,"W",false,true,false));
-    console.log("end AC");
-}
-function ChangedAC(){
-    var acperiod = GrabNumber("ACperiod","selectACperiod",true,minnorm,maxnorm);
-    var acfreq   = 1/acperiod;
-    var acperiodexp = "f=\\frac{1}{T}=\\frac{1}{"+MakeTripleNotation(acperiod,"s")+"}="+MakeTripleNotation(acfreq,"Hz")+MakeEngNotation(acfreq,"Hz",true,false,false);
-    NewMathAtItem(acperiodexp,"periodfrequency");
-    var acvmax = GrabNumber("ACVmax","selectACVmax",true,-maxnorm,maxnorm);
-    var acvmin = GrabNumber("ACVmin","selectACVmin",true,-maxnorm,maxnorm);
-    var acphi =  GrabNumber("ACphi","none",false,-360,360);
-    var rmsr = GrabNumber("rmsresistance","selectrmsr",true,minnorm,maxnorm);
-    var acvm = (acvmax - acvmin)/2.0;
-    var acvb = (acvmax + acvmin)/2.0;
-    var acvrms = Math.sqrt(acvb*acvb+acvm*acvm/2);
-    var acirms = acvrms / rmsr;
-    var acpave = acvrms*acirms; 
-    var acim = acvm / rmsr;
-    var acib = acvb / rmsr;
-    var acpavevi = acvb*acib+0.5*acvm*acim;
-    var includepar1 = "";
-    var includepar2 = "";
-    if(acvmin < 0){
-        includepar1 = "(";
-        includepar2 = ")";
-    }
-    var acvbexp, acvmexp, acrmsexp, acrmsiexp, acvexp,aciexp,acpaveexp,acderive;
-    if(acvmax > acvmin){
-        DrawCosine(acvmax,acvmin,acphi,acperiod,acfreq,rmsr);
-        acvmexp = "V_m=\\frac{V_{Max}-V_{Min}}{2}=\\frac{"+MakeTripleNotation(acvmax,"V")+"-"+includepar1+MakeTripleNotation(acvmin,"V")+includepar2+"}{2}="
-            +MakeTripleNotation(acvm,"V")+MakeEngNotation(acvm,"V",true,false,false);
-        acvbexp = "V_B=\\frac{V_{Max}+V_{Min}}{2}=\\frac{"+MakeTripleNotation(acvmax,"V")+"+"+includepar1+MakeTripleNotation(acvmin,"V")+includepar2+"}{2}="
-            +MakeTripleNotation(acvb,"V")+MakeEngNotation(acvb,"V",true,false,false);
-        acvexp = "v_s(t)=";
-        aciexp = "i_s(t)=\\frac{v_s(t)}{R_{EQ}}=";
-        acrmsexp = "V_{S,RMS}=\\sqrt{V_B^2+\\frac{V_m^2}{2}}=";
-        acrmsiexp= "I_{S,RMS}=\\sqrt{I_B^2+\\frac{I_m^2}{2}}=";
-        acpaveexp = "P_{AVE}=I_{RMS}V_{RMS}="+MakeTripleNotation(acvrms,"V_{RMS}")+"\\times "+MakeTripleNotation(acirms,"A_{RMS}")
-            +"="+MakeTripleNotation(acpave,"W")+MakeEngNotation(acpave,"W",true,false,false);
-        acderive = "=";
-        if(acvb == 0){
-            acrmsexp += "\\frac{V_m}{\\sqrt{2}}=\\frac{"+MakeTripleNotation(acvm,"V")+"}{\\sqrt{2}}=";
-            acrmsiexp+= "\\frac{I_m}{\\sqrt{2}}=\\frac{"+MakeTripleNotation(acim,"A")+"}{\\sqrt{2}}=";
-        }
-        else{
-            acvexp += MakeEngNotation(acvb,"V",false,true,false)+"+";
-            aciexp += MakeEngNotation(acib,"A",false,true,false)+"+";
-            acrmsexp += "\\sqrt{("+MakeTripleNotation(acvb,"V")+")^2+\\frac{("+MakeTripleNotation(acvm,"V")+")^2}{2}}=";
-            acrmsiexp+= "\\sqrt{("+MakeTripleNotation(acib,"A")+")^2+\\frac{("+MakeTripleNotation(acim,"A")+")^2}{2}}=";
-            acderive += MakeTripleNotation(acvb,"V")+"\\times"+MakeTripleNotation(acib,"A")+"+";
-        }
-        acvexp += MakeEngNotation(acvm,"V",false,true,false,true,false)+"cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
-            +MakeTripleNotation(acphi,"^\\circ",false,true,false)+")"+MakeEngNotation(acvm,"V",false,true,false,false,true);
-        aciexp += MakeEngNotation(acim,"A",false,true,false,true,false)+"cos(360^\\circ\\times "+MakeEngNotation(acfreq,"Hz",false,true,false)+"\\times t+"
-            +MakeTripleNotation(acphi,"^\\circ",false,true,false)+")"+MakeEngNotation(acim,"A",false,true,false,false,true);
-        acrmsexp += MakeTripleNotation(acvrms,"V_{RMS}")+MakeEngNotation(acvrms,"V_{RMS}",true,false,false);
-        acrmsiexp+= MakeTripleNotation(acirms,"A_{RMS}")+MakeEngNotation(acirms,"A_{RMS}",true,false,false);
-        acderive += "\\frac{" +MakeTripleNotation(acvm,"V")+"\\times"+MakeTripleNotation(acim,"A")+"}{2}="
-            +MakeTripleNotation(acpavevi,"W")+MakeEngNotation(acpavevi,"W",true,false,false);
-    }
-    else{
-        var acerror = "\\text {Error: } V_{Max}\\ngtr V_{Min}";
-        acvbexp = acerror;
-        acvmexp = acerror;
-        acrmsexp = acerror;
-        acrmsiexp= acerror;
-        acvexp = acerror;
-        aciexp = acerror;
-        acpaveexp = acerror;
-        acderive = acerror;
-    }
-    var acohmsexp = "I_{S,RMS}=\\frac{V_{S,RMS}}{R_{EQ}}=\\frac{"+MakeTripleNotation(acvrms,"V_{RMS}")+"}{"+MakeTripleNotation(rmsr,"\\Omega")+"}="
-        +MakeTripleNotation(acirms,"A_{RMS}")+MakeEngNotation(acirms,"A_{RMS}",true,false,false);
-    NewMathAtItem(acvmexp,"vmderived");
-    NewMathAtItem(acvbexp,"vbderived");
-    NewMathAtItem(acrmsexp,"acrms");
-    NewMathAtItem(acrmsiexp,"acirms");
-    NewMathAtItem(acohmsexp,"acohms");
-    NewMathAtItem(acvexp, "acveqn");
-    NewMathAtItem(aciexp, "acieqn");
-    NewMathAtItem(acpaveexp,"acpave");
-    NewMathAtItem(acderive,"acderive")
+    DrawLabeledLine(ctxp,powermax*pcanK+pcanB,"P_max="+writeEng(powermax,"W",false,true,false));
+    DrawLabeledLine(ctxp,powerave*pcanK+pcanB,"P_ave="+writeEng(powerave,"W",false,true,false));
 }
 
-function ChangedRadar(){
-    EnforceNumericalHTML("radarpt",minnorm,maxnorm);
-    var pt = document.getElementById("radarpt").value * Math.pow(10,document.getElementById("radarptexp").value);
-    EnforceNumericalHTML("radargain",mingain,maxgain);
-    var gr = parseFloat(document.getElementById("radargain").value);
-    var gsquaredtext = gr.toString()+"^2";
-    EnforceNumericalHTML("radarrcs",minRCS,maxRCS);
-    var rcs = parseFloat(document.getElementById("radarrcs").value);
-    EnforceNumericalHTML("radarfreq",minnorm,maxnorm);
-    var freq = document.getElementById("radarfreq").value * Math.pow(10,document.getElementById("radarfreqexp").value);
-    EnforceNumericalHTML("radarrange",mindist,maxdist);
-    var range = document.getElementById("radarrange").value * Math.pow(10,document.getElementById("radarrangeexp").value);
-    var lambda = SOL/freq;
-    var pr = pt*gr*gr*rcs*lambda*lambda/(FOURPICUBE*range*range*range*range);
-    var radarexpression = "P_R=P_T G^2 RCS \\frac{\\lambda^2}{(4\\pi)^3 R^4}="+MakeTripleNotation(pt,"W")+"\\times "+
-                            gsquaredtext+"\\times "+MakeTripleNotation(rcs,"m^2 ")+ "\\frac{("+MakeTripleNotation(lambda,"m")+")^2}{(4\\pi)^3("+
-                            MakeTripleNotation(range,"m")+")^4}="+MakeTripleNotation(pr,"W")+MakeEngNotation(pr,"W",true,false);
-    NewMathAtItem(radarexpression,"radarpreqn");
-    EnforceNumericalHTML("radarprmin",minnorm,maxnorm);
-    var prminradar = parseFloat(document.getElementById("radarprmin").value) * Math.pow(10,document.getElementById("radarprminexp").value);
-    console.log(prminradar);
-    var radarrmax = Math.sqrt(Math.sqrt(pt/prminradar*gr*gr*rcs*lambda*lambda/FOURPICUBE));
-    console.log(radarrmax);
-    var radarrmaxexpression = "R_{Radar}=R_{Max}=\\sqrt[4]{\\frac{P_T}{P_R}G^2 RCS \\frac{\\lambda^2}{(4\\pi)^3}}=\\sqrt[4]{\\frac{"+
-                                MakeTripleNotation(pt,"W")+"}{"+MakeTripleNotation(prminradar,"W")+"}"+gsquaredtext+"\\times "+MakeTripleNotation(rcs,"m^2 ")+
-                                "\\frac{("+MakeTripleNotation(lambda,"m")+")^2}{(4\\pi)^3}}="+MakeTripleNotation(radarrmax,"m")+MakeEngNotation(radarrmax,"m",true,false);
-    NewMathAtItem(radarrmaxexpression,"radarrmaxeqn");
-    EnforceNumericalHTML("radarPRF",minnorm,maxnorm);
-    var prf = parseFloat(document.getElementById("radarPRF").value)*Math.pow(10,document.getElementById("radarPRFexp").value);
-    var pri = 1/prf;
-    var rumax = 0.5*SOL*pri;
-    var rumaxexpression = "R_U=\\frac{c}{2\\times PRF}=\\frac{3\\times 10^8 m/s}{2 \\times"+MakeTripleNotation(prf,"Hz")+"}="+MakeTripleNotation(rumax,"m")+MakeEngNotation(rumax,"m",true,false);
-    NewMathAtItem(rumaxexpression,"radarrueqn");
-    EnforceNumericalHTML("radarpw",minnorm,maxnorm);
-    var pw = parseFloat(document.getElementById("radarpw").value)*Math.pow(10,document.getElementById("radarpwexp").value);
-    var deltar = 0.5*SOL*pw;
-    var deltarexpression = "\\Delta R=\\frac{c \\tau}{2}=\\frac{3\\times 10^8 m/s\\times"+MakeTripleNotation(pw,"s")+"}{2}="+MakeTripleNotation(deltar,"m")+MakeEngNotation(deltar,"m",true,false);
-    NewMathAtItem(deltarexpression,"radarresolutioneqn");
-    var grwr = GrabNumber("rwrgain","null",false,mingain,maxgain);
-    var rwrprmin = GrabNumber("rwrprmin","rwrprminexp",true,minnorm,maxnorm);
-    var rwrrange = lambda/(FOURPI)*Math.sqrt(pt/rwrprmin*grwr*gr);
-    var rwrrangeexpression = "R_{RWR}=R_{Max}=\\frac{\\lambda}{4\\pi}\\sqrt{\\frac{P_T}{P_R}G_T G_R}=\\frac{"+MakeTripleNotation(lambda,"m")+"}{4\\pi}\\sqrt{\\frac{"+MakeTripleNotation(pt,"W")+"}{"+
-                                MakeTripleNotation(rwrprmin,"W")+"}"+gr.toString()+"\\times "+grwr.toString()+"}="+MakeTripleNotation(rwrrange,"m")+MakeEngNotation(rwrrange,"m",true,false);
-    NewMathAtItem(rwrrangeexpression,"radarrwreqn");
-    var rheight = GrabNumber("radarheight","null",false,minvertical,maxvertical);
-    var theight = GrabNumber("targetheight","null",false,minvertical,maxvertical);
-    var rlos = 1610*(Math.sqrt(2*rheight)+Math.sqrt(2*theight));
-    var lospart1 = Math.sqrt(rheight*2);
-    var lospart2 = Math.sqrt(theight*2);
-    var rloseqn = "R_{LOS}=\\sqrt{2 h_1}+\\sqrt{2 h_2}=\\sqrt{2\\times "+rheight.toString()+"}+\\sqrt{2\\times "+theight.toString()+"}=("+lospart1.toPrecision(4)+"mi+"+lospart2.toPrecision(4)+"mi)"+
-                "\\times 1.61\\frac{km}{mi}="+MakeEngNotation(rlos,"m",false,true);
-    NewMathAtItem(rloseqn,"radarloseqn");
-    //now conclude with a message about the winner: 
-    //\[ Max\begin{cases} Min(R_{LOS},R_{RWR}) \\ Min(R_{LOS},R_{Radar}) \end{cases}  \]
-    //var minmaxmsg = " Max\\begin{cases} Min(R_{LOS},R_{RWR}) \\\\ Min(R_{LOS},R_{Radar}) \\end{cases}  ";
 
-    var bestradar = Math.min(rlos,radarrmax);
-    var bestrwr = Math.min(rlos,rwrrange);
-    var bestoverall = Math.max(bestradar,bestrwr);
-
-    var minmaxmsg = "Max\\begin{cases} Radar= & Min("+MakeEngNotation(rlos,"m")+","+MakeEngNotation(radarrmax,"m")+") \\\\ RWR= & Min("+
-                     MakeEngNotation(rlos,"m")+","+MakeEngNotation(rwrrange,"m")+")\\end{cases}\\Rightarrow "+
-                     "Max\\begin{cases} Radar= & "+MakeEngNotation(bestradar,"m")+"\\\\"+
-                                       "RWR=   & "+MakeEngNotation(bestrwr,"m")+"\\end{cases}\\Rightarrow "+
-                     MakeEngNotation(bestoverall,"m");
-    NewMathAtItem(minmaxmsg,"minmaxmessage");
-
-    var finalmsg ="<u>The following conclusions are true for this particular RADAR and Target: </u><br>";
-    var b_loslimitsradar = false;
-    if(rlos < radarrmax) b_loslimitsradar = true;
-    var b_loslimitsrwr = false;
-    if(rlos < rwrrange) b_loslimitsrwr = true;
-    var b_tied = false;
-    if(b_loslimitsradar == true && b_loslimitsrwr == true) b_tied = true;
-    var b_ambiguous = false;
-    if(rumax < bestradar) b_ambiguous = true;
-    var b_radarwins = false;
-    if(b_tied == false && bestradar > bestrwr) b_radarwins = true;
-
-    //Tired of coming up with a dynamic paragraph? Me too.
-    finalmsg += "<b>R<sub>RADAR</sub> = "+MakeEngNotation(radarrmax,"m",false,true)+"</b> ";
-    if(b_loslimitsradar) finalmsg += "is limited by ";
-    else finalmsg += "is not limited by ";
-    finalmsg += "<b>R<sub>LOS</sub>="+MakeEngNotation(rlos,"m")+"</b>, so the RADAR can detect these targets out to a distance of <b>R<sub>Radar-Detection</sub>="+MakeEngNotation(bestradar,"m",false,true)+".</b><br>";
-    if(b_ambiguous) finalmsg += "However targets beyond its Maximum Unambiguous Range <b>R<sub>U</sub>="+MakeEngNotation(rumax,"m",false,true)+"</b> will be ambiguously shown at incorrect ranges.<br>";
-    else finalmsg += "Its range does not extend beyond its Maximum Unabmiguous Range <b>R<sub>U</sub>="+MakeEngNotation(rumax,"m",false,true)+"</b>, so all detectable targets will be shown at the correct range.<br>";
-    finalmsg += "The Target's RWR Range <b>R<sub>RWR</sub>="+MakeEngNotation(rwrrange,"m",false,true)+"</b> ";
-    if(b_loslimitsrwr) finalmsg += "is limited by ";
-    else finalmsg += "is not limited by ";
-    finalmsg += "<b>R<sub>LOS</sub>="+MakeEngNotation(rlos,"m",false,true)+"</b>, so the RWR can detect this kind of RADAR out to a distance of <b>R<sub>RWR-Detection</sub>="+MakeEngNotation(bestrwr,"m",false,true)+".</b><br>";
-    if(b_tied) finalmsg += "Since both systems are limited by LOS there is a <b>TIE</b>";
-    else{
-        if(bestradar == bestrwr) finalmsg += "Coincidentally, both systems have equal detection ranges and there is a <b>TIE</b>";
-        else if(bestradar > bestrwr){
-            if(b_ambiguous) finalmsg += "Despite the presence of ambiguous returns, the <b>RADAR</b> system will detect the aircraft first.";
-            else finalmsg += "The <b>RADAR</b> system will detect the aircraft first, and it will do so unambiguously";
-        }
-        else{
-            finalmsg += "The <b>RWR</b> will detect the RADAR first.";
-        }
-    }
-    document.getElementById("winnermessage").innerHTML = finalmsg;
-    //"RADAR detections occurs at up to <b>"+MakeEngNotation(bestradar,"m")+"</b>. The clear-sky 
-}
-function ChangedDoppler(){
-    var rttt = GrabNumber("radartime","radartimeexp",true,minnorm,maxnorm);
-    var rangetotarget = 0.5*SOL*rttt;
-    var radardistanceexp = "R=\\frac{c t}{2}=\\frac{3\\times10^8m/s\\times"+MakeTripleNotation(rttt,"s")
-                            +"}{2}="+MakeTripleNotation(rangetotarget,"m")+
-                            MakeEngNotation(rangetotarget,"m",true,false);
-    NewMathAtItem(radardistanceexp,"radartimedistanceeqn");
-
-    var onewaytraveltime = GrabNumber("radiotime","radiotimeexp",true,minnorm,maxnorm);
-    var onewayrange = SOL*onewaytraveltime;
-    var radiotimedistanceeqn = "R=c t=3\\times10^8m/s\\times"+MakeTripleNotation(onewaytraveltime,"s")
-                            +"="+MakeTripleNotation(onewayrange,"m")+
-                            MakeEngNotation(onewayrange,"m",true,false);
-    NewMathAtItem(radiotimedistanceeqn,"radiotimedistanceeqn");
-
-    var fzero = GrabNumber("radarFzero","radarFzeroexp",true,minnorm,maxnorm);
-    var velocity = GrabNumber("radarvelocity","",false,-SOL,SOL);
-    var dopplerangle = GrabNumber("radarangle","",false,minangle,maxangle);
-    var angleinrads = dopplerangle*PI/180;
-    var tofrom = parseFloat(document.getElementById("radartowards").value);
-    var tofromtext = "+";
-    if(tofrom < 0) tofromtext = "-";
-    console.log(velocity);
-    console.log(Math.cos(angleinrads));
-    var freturn = fzero*(1+tofrom*2*velocity*Math.cos(angleinrads)/SOL);
-    var fshift = freturn - fzero;
-    var freturnexpression = "f_{R}=f_0[1\\pm\\frac{2v\\times cos(\\theta)}{c}]="+MakeTripleNotation(fzero,"Hz")+
-        "[1"+tofromtext+"\\frac{2\\times"+MakeTripleNotation(velocity,"m/s")+"\\times cos("+dopplerangle.toString()+
-        "^\\circ)}{3\\times10^8m/s}="+MakeTripleNotation(freturn,"Hz",true)+MakeEngNotation(freturn,"Hz",true,false,true);
-    NewMathAtItem(freturnexpression,"radarreturnfrequency");
-    console.log("frequency output");
-    var returnshift = "\\Delta f=f_R-f_0="+MakeTripleNotation(fshift,"Hz")+MakeEngNotation(fshift,"Hz",true,false);
-    NewMathAtItem(returnshift,"radarreturnshift");
-
-    var fshiftgiven = GrabNumber("radarShift","radarShiftexp",true,-maxnorm,maxnorm);
-    var compvelocity = SOL/2*fshiftgiven/(fzero*Math.cos(angleinrads));
-    var velocityexpression = "v=\\frac{c(f_R-f_0)}{2f_0cos(\\theta)}="+"\\frac{c\\times\\Delta f}{2f_0cos(\\theta)}="+
-                "\\frac{3\\times10^8m/s\\times"+MakeTripleNotation(fshiftgiven,"Hz")+
-                "}{2\\times"+MakeTripleNotation(fzero,"Hz")+"\\times cos("+dopplerangle.toString()+"^\\circ)}="+
-                MakeTripleNotation(compvelocity,"m/s");
-    NewMathAtItem(velocityexpression,"radarcomputevelocity");
-}
-function NewMathAtItem(mathexpression, htmlitem){
-    var input = mathexpression;
-    var output = document.getElementById(htmlitem);
-    output.innerHTML = '';
-    MathJax.texReset();
-    var options = MathJax.getMetricsFor(output);
-    //options.display = display.checked;
-    MathJax.tex2chtmlPromise(input, options).then(function (node) {
-      //
-      //  The promise returns the typeset node, which we add to the output
-      //  Then update the document to include the adjusted CSS for the
-      //    content of the new equation.
-      //
-      output.appendChild(node);
-      MathJax.startup.document.clear();
-      MathJax.startup.document.updateDocument();
-    }).catch(function (err) {
-      //
-      //  If there was an error, put the message into the output instead
-      //
-      output.appendChild(document.createElement('pre')).appendChild(document.createTextNode(err.message));
-    }).then(function () {
-      //
-      //  Error or not, re-enable the display and render buttons
-      //
-      //button.disabled = display.disabled = false;
-    });
-}
-//generic, enforce numerical entries
-function EnforceNumericalHTML(entryitem, min, max){
-    var current = document.getElementById(entryitem).value;
-    if(isNaN(current)) current = 0;
-    if(current < min) current = min;
-    if(current > max) current = max;
-    document.getElementById(entryitem).value = current;
-}
-//generic, ChangedInput (go through all)
-function SetLengthHTML(length, arghtml, exphtml){
-    if(length > 1000){
-        document.getElementById(exphtml).value="3";
-        document.getElementById(arghtml).value = length/1000.0;
-    }
-    else if(length > 1){
-        document.getElementById(exphtml).value="0";
-        document.getElementById(arghtml).value = length;
-    }
-    else{
-        document.getElementById(exphtml).value="-3";
-        document.getElementById(arghtml).value = length*1000.0;
-    }
-}
 function getBaseLog(x, y) {
     return Math.log(y) / Math.log(x);
   }
@@ -1066,8 +1339,8 @@ function ChangedComm(){
     var newexp = document.getElementById("commfreqexp").value;
     freq = newarg * Math.pow(10,newexp);
     wavelength = SOL/freq;
-    var ff = MakeEngNotation(freq,"Hz",false,true);
-    var ww = MakeEngNotation(wavelength, "m",false,true);
+    var ff = writeEng(freq,"Hz",false,true);
+    var ww = writeEng(wavelength, "m",false,true);
     var wavelengthexpression = "\\lambda=\\frac{c}{f}=\\frac{3 \\times 10^8 m/s}{"+ff+"}="+ww;
     NewMathAtItem(wavelengthexpression,"lambdaeqn");
 
@@ -1170,14 +1443,14 @@ function ChangedComm(){
     EnforceNumericalHTML("powertransmitted",minnorm,maxnorm);
     friis_p_t = document.getElementById("powertransmitted").value * Math.pow(10,document.getElementById("powertransmittedexp").value);
     var pt, gt, gr, rr, ll,pr,prneat;
-    pt = MakeTripleNotation(friis_p_t,"W");
-    gt = MakeTripleNotation(gain_tx);
-    gr = MakeTripleNotation(gain_rx);
-    ll = MakeTripleNotation(wavelength,"m");
-    rr = MakeTripleNotation(friis_range,"m");
+    pt = writeTriple(friis_p_t,"W");
+    gt = writeTriple(gain_tx);
+    gr = writeTriple(gain_rx);
+    ll = writeTriple(wavelength,"m");
+    rr = writeTriple(friis_range,"m");
     friis_p_r = friis_p_t*gain_tx*gain_rx*wavelength*wavelength/(FOURPI*FOURPI*friis_range*friis_range);
-    pr = MakeTripleNotation(friis_p_r,"W");
-    prneat = MakeEngNotation(friis_p_r,"W",false,true);
+    pr = writeTriple(friis_p_r,"W");
+    prneat = writeEng(friis_p_r,"W",false,true);
     var friisexpression = "P_R=P_T G_T G_R {\\lambda^2 \\over (4 \\pi R)^2}="
                            +pt+"\\times "+gt+"\\times "+gr+"\\frac{("+ll+")^2}{(4\\pi \\times "+rr+")^2}="
                            +pr+"="+prneat;
@@ -1186,10 +1459,10 @@ function ChangedComm(){
     //5. Compute R_max
     EnforceNumericalHTML("prminvalue",minnorm,maxnorm);
     friis_p_r_min = document.getElementById("prminvalue").value * Math.pow(10,document.getElementById("prminexp").value);
-    var prmin = MakeTripleNotation(friis_p_r_min,"W");
+    var prmin = writeTriple(friis_p_r_min,"W");
     friis_r_max = wavelength/(FOURPI)*Math.sqrt(friis_p_t/friis_p_r_min*gain_tx*gain_rx);
-    var rmaxtriple = MakeTripleNotation(friis_r_max,"m");
-    var rmaxeng = MakeEngNotation(friis_r_max,"m",true,false);
+    var rmaxtriple = writeTriple(friis_r_max,"m");
+    var rmaxeng = writeEng(friis_r_max,"m",true,false);
     var rmaxexpression = "R_{Friis}=R_{Max}={\\lambda \\over 4 \\pi}\\sqrt{{P_T \\over P_{Rmin}}G_T G_R}="+
                          "\\frac{"+ll+"}{4\\pi}\\sqrt{\\frac{"+pt+"}{"+prmin+"}"+gt+"\\times "+gr+"}="+
                          rmaxtriple+rmaxeng;
@@ -1231,8 +1504,8 @@ function ChangedComm(){
     //7. Determine at what range communication is possible for the two heights and the Pt/Pr_min scenario
     comm_range_viable = Math.min(los_total, friis_r_max);
     var commexpression = "R_{Comm}=Min(R_{LOS},R_{Friis})=";
-    var los_total_text = MakeEngNotation(los_total,"m");
-    var friis_range_text = MakeEngNotation(friis_r_max,"m");
+    var los_total_text = writeEng(los_total,"m");
+    var friis_range_text = writeEng(friis_r_max,"m");
     if(los_total < friis_r_max){
         commexpression += los_total_text;
     }
@@ -1246,122 +1519,7 @@ function ChangedComm(){
     UpdateCanvas(); //go to the drawing function
 
 }
-function MakeTripleNotation(value,units="",makedoppler=false){
-    if(value == 0) return "0"+units;
-    var putinnegativesign = "";
-    var absvalue = Math.abs(value);
-    if(value < 0){
-        putinnegativesign = "-"; 
-    }
-    //console.log(absvalue,putinnegativesign);
-    var exp = Math.log(absvalue) / Math.log(10);
-    var precision = 4;
-    if(makedoppler == true) precision = exp + 1;
-    var triplets = Math.round(exp/3.0-0.5);
-    var t_exp = 3*triplets;
-    var argument = absvalue / Math.pow(10,t_exp);
-    var argstring = argument.toPrecision(precision);
-    argument = parseFloat(argstring);
-    //then check if argument is 1000 due to some precision in the log and rounding
-    if(argument >= 1000){
-        t_exp += 3;
-        argument = absvalue / Math.pow(10,t_exp);
-        argstring = argument.toPrecision(precision);
-    }
-    else if(argument < 1){
-        t_exp -= 3;
-        argument = absvalue / Math.pow(10,t_exp);
-        argstring = argument.toPrecision(precision);
-    }
-    if(t_exp == 0){
-        return putinnegativesign+argstring+units;
-    }
-    else{
-        return putinnegativesign+argstring+"\\times "+"10^{"+t_exp+"}"+units;
-    }
-}
 
-const IOTA = Math.pow(10,-24);
-
-function MakeComplexRectEng(real,imag,units){
-    var sign = "+";
-    var realabs = Math.abs(real);
-    var imagabs = Math.abs(imag);
-    if (imag < 0)
-        sign = "-";
-    if (realabs < IOTA){
-        if(imagabs < IOTA){
-            return "0"+units;
-        }
-        else{
-            if (imag > 0) sign = "";
-            return sign+"j"+MakeEngNotation(imagabs,units,false,true);
-        }
-    }
-    if(imagabs < IOTA){
-        return MakeEngNotation(real,units,false,true);
-    }
-    return "["+MakeEngNotation(real,"",false,true)+sign+"j"+MakeEngNotation(imagabs,"",false,true)+"]"+units;
-}
-
-function MakeEngNotation(value, units, prependequals = false, forceoutput = false, dopplerfreq = false, outputnumber = true, outputunits = true){
-    var absvalue = Math.abs(value);
-    var sign = "";
-    if(value < 0) sign = "-";
-    var exp = 0;
-    if(value != 0)
-        exp = Math.log(absvalue) / Math.log(10);
-    var triplets = Math.round(exp/3.0-0.5);
-    var t_exp = 3*triplets;
-    var prefix = " ";
-    var precision = 4; //if going to millions of meters, increase precision to keep digits from turning into sci notation
-    switch(t_exp){
-        case -24:   prefix = "y";   break;
-        case -21:   prefix = "z";   break;
-        case -18:   prefix = "a";   break;
-        case -15:   prefix = "f";   break;
-        case -12:   prefix = "p";   break;
-        case -9:    prefix = "n";   break;
-        case -6:    prefix = "\\mu ";   break; //debugging micro? make sure to have a space after as in "\\mu " not "\\mu"
-        case -3:    prefix = "m";   break;
-        case 0:     prefix = " ";   break;
-        case 3:     prefix = "k";   break;
-        case 6:     prefix = "M";   break;
-        case 9:     prefix = "G";   break;
-        case 12:    prefix = "T";   break;
-        case 15:    prefix = "P";   break;
-        case 18:    prefix = "E";   break;
-        case 21:    prefix = "Z";   break;
-        case 24:    prefix = "Y";   break;
-        default: prefix = "?"; break;
-    }
-    if(units == "m"){ //don't go above km for distances
-        if(t_exp >= 3){
-            t_exp = 3;
-            prefix = "k";
-            precision = exp;
-        }
-    }
-    if(t_exp == 0 && forceoutput == false){
-        return "";
-    }
-    if(dopplerfreq == true){
-        precision = exp + 2;
-    }
-    var argument = absvalue / Math.pow(10,t_exp);
-    var output = "";
-    if(outputnumber == true){
-        if(prependequals){ //outputnumber and output units allow splitting the answer to throw in the cosine in between for AC signals
-            output = "=";
-        }
-        output += sign;
-        output += argument.toPrecision(precision);
-    }
-    if(outputunits == true){
-        output += prefix+units;
-    }
-    return output;
-}
 function ChangedCommPicture(pullfromupperhalf=false){
     //if pullfromupperhalf == true, then we will not call "ChangedInput()" and instead pull data from above to here
     //else, this was a button click in the lower half and we will push all data from the lower to the upper half (values only, not visibility)
@@ -1443,7 +1601,7 @@ function ChangedCommPicture(pullfromupperhalf=false){
     }
 }
 
-//******************************************************************* DRAWING ****************************************** */
+//******************************************************************* EARTH DRAWING ****************************************** */
 var earthsize = 4;
 var heightfttopixel = 200;
 var sharpness = 0.2;
@@ -1466,7 +1624,6 @@ function ChangeHeights(growthdir){
     UpdateCanvas();
 }
 function ChangeGainArc(growthdir){
-    //console.log("hello");
     if(growthdir > 0){
         sharpness *= 1.05;
     }
@@ -1509,7 +1666,7 @@ function UpdateCanvas(){
     multiplier = pix_los_total / los_total;
     if(los_total < 1.0){
         multiplier = oldmulti;
-        console.log("drawing is incorrect when both heights are 0'")
+        console.log("drawing is incorrect when both heights are 0'");
     }
     pix_friis_rmax= friis_r_max*multiplier;
     var gradient = ctx.createRadialGradient(pix_tx_x,pix_tx_y,0,pix_tx_x,pix_tx_y,pix_friis_rmax);
@@ -1527,7 +1684,6 @@ function UpdateCanvas(){
     //for gain sharpness, draw segments to block this orange-ish cloud
     //compute the angle in 0..PI from the 270-degree point
     var factor = 1.0-1/Math.pow(gain_tx,sharpness);
-    console.log(factor);
     var upperrad = PI+factor*PI;
     var lowerrad = PI-factor*PI;
     var arc_x = pix_tx_x + pix_friis_rmax*Math.cos(upperrad);
