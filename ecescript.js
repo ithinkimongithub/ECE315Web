@@ -187,40 +187,26 @@ function ChangedIC(){
     var Zeqimagabs = 0;
     var ZeqPolar = new Array(2);
     var Zeqimagsign = "+";
-    console.log("ckt choice=",cktchoice);
+    var Zeqw = 2*Math.PI*ICfreq;
+    var Zeqw2 = Zeqw*Zeqw;
+    var ICres2 = ICres*ICres;
+    var ICres2rec = 1.0/ICres2;
     switch (cktchoice){
         case "SRLC": 
             Zeqreal = ICres;
             Zeqimag = ICLimp - ICCimp;
-            Zeqimagabs = Math.abs(Zeqimag);
-            if(Zeqimag < 0) Zeqimagsign = "-";
-            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
             Zeqexp += "Z_R+Z_L+Z_C="+MakeEngNotation(ICres,"\\Omega",false,true)+"+j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"-j"+
-                MakeEngNotation(ICCimp,"\\Omega",false,true)+"=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
-                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
-            NewMathAtItem(Zeqexp,"ICzeq");
+                MakeEngNotation(ICCimp,"\\Omega",false,true);
         break;
         case "SRC":
             Zeqreal = ICres;
             Zeqimag = -1*ICCimp;
-            Zeqimagabs = Math.abs(Zeqimag);
-            if(Zeqimag < 0) Zeqimagsign = "-";
-            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "Z_R+Z_C="+MakeEngNotation(ICres,"\\Omega",false,true)+"-j"+
-                MakeEngNotation(ICCimp,"\\Omega",false,true)+"=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
-                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
-            NewMathAtItem(Zeqexp,"ICzeq");
+            Zeqexp += "Z_R+Z_C="+MakeEngNotation(ICres,"\\Omega",false,true)+"-j"+MakeEngNotation(ICCimp,"\\Omega",false,true);
         break;
         case "SRL":
             Zeqreal = ICres;
             Zeqimag = ICLimp;
-            Zeqimagabs = Math.abs(Zeqimag);
-            if(Zeqimag < 0) Zeqimagsign = "-";
-            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "Z_R+Z_L="+MakeEngNotation(ICres,"\\Omega",false,true)+"+j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+
-                "=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
-                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
-            NewMathAtItem(Zeqexp,"ICzeq");
+            Zeqexp += "Z_R+Z_L="+MakeEngNotation(ICres,"\\Omega",false,true)+"+j"+MakeEngNotation(ICLimp,"\\Omega",false,true);
         break;
         case "SLC": 
             Zeqreal = 0;
@@ -228,29 +214,52 @@ function ChangedIC(){
             Zeqimagabs = Math.abs(Zeqimag);
             if(Zeqimag < 0) Zeqimagsign = "-";
             ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "Z_L+Z_C=j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"-j"+
-                MakeEngNotation(ICCimp,"\\Omega",false,true)+"=["+MakeTripleNotation(Zeqreal)+Zeqimagsign+"j"+MakeTripleNotation(Zeqimagabs)+"]\\Omega="+
-                writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
-            NewMathAtItem(Zeqexp,"ICzeq");
+            Zeqexp += "Z_L+Z_C=j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"-j"+MakeEngNotation(ICCimp,"\\Omega",false,true);
         break;
         case "PRLC": 
-            var Zeqw = 2*Math.PI*ICfreq;
             var wRLmRwC = Zeqw*ICres*ICind-ICres/(Zeqw*ICcap);
             var wRLmRwCsquared = wRLmRwC*wRLmRwC;
             var denom  = ICind*ICind+ICcap*ICcap*wRLmRwCsquared;
             Zeqreal = ICres*ICind*ICind/denom;
             Zeqimag = -1*ICres*ICcap*ICind*wRLmRwC/denom;
+            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_L}+\\frac{1}{Z_C}]^{-1}=[\\frac{1}{R}+\\frac{1}{j\\omega L}+j\\omega C]^{-1}=[\\frac{1}{"
+                +MakeEngNotation(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"}+j("
+                +MakeEngNotation(ICCimp,"\\Omega",false,true)+")]^{-1}";
+        break;
+        case "PRC":
+            var denom = ICres2rec+Zeqw2*ICcap*ICcap;
+            Zeqreal = (1.0/ICres)/denom;
+            Zeqimag = -Zeqw*ICcap/denom;
             Zeqimagabs = Math.abs(Zeqimag);
             if(Zeqimag < 0) Zeqimagsign = "-";
             ZeqPolar = GetPolar(Zeqreal,Zeqimag);
-            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_L}+\\frac{1}{Z_C}]^{-1}=[\\frac{1}{R}+\\frac{1}{j\\omega L}+j\\omega C]^{-1}=[\\frac{1}{"
-                +MakeEngNotation(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"+MakeEngNotation(ICLimp,"\\Omega",false,true)+"}+j("
-                +MakeEngNotation(ICCimp,"\\Omega",false,true)+")]^{-1}="+writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");
-            NewMathAtItem(Zeqexp,"ICzeq");
+            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_C}]^{-1}=[\\frac{1}{"+MakeEngNotation(ICres,"\\Omega",false,true)+"}-\\frac{1}{j"
+                +MakeEngNotation(ICCimp,"\\Omega",false,true)+"}]^{-1}";
         break;
-        //case "PRC":
-        //    var 
+        case "PRL":
+            var denom = ICres2+Zeqw2*ICind*ICind;
+            Zeqreal = Zeqw2*ICres*ICind*ICind/denom;
+            Zeqimag = Zeqw*ICres2*ICind/denom;
+            Zeqimagabs = Math.abs(Zeqimag);
+            if(Zeqimag < 0) Zeqimagsign = "-";
+            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+            Zeqexp += "[\\frac{1}{Z_R}+\\frac{1}{Z_L}]^{-1}=[\\frac{1}{"+MakeEngNotation(ICres,"\\Omega",false,true)+"}+\\frac{1}{j"
+                +MakeEngNotation(ICLimp,"\\Omega",false,true)+"}]^{-1}";
+        break;
+        case "PLC":
+            Zeqreal = 0;
+            Zeqimag = -1.0/(Zeqw*ICcap-1.0/(Zeqw*ICind));
+            Zeqimagabs = Math.abs(Zeqimag);
+            if(Zeqimag < 0) Zeqimagsign = "-";
+            ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+            Zeqexp += "[\\frac{1}{Z_C}+\\frac{1}{Z_L}]^{-1}=[\\frac{-1}{j"+MakeEngNotation(ICCimp,"\\Omega",false,true)+"}+\\frac{1}{j"
+                +MakeEngNotation(ICLimp,"\\Omega",false,true)+"}]^{-1}";
+        break;
     }
+    ZeqPolar = GetPolar(Zeqreal,Zeqimag);
+    Zeqexp += "="+MakeComplexRectEng(Zeqreal,Zeqimag,"\\Omega")+"="+writePolarEng(ZeqPolar[0],ZeqPolar[1],"\\Omega");  
+    NewMathAtItem(Zeqexp,"ICzeq");
+
     var ICvoltageeqn = "v_s(t)=10cos(360^{\\circ}"+MakeEngNotation(ICfreq,"",false,true,false)+"t+0^{\\circ})V"
         +"\\rightarrow V_S=10\\angle 0^{\\circ}V";
     NewMathAtItem(ICvoltageeqn,"ICvoltageeqn");
@@ -1243,6 +1252,30 @@ function MakeTripleNotation(value,units="",makedoppler=false){
         return putinnegativesign+argstring+"\\times "+"10^{"+t_exp+"}"+units;
     }
 }
+
+const IOTA = Math.pow(10,-24);
+
+function MakeComplexRectEng(real,imag,units){
+    var sign = "+";
+    var realabs = Math.abs(real);
+    var imagabs = Math.abs(imag);
+    if (imag < 0)
+        sign = "-";
+    if (realabs < IOTA){
+        if(imagabs < IOTA){
+            return "0"+units;
+        }
+        else{
+            if (imag > 0) sign = "";
+            return sign+"j"+MakeEngNotation(imagabs,units,false,true);
+        }
+    }
+    if(imagabs < IOTA){
+        return MakeEngNotation(real,units,false,true);
+    }
+    return "["+MakeEngNotation(real,"",false,true)+sign+"j"+MakeEngNotation(imagabs,"",false,true)+"]"+units;
+}
+
 function MakeEngNotation(value, units, prependequals = false, forceoutput = false, dopplerfreq = false, outputnumber = true, outputunits = true){
     var absvalue = Math.abs(value);
     var sign = "";
