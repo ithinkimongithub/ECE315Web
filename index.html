@@ -542,7 +542,7 @@
         <button id="BodeRightDec" onclick="BodeSlew(10)">Decade Right</button>
         <hr />
         <br>
-        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedFilter()">
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="10" step="any" onchange="ChangedFilter()">
         <select class="SignalVP" onchange="ChangedFilter()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -559,8 +559,9 @@
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
+        Phase \(\phi\): <input type="number" class="SignalPhase"  min="-360" max="360" value="0" step="any" onchange="ChangedFilter()"> \(^{\circ}\)
         <br>
-        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedFilter()">
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="3.3" step="any" onchange="ChangedFilter()">
         <select class="SignalVP" onchange="ChangedFilter()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -576,8 +577,9 @@
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
+        Phase \(\phi\): <input type="number" class="SignalPhase"  min="-360" max="360" value="180" step="any" onchange="ChangedFilter()"> \(^{\circ}\)
         <br>
-        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedFilter()">
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="2" step="any" onchange="ChangedFilter()">
         <select class="SignalVP" onchange="ChangedFilter()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -594,8 +596,9 @@
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
+        Phase \(\phi\): <input type="number" class="SignalPhase" min="-360" max="360" value="0" step="any" onchange="ChangedFilter()"> \(^{\circ}\)
         <br>
-        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedFilter()">
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1.43" step="any" onchange="ChangedFilter()">
         <select class="SignalVP" onchange="ChangedFilter()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -612,6 +615,7 @@
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
+        Phase \(\phi\): <input type="number" class="SignalPhase"  min="-360" max="360" value="180" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
         <br><canvas id="canvasFilterTime" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
         <br><canvas id="canvasFilterSpectrum" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
     </div>

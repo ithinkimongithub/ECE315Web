@@ -580,6 +580,7 @@ function ChangedFilter(){
     var SignalVPs = document.getElementsByClassName("SignalVP");
     var SignalFs = document.getElementsByClassName("SignalF");
     var SignalFPs = document.getElementsByClassName("SignalFP");
+    var SignalPhis = document.getElementsByClassName("SignalPhase");
     var sig = new Array(SignalVs.length);
     var height = 1;
     var width  = 0.1;
@@ -588,7 +589,7 @@ function ChangedFilter(){
         sig[i][0] = parseFloat(SignalVs[i].value)*Math.pow(10,parseFloat(SignalVPs[i].value));
         height += sig[i][0];
         sig[i][1] = parseFloat(SignalFs[i].value)*Math.pow(10,parseFloat(SignalFPs[i].value));
-        sig[i][2] = 0;
+        sig[i][2] = Math.PI/180*parseFloat(SignalPhis[i].value);
     }
     canvas = document.getElementById("canvasFilterTime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
