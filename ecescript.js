@@ -531,56 +531,36 @@ function ChangedFilter(){
     GPolar = GetResponse(R,L,C,omega,topo);
     switch(topo){
         case "SRLC":
-            //helper = 1.0-omega*omega*C*L;
-            //denom = helper*helper+omega*omega*R*R*C*C;
-            //Greal = helper/denom;
-            //Gimag = -omega*R*C/denom;
-            //GPolar[0] = 1.0/Math.sqrt(denom);
-            //GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,helper);
             gainexp = "Gain=\\frac{Z_C}{Z_R+Z_L+Z_C}=\\frac{1}{(1-\\omega^2CL)+j\\omega RC}"+
             "=\\frac{(1-\\omega^2CL)-j\\omega RC}{(1-\\omega^2CL)^2+\\omega^2R^2C^2}=";
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{(1-\\omega^2CL)^2+\\omega^2R^2C^2}}";
         break;
         case "SRC":
             gainexp = "Gain=\\frac{Z_C}{Z_C+Z_R}=\\frac{1}{1+\\frac{Z_R}{Z_C}}=\\frac{1}{1+j\\omega RC}=";
-            //GPolar[0] = 1.0/Math.sqrt(1+omega*omega*R*R*C*C);
-            //GPolar[1] = 180/Math.PI*Math.atan2(omega*R*C,1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\omega RC)^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{1}{RC}\\rightarrow"+
             " f_{co}=\\frac{1}{2\\pi RC}="+writeEng(1/(2*Math.PI*R*C),"Hz",false,true);
         break;
         case "SCR":
             gainexp = "Gain=\\frac{Z_R}{Z_R+Z_C}=\\frac{1}{1+\\frac{Z_C}{Z_R}}=\\frac{1}{1-j\\frac{1}{\\omega RC}}=";
-            //GPolar[0] = 1.0/Math.sqrt(1+1/(omega*omega*R*R*C*C));
-            //GPolar[1] = 180/Math.PI*Math.atan2(-1/(omega*R*C),1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+\\frac{1}{(\\omega RC)^2}}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{1}{RC}\\rightarrow"+
             " f_{co}=\\frac{1}{2\\pi RC}="+writeEng(1/(2*Math.PI*R*C),"Hz",false,true);
         break;
         case "SRL":
             gainexp = "Gain=\\frac{Z_L}{Z_L+Z_R}=\\frac{1}{1+\\frac{Z_R}{Z_L}}=\\frac{1}{1-j\\frac{R}{\\omega L}}=";
-            //GPolar[0] = 1.0/Math.sqrt(1+R*R/(omega*omega*L*L));
-            //GPolar[1] = 180/Math.PI*Math.atan2(-R/(omega*L),1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\frac{R}{\\omega L})^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{R}{L}\\rightarrow"+
             " f_{co}=\\frac{R}{2\\pi L}="+writeEng(R/(2*Math.PI*L),"Hz",false,true);
         break;
         case "SLR":
             gainexp = "Gain=\\frac{Z_R}{Z_R+Z_L}=\\frac{1}{1+\\frac{Z_L}{Z_R}}=\\frac{1}{1+j\\frac{\\omega L}{R}}=";
-            //GPolar[0] = 1.0/Math.sqrt(1+omega*omega*L*L/(R*R));
-            //GPolar[1] = 180/Math.PI*Math.atan2(omega*L/R,1);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\frac{\\omega L}{R})^2}}=\\frac{1}{\\sqrt{2}}\\rightarrow \\omega_{co}=\\frac{R}{L}\\rightarrow"+
             " f_{co}=\\frac{R}{2\\pi L}="+writeEng(R/(2*Math.PI*L),"Hz",false,true);
         break;
         case "SLC":
             gainexp = "Gain=\\frac{Z_C}{Z_C+Z_L}=\\frac{1}{1+\\frac{Z_L}{Z_C}}=\\frac{1}{1+j^2\\omega^2 LC}=";
-            //GPolar[0] = 1-(omega*omega*L*C);
-            //GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
-            //GPolar[0] = Math.abs(GPolar[0]);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+(\\omega^2LC)^2}}";
         break;
         case "SCL":
             gainexp = "Gain=\\frac{Z_L}{Z_L+Z_C}=\\frac{1}{1+\\frac{Z_C}{Z_L}}=\\frac{1}{1+j^2\\frac{1}{\\omega^2 LC}}=";
-            //GPolar[0] = 1-1.0/(omega*omega*L*C);
-            //GPolar[1] = 180/Math.PI*Math.atan2(0,GPolar[0]);
-            //GPolar[0] = Math.abs(GPolar[0]);
             gainexpline2 = "\\lvert Gain \\rvert=\\frac{1}{\\sqrt{1+\\frac{1}{(\\omega^2LC)^2}}}";
         break;
     }
@@ -592,10 +572,30 @@ function ChangedFilter(){
     var canvas = document.getElementById("canvasBODE");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     var ctx = canvas.getContext("2d");
-    initPlot(f1,ymin,f2,ymax,canvas.width,canvas.height,(f2-f1)/40,(ymax-ymin)/20,true, 100,100,30,30);
+    initPlot(f1,ymin,f2,ymax,canvas.width,canvas.height,(f2-f1)/40,(ymax-ymin)/20,true, 100,100,25,25);
     showGrid(ctx,true,false,true);
     FillFrequencyResponse(R,L,C,topo);
     PlotFrequencyResponse(ctx,R,L,C,topo);
+    var SignalVs = document.getElementsByClassName("SignalV");
+    var SignalVPs = document.getElementsByClassName("SignalVP");
+    var SignalFs = document.getElementsByClassName("SignalF");
+    var SignalFPs = document.getElementsByClassName("SignalFP");
+    var sig = new Array(SignalVs.length);
+    var height = 1;
+    var width  = 0.1;
+    for(var i = 0; i < SignalVs.length; i++){
+        sig[i] = new Array(2); //mag, freq
+        sig[i][0] = parseFloat(SignalVs[i].value)*Math.pow(10,parseFloat(SignalVPs[i].value));
+        height += sig[i][0];
+        sig[i][1] = parseFloat(SignalFs[i].value)*Math.pow(10,parseFloat(SignalFPs[i].value));
+    }
+    canvas = document.getElementById("canvasFilterTime");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+    height*=2;
+    initPlot(0,-height*0.6,width,height*0.6,canvas.width,canvas.height,width/50,height/20,false,100,100,25,25);
+    GridSetAxisUnits("s","V");
+    showGrid(ctx,true,false,true);
 }
 
 function ChangedIC(){
@@ -1117,8 +1117,9 @@ const ArrayLength = 1920;
 var plotdatax = new Array(ArrayLength);
 var plotdatay = new Array(ArrayLength);
 var plotdataypix = new Array(ArrayLength);
-
-function initPlot(xmin,ymin,xmax,ymax,pixelwidth,pixelheight,xgridstep,ygridstep,logged=false,left=0,right=0,top=0,bottom=0){
+var plotxunit = "";
+var plotyunit = "";
+function initPlot(xmin,ymin,xmax,ymax,canvaswidth,canvasheight,xgridstep,ygridstep,logged=false,left=0,right=0,top=0,bottom=0){
     //grids will get stretched unless you make the spans squared' up
     plotleft = left;
     plotright = right;
@@ -1126,24 +1127,24 @@ function initPlot(xmin,ymin,xmax,ymax,pixelwidth,pixelheight,xgridstep,ygridstep
     plotbottom = bottom;
     if(xgridstep <= 0) plotxgridstep = 1;
     if(ygridstep <= 0) plotygridstep = 1;
-    if(xmax <= xmin || xmin == 0 || xmax == 0) return;
-    if(ymax <= ymin || ymin == 0 || ymax == 0) return;
+    if(xmax <= xmin) return;
+    if(ymax <= ymin) return;
     plotxstart = xmin; //translates to pixel pixxoffset
     plotystart = ymin;
     plotxend = xmax;
     plotyend = ymax;
     plotxspan = xmax-xmin;
     plotyspan = ymax-ymin;
-    plotpixw = pixelwidth-plotleft-plotright;
-    plotpixh = pixelheight-plotbottom-plottop;
-    plotxfact = pixelwidth/plotxspan;
-    plotyfact = pixelheight/plotyspan;
+    plotpixw = canvaswidth-plotleft-plotright;
+    plotpixh = canvasheight-plotbottom-plottop;
+    plotxfact = plotpixw/plotxspan;
+    plotyfact = plotpixh/plotyspan;
     plotxgridstep = xgridstep;
     plotygridstep = ygridstep;
     plotxpixgridstep = plotxfact/xgridstep;
     plotypixgridstep = plotyfact/ygridstep;
-    plotxzero = (-xmin)/(plotxspan)*pixelwidth+left;
-    plotyzero = (-ymin)/(plotyspan)*pixelheight+top;
+    plotxzero = (-xmin)/(plotxspan)*plotpixw+left;
+    plotyzero = (-ymin)/(plotyspan)*plotpixh+top;
     plotxfirst = Math.round(plotxstart/plotxgridstep)*plotxgridstep;
     plotyfirst = Math.round(plotystart/plotygridstep)*plotygridstep;
     plotxpixelstep = (plotxspan)/plotpixw;
@@ -1159,6 +1160,11 @@ function initPlot(xmin,ymin,xmax,ymax,pixelwidth,pixelheight,xgridstep,ygridstep
         plotxpixelstep = Math.pow(10,1/(plotxpixperdecade+1)); //use as a multiplier not an adder
         //then grid lines will be placed on decades (x10) change which are evenly spaced
     }
+}
+
+function GridSetAxisUnits(xname,yname){
+    plotxunit = xname;
+    plotyunit = yname;
 }
 
 var currentplotindex=0;
@@ -1370,13 +1376,47 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
             }
         }
         else{
+            ctx.textAlign = "right";
+            ctx.font = "15px Helvetica";
+            var minor = 5;
             for(x = plotxfirst; x <= plotxend; x+= plotxgridstep){
                 px = plotleft+(x-plotxstart)*plotxfact;
                 ctx.moveTo(px,plottop);   ctx.lineTo(px,plotpixh+plottop);
+                if(minor == 5){
+                    ctx.fillRect(px-1,plottop+plotpixh,3,6);
+                    ctx.fillText(writeEng(x,plotxunit,false,true),px-5,plotpixh+plottop+20);
+                    minor = 0;
+                }
+                minor++;
             }
-            for(y = plotyfirst; y <= plotyend; y+= plotygridstep){
-                py = plotright+(y-plotystart)*plotyfact;
+            minor = 0;
+            ctx.textAlign = "right";
+            ctx.font = "15px Helvetica";
+            for(y = 0; y >= plotystart; y-= plotygridstep){
+                py = plotyzero-(y)*plotyfact;
                 ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
+                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+                if(minor == 0){
+                    minor = 5;
+                    ctx.fillRect(plotleft-6,py-1,6,3);
+                    ctx.fillText(writeEng(y,plotyunit,false,true),plotleft-6,py+5);
+                }
+                minor--;
+                
+            }
+            minor = 0;
+            for(y = 0; y <= plotyend; y+= plotygridstep){
+                py = plotyzero-(y)*plotyfact;
+                ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
+                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+                if(minor == 0){
+                    minor = 5;
+                    if(y > 0){
+                        ctx.fillRect(plotleft-6,py-1,6,3);
+                        ctx.fillText(writeEng(y,plotyunit,false,true),plotleft-6,py+5);
+                    }
+                }
+                minor--;
             }
         }
         ctx.stroke();
@@ -1387,13 +1427,15 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
         ctx.lineWidth = 2;
         ctx.strokeStyle = "black"; 
         if(plotislog){
-            //?
+            //skip the zero's?
         }
         else{
-            
-            ctx.moveTo(0,plotyzero);    ctx.lineTo(plotpixw,plotyzero);  // X axis
-            ctx.moveTo(plotxzero,0);    ctx.lineTo(plotxzero,plotpixh);  // Y axis
-            
+            if(plotxzero >= plotleft && plotxzero < plotleft+plotpixw){
+                ctx.moveTo(plotxzero,plottop);    ctx.lineTo(plotxzero,plottop+plotpixh);  // Y axis at x=0
+            }
+            if(plotyzero >= plottop && plotxzero < plottop+plotpixh){
+                ctx.moveTo(plotleft,plotyzero);    ctx.lineTo(plotleft+plotpixw,plotyzero);  // X axis at y=0
+            }
         }
         ctx.stroke();
         ctx.closePath();

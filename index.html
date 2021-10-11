@@ -541,6 +541,79 @@
         <button id="BodeRight" onclick="BodeSlew(1)">Step Right</button>
         <button id="BodeRightDec" onclick="BodeSlew(10)">Decade Right</button>
         <hr />
+        <br>
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedDC()">
+        <select class="SignalVP" onchange="ChangedDC()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        Frequency: <input type="number" class="SignalF" min="1" max="999" value="100" step="any" onchange="ChangedFilter()">
+        <select class="SignalFP" onchange="ChangedFilter()">
+            <option value="0" selected>Hz</option>
+            <option value="3" >kHz</option>
+            <option value="6">MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br>
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedDC()">
+        <select class="SignalVP" onchange="ChangedDC()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>Frequency: <input type="number" class="SignalF" min="1" max="999" value="300" step="any" onchange="ChangedFilter()">
+        <select class="SignalFP" onchange="ChangedFilter()">
+            <option value="0" selected>Hz</option>
+            <option value="3" >kHz</option>
+            <option value="6">MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br>
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedDC()">
+        <select class="SignalVP" onchange="ChangedDC()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        Frequency: <input type="number" class="SignalF" min="1" max="999" value="500" step="any" onchange="ChangedFilter()">
+        <select class="SignalFP" onchange="ChangedFilter()">
+            <option value="0" selected>Hz</option>
+            <option value="3" >kHz</option>
+            <option value="6">MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br>
+        Voltage: <input type="number" class="SignalV" min="1" max="999" value="1" step="any" onchange="ChangedDC()">
+        <select class="SignalVP" onchange="ChangedDC()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        Frequency: <input type="number" class="SignalF" min="1" max="999" value="700" step="any" onchange="ChangedFilter()">
+        <select class="SignalFP" onchange="ChangedFilter()">
+            <option value="0" selected>Hz</option>
+            <option value="3">kHz</option>
+            <option value="6">MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <br><canvas id="canvasFilterTime" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
+        <br><canvas id="canvasFilterSpectrum" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
     </div>
 
     <div class="tabcontent" id="commequations">
