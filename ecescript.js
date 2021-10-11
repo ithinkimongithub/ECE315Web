@@ -597,18 +597,23 @@ function ChangedFilter(){
     initPlot(0,-height*0.6,width,height*0.6,canvas.width,canvas.height,width/50,height/20,false,100,100,25,25);
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
-    sumofsig = FillCosineSum(sig);
+    var size = FillCosineSum(sig);
+    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
 }
 
 function FillCosineSum(signals){
     var tpi = Math.PI*2;
-    for(var t = plotxstart; t < plotxend; t+= plotypixelstep){
+    var count = 0;
+    for(var t = plotxstart; t < plotxend; t+= plotxpixelstep){
         var sum = 0;    
         for(var f = 0; f < signals.length; f++){
             sum += signals[f][0]*Math.cos(tpi*signals[f][1]*t+signals[f][2]);
         }
-        sumofsig[t]=sum;
+        sumofsig[count]=sum;
+        sumofsigt[count]=t;
+        count++;
     }
+    return count;
 }
 
 function ChangedIC(){
@@ -1134,6 +1139,7 @@ var plotxunit = "";
 var plotyunit = "";
 
 var sumofsig = new Array(ArrayLength);
+var sumofsigt = new Array(ArrayLength);
 
 function initPlot(xmin,ymin,xmax,ymax,canvaswidth,canvasheight,xgridstep,ygridstep,logged=false,left=0,right=0,top=0,bottom=0){
     //grids will get stretched unless you make the spans squared' up
@@ -1254,7 +1260,6 @@ function LabelFrequencyResponse(event,manual=false){
         ix = px-plotleft;
         currentplotindex = px-plotleft;
     }
-    
     var py = plotdataypix[ix]+plottop;
     console.log("px",px,"py",py);
     var x = plotdatax[ix];
@@ -1310,6 +1315,23 @@ function PlotFrequencyResponse(ctx){
     }
     ctx.stroke();
     ctx.closePath();
+}
+
+function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color){
+    var ix, px, py;
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = color;
+    //ctx.moveTo(0,0);
+    for(var ix = 0; ix < size && ix < ArrayLength; ix++){
+        px = plotxzero+sumofsigt[ix]*plotxfact;
+        py = plotyzero-sumofsig[ix]*plotyfact;
+        ctx.lineTo(px,py);
+        console.log(plotxzero,sumofsigt[ix],plotxfact);
+    }
+    ctx.stroke();
+    ctx.closePath();
+    console.log("done");
 }
 
 function drawVector(ctx,r,i,x=0,y=0,color="red"){
