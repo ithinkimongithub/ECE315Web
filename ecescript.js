@@ -584,10 +584,11 @@ function ChangedFilter(){
     var height = 1;
     var width  = 0.1;
     for(var i = 0; i < SignalVs.length; i++){
-        sig[i] = new Array(2); //mag, freq
+        sig[i] = new Array(3); //mag, freq,phase
         sig[i][0] = parseFloat(SignalVs[i].value)*Math.pow(10,parseFloat(SignalVPs[i].value));
         height += sig[i][0];
         sig[i][1] = parseFloat(SignalFs[i].value)*Math.pow(10,parseFloat(SignalFPs[i].value));
+        sig[i][2] = 0;
     }
     canvas = document.getElementById("canvasFilterTime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
@@ -596,6 +597,18 @@ function ChangedFilter(){
     initPlot(0,-height*0.6,width,height*0.6,canvas.width,canvas.height,width/50,height/20,false,100,100,25,25);
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
+    sumofsig = FillCosineSum(sig);
+}
+
+function FillCosineSum(signals){
+    var tpi = Math.PI*2;
+    for(var t = plotxstart; t < plotxend; t+= plotypixelstep){
+        var sum = 0;    
+        for(var f = 0; f < signals.length; f++){
+            sum += signals[f][0]*Math.cos(tpi*signals[f][1]*t+signals[f][2]);
+        }
+        sumofsig[t]=sum;
+    }
 }
 
 function ChangedIC(){
@@ -1119,6 +1132,9 @@ var plotdatay = new Array(ArrayLength);
 var plotdataypix = new Array(ArrayLength);
 var plotxunit = "";
 var plotyunit = "";
+
+var sumofsig = new Array(ArrayLength);
+
 function initPlot(xmin,ymin,xmax,ymax,canvaswidth,canvasheight,xgridstep,ygridstep,logged=false,left=0,right=0,top=0,bottom=0){
     //grids will get stretched unless you make the spans squared' up
     plotleft = left;
@@ -1221,6 +1237,11 @@ function LabelFrequencyResponse(event,manual=false){
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     var ctx = canvas.getContext("2d");
     var rect = canvas.getBoundingClientRect();
+    var f1 = GrabNumber("FilterFreq1","FilterFreq1P",true,minnorm,maxnorm);
+    var f2 = GrabNumber("FilterFreq2","FilterFreq2P",true,minnorm,maxnorm);
+    var ymin=Math.pow(10,document.getElementById("BodeMinP").value);
+    var ymax=Math.pow(10,document.getElementById("BodeMaxP").value);
+    initPlot(f1,ymin,f2,ymax,canvas.width,canvas.height,(f2-f1)/40,(ymax-ymin)/20,true, 100,100,25,25);
     showGrid(ctx,true,false,true);
     PlotFrequencyResponse(ctx);
     var px, ix;
