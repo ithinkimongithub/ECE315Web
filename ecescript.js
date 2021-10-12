@@ -919,12 +919,65 @@ function ChangedTransducer(){
     NewMathAtItem(deltaveqn,"deltaV");
     var evald = (vout-lower)/res;
     var evaleqn = "EL=\\frac{V_{In}-V_{Min}}{\\Delta V}=\\frac{"+writeEng(vout,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{"+writeEng(res,"V/level",false,true)+"}="
-        +evald.toFixed(3)+"levels\\rightarrow QL=Floor(EL)="+(evald-0.5).toFixed(0);
+        +evald.toFixed(3)+" levels\\rightarrow QL=Floor(EL)="+(evald-0.5).toFixed(0);
     NewMathAtItem(evaleqn,"evallevel");
     var QE = res*(evald - parseFloat((evald-0.5).toFixed(0)));
     console.log(parseFloat((evald-0.5).toFixed(0)),res,QE);
     var QEeqn = "QE = \\Delta V\\times(EL - QL) ="+writeEng(QE,"V",false,true);
     NewMathAtItem(QEeqn,"quantizationerror");
+    var htmladcsigfreqs = document.getElementsByClassName("adcsignalf");
+    var htmladcsigfreqps = document.getElementsByClassName("adcsignalfp");
+}
+var currentfreq = 0;
+function AddSignalFreq(){
+    currentfreq++;
+    var newid = currentfreq.toFixed(0);
+    //var element = document.querySelector('#signal0');
+    var signalhtmls = document.getElementsByClassName("addablesignal");
+    var element = signalhtmls[signalhtmls.length-1];
+    var clone = element.cloneNode(true);
+    clone.id = "signalcomponent"+newid;
+    element.after(clone);
+}
+
+function AutoSquare(){
+    var htmladcsigvs = document.getElementsByClassName("adcsignalv");
+    var htmladcsigvps = document.getElementsByClassName("adcsignalvp");
+    var htmladcsigfreqs = document.getElementsByClassName("adcsignalf");
+    var htmladcsigfreqps = document.getElementsByClassName("adcsignalfp");
+    var htmladcsigphis = document.getElementsByClassName("adcsignalphi");
+    var q = htmladcsigvs.length;
+    var v0 = htmladcsigvs[0].value;
+    var vx;
+    var vp= htmladcsigvps[0].value;
+    var factor = 1;
+    var f0 = htmladcsigfreqs[0].value;
+    var fx;
+    var fp = parseFloat(htmladcsigfreqps[0].value);
+    var phase = 0;
+    for(var t = 1; t < q; t++){
+        factor += 2;
+        if(phase == 0) phase = 180;
+        else phase = 0;
+        vx = v0 / factor;
+        if(vx < 1.0){
+            vx = vx*1000;
+            vp = vp-3;
+            v0 = v0*1000;
+        }
+        fx = f0*factor;
+        if(fx >= 1000.0){
+            fx = fx/1000;
+            fp = fp+3;
+            f0 = f0/1000;
+        }
+        htmladcsigvs[t].value=vx;
+        htmladcsigvps[t].value=vp;
+        htmladcsigfreqs[t].value=fx;
+        htmladcsigfreqps[t].value=fp;
+        htmladcsigphis[t].value=phase;
+        //console.log(vx,vp,fx,fp);
+    }    
 }
 
 function ChangedAC(){

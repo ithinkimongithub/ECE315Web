@@ -675,6 +675,39 @@
         <p id="deltaV">Compute DV</p>
         <p id="evallevel">Compute ELandQL</p>
         <p id="quantizationerror">Compute QE</p>
+        Now let's add the concept of time by designing a signal (with multiple components) and a sampling rate:
+        <br><button onclick="AddSignalFreq()">Add Signal Component</button>
+        <button onclick="AutoSquare()">Auto-Square</button>
+        <div id="signalcomponent1" class="addablesignal">
+            Voltage: <input class="adcsignalv" type="number" id="adcsignalv0" min="-999" max="999" value="1" step="any" onchange="ChangedTransducer()">
+            <select class="adcsignalvp" id="adcsignalv0p" onchange="ChangedTransducer()">
+                <option value="-9">nV</option>
+                <option value="-6" >&#181;V</option>
+                <option value="-3">mV</option>
+                <option value="0" selected>V</option>
+                <option value="3">kV</option>
+                <option value="6">MV</option>
+            </select>
+            Frequency: <input type="number" class="adcsignalf" id="adcsignalf0" min="1" max="999" value="1" step="any" onchange="ChangedTransducer()">
+            <select class="adcsignalfp" id="adcsignalfp0" onchange="ChangedTransducer()">
+                <option value="0">Hz</option>
+                <option value="3"selected>kHz</option>
+                <option value="6" >MHz</option>
+                <option value="9">GHz</option>
+                <option value="12">THz</option>
+            </select>
+            Phase \(\phi\): <input type="number" class="adcsignalphi" id="adcsignalphi0" min="-360" max="360" value="0" step="any" onchange="ChangedTransducer()"> \(^{\circ}\)
+        </div>
+        <br>ADC Sampling Rate: 
+        <input type="number" class="adcsample" id="adcsamplerate" min="1" max="999" value="1" step="any" onchange="ChangedTransducer()">
+        <select id="adcsamplefp" onchange="ChangedTransducer()">
+            <option value="0">Hz</option>
+            <option value="3">kHz</option>
+            <option value="6" selected>MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <hr />
     </div>
 
     <div class="tabcontent" id="commequations">
