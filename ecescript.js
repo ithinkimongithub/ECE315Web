@@ -885,6 +885,48 @@ function animatecomplex(){
     animationInterval = setInterval(animatecomplexOnce, 10);
 }
 
+function ChangedTransducer(){
+    var sensora = GrabNumber("sensora","sensorap",true,-999,999);
+    var sensorb = GrabNumber("sensorb","sensorbp",true,-999,999);
+    var adca = GrabNumber("adca","adcap",true,-999,999);
+    var adcb = GrabNumber("adcb","adcbp",true,-999,999);
+    var testv = GrabNumber("testvoltage","testvoltagep",true,-999,999);
+    var bitsize = GrabNumber("bitsize","",false,1,128);
+    var deltay = adca-adcb;
+    var deltax = sensora-sensorb;
+    var Kval = deltay/deltax;
+    var Bval = adca-Kval*sensora;
+    var Kexpanswer = writeTripleLatex(Kval,"");
+    if(Kval < 1) Kexpanswer = Kval.toFixed(4);
+    var Keqn = "K=\\frac{V_{Out,Max}-V_{Out,Min}}{V_{In,Max}-V_{In,Min}}=\\frac{V_{ADC,A}-V_{ADC,B}}{V_{Sensor,A}-V_{Sensor,B}}=\\frac{"
+    +writeEng(adca,"V",false,true)+"-("+writeEng(adcb,"V",false,true)+")}{"+writeEng(sensora,"V",false,true)+"-("+writeEng(sensorb,"V",false,true)+")}="+
+    Kexpanswer;
+    NewMathAtItem(Keqn,"Keqn");
+    var Beqn = "B=V_{ADC,A}-K\\times V_{Sensor,A}="+writeEng(adca,"V",false,true)+"-"+writeTripleLatex(Kval,"")+"\\times"+writeEng(sensora,"V",false,true)+"="+writeEng(Bval,"V",false,true);
+    NewMathAtItem(Beqn,"Beqn");
+    var vout = testv*Kval+Bval;
+    var vouteqn = "V_{Out}=V_{In}\\times K+B="+writeEng(testv,"V",false,true)+"\\times "+writeTripleLatex(Kval,"")+"+("+writeEng(Bval,"V",false,true)+")="+writeEng(vout,"V",false,true);
+    NewMathAtItem(vouteqn,"Vout");
+    var res;
+    var lower = adca;
+    var upper = adcb;
+    if(adca>adcb){
+        lower = adcb;
+        upper = adca;
+    }
+    res = Math.abs(adcb-adca)/Math.pow(2,bitsize);
+    var deltaveqn = "\\Delta V=\\frac{V_{Max}-V_{Min}}{2^b}=\\frac{"+writeEng(upper,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{2^"+bitsize.toFixed(0)+"}="+writeEng(res,"V/level",false,true);
+    NewMathAtItem(deltaveqn,"deltaV");
+    var evald = (vout-lower)/res;
+    var evaleqn = "EL=\\frac{V_{In}-V_{Min}}{\\Delta V}=\\frac{"+writeEng(vout,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{"+writeEng(res,"V/level",false,true)+"}="
+        +evald.toFixed(3)+"levels\\rightarrow QL=Floor(EL)="+(evald-0.5).toFixed(0);
+    NewMathAtItem(evaleqn,"evallevel");
+    var QE = res*(evald - parseFloat((evald-0.5).toFixed(0)));
+    console.log(parseFloat((evald-0.5).toFixed(0)),res,QE);
+    var QEeqn = "QE = \\Delta V\\times(EL - QL) ="+writeEng(QE,"V",false,true);
+    NewMathAtItem(QEeqn,"quantizationerror");
+}
+
 function ChangedAC(){
     var acperiod = GrabNumber("ACperiod","selectACperiod",true,minnorm,maxnorm);
     var acfreq   = 1/acperiod;

@@ -45,9 +45,9 @@
     <br>
     <button class="tablink" onclick="openBigTab('ComplexNumbers',this)">Complex Numbers</button>
     <button class="tablink" onclick="openBigTab('InductorCapacitor',this)" >Inductor Capacitor</button>
-    <button class="tablink" onclick="openBigTab('AnalogFilter',this)" id="defaultOpen">Analog Filter</button>
-    <button class="tablink" onclick="openBigTab('TransducerInterface',this)">Transducer Interface</button>
-    <button class="tablink" onclick="openBigTab('ADC',this)">ADC</button>
+    <button class="tablink" onclick="openBigTab('AnalogFilter',this)" >Analog Filter</button>
+    <button class="tablink" onclick="openBigTab('TransducerInterface',this)"id="defaultOpen">Signal Conditioning</button>
+    <button class="tablink" onclick="openBigTab('ADC',this)">ADC Data Rates</button>
     <br>
     <button class="tablink" onclick="openBigTab('commequations',this)">Communications</button>
     <button class="tablink" onclick="openBigTab('commpicture',this)">Comm Picture</button>
@@ -618,6 +618,63 @@
         Phase \(\phi\): <input type="number" class="SignalPhase"  min="-360" max="360" value="180" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
         <br><canvas id="canvasFilterTime" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
         <br><canvas id="canvasFilterSpectrum" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
+    </div>
+
+    <div class="tabcontent" id="TransducerInterface">
+        Build and test a transducer Interface
+        <br>Sensor Voltage A: <input type="number" id="sensora" min="-999" max="999" value="-200" step="any" onchange="ChangedTransducer()">
+        <select id="sensorap" onchange="ChangedTransducer()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3"selected>mV</option>
+            <option value="0" >V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        ADC Voltage A: <input type="number" id="adca" min="-999" max="999" value="0" step="any" onchange="ChangedTransducer()">
+        <select id="adcap" onchange="ChangedTransducer()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        <br>Sensor Voltage B: <input type="number" id="sensorb" min="-999" max="999" value="200" step="any" onchange="ChangedTransducer()">
+        <select id="sensorbp" onchange="ChangedTransducer()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3"selected>mV</option>
+            <option value="0">V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        ADC Voltage B: <input type="number" id="adcb" min="-999" max="999" value="5" step="any" onchange="ChangedTransducer()">
+        <select id="adcbp" onchange="ChangedTransducer()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        <br>Test Sensor Voltage: <input type="number" id="testvoltage" min="-999" max="999" value="0" step="any" onchange="ChangedTransducer()">
+        <select id="testvoltagep" onchange="ChangedTransducer()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3"selected>mV</option>
+            <option value="0" >V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        <p>Beware that the ADC Min may match to the Sensor Max. For that reason, assign the values "A" and "B" as opposed to Min/Max.</p>
+        <p id="Keqn">Compute K</p>
+        <p id="Beqn">Compute B</p>
+        <p id="Vout">Compute Vout</p>
+        <br>ADC Sample Size (b=): <input type="number" id="bitsize" min="1" max="128" value="8" step="any" onchange="ChangedTransducer()">
+        <p id="deltaV">Compute DV</p>
+        <p id="evallevel">Compute ELandQL</p>
+        <p id="quantizationerror">Compute QE</p>
     </div>
 
     <div class="tabcontent" id="commequations">
