@@ -925,9 +925,70 @@ function ChangedTransducer(){
     console.log(parseFloat((evald-0.5).toFixed(0)),res,QE);
     var QEeqn = "QE = \\Delta V\\times(EL - QL) ="+writeEng(QE,"V",false,true);
     NewMathAtItem(QEeqn,"quantizationerror");
+
+    var htmladcsigvs = document.getElementsByClassName("adcsignalv");
+    var htmladcsigvps = document.getElementsByClassName("adcsignalvp");
     var htmladcsigfreqs = document.getElementsByClassName("adcsignalf");
     var htmladcsigfreqps = document.getElementsByClassName("adcsignalfp");
+    var htmladcsigphis = document.getElementsByClassName("adcsignalphi");
+    var numcomps = htmladcsigvs.length;
+    var sigs = new Array(numcomps);
+    
+    for(var s = 0; s < numcomps; s++){
+        sigs[s] = new Array(3);
+        sigs[s][0] =    parseFloat(htmladcsigvs[s].value)*Math.pow(10,parseFloat(htmladcsigvps[s].value));
+        sigs[s][1] = parseFloat(htmladcsigfreqs[s].value)*Math.pow(10,parseFloat(htmladcsigfreqps[s].value));
+        sigs[s][2] = Math.PI/180*parseFloat(htmladcsigphis[s].value);
+    }
+    var width = 0.01; 
+    var height = 10;
+    var canvas = document.getElementById("canvasADCtime");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    var ctx = canvas.getContext("2d");
+    initPlot(0,-height*0.6,width,height*0.6,canvas.width,canvas.height,width/50,height/20,false,100,100,25,25);
+    GridSetAxisUnits("s","V");
+    showGrid(ctx,true,false,true);
+    var size = FillCosineSum(sigs);
+    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    
 }
+
+function PlayADCInputSound(){
+    var htmladcsigvs = document.getElementsByClassName("adcsignalv");
+    var htmladcsigvps = document.getElementsByClassName("adcsignalvp");
+    var htmladcsigfreqs = document.getElementsByClassName("adcsignalf");
+    var htmladcsigfreqps = document.getElementsByClassName("adcsignalfp");
+    var htmladcsigphis = document.getElementsByClassName("adcsignalphi");
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
+    for(var s = 0; s < htmladcsigvs.length; s++){
+        var oscillator = audioCtx.createOscillator();
+        var gainNode = audioCtx.createGain();
+        var gain = htmladcsigvs[s].value*Math.pow(10,htmladcsigvps[s].value);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        gainNode.gain.value = 
+        oscillator.frequency.value = htmladcsigfreqs[s].value*Math.pow(10,htmladcsigfreqps[s].value);
+        oscillator.start(audioCtx.currentTime);
+        oscillator.stop(audioCtx.currentTime + ((1000 || 500) / 1000));
+    }
+}
+
+function beep(duration, frequency, volume, type, callback) {
+    var oscillator = audioCtx.createOscillator();
+    var gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    if (volume){gainNode.gain.value = volume;}
+    if (frequency){oscillator.frequency.value = frequency;}
+    if (type){oscillator.type = type;}
+    if (callback){oscillator.onended = callback;}
+
+    oscillator.start(audioCtx.currentTime);
+    oscillator.stop(audioCtx.currentTime + ((duration || 500) / 1000));
+};
+
 var currentfreq = 0;
 function AddSignalFreq(){
     currentfreq++;
@@ -1423,7 +1484,7 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color){
         px = plotxzero+sumofsigt[ix]*plotxfact;
         py = plotyzero-sumofsig[ix]*plotyfact;
         ctx.lineTo(px,py);
-        console.log(plotxzero,sumofsigt[ix],plotxfact);
+        //console.log(plotxzero,sumofsigt[ix],sumofsig[ix],plotxfact,px,py);
     }
     ctx.stroke();
     ctx.closePath();

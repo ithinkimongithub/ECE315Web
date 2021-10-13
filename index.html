@@ -616,8 +616,8 @@
             <option value="12">THz</option>
         </select>
         Phase \(\phi\): <input type="number" class="SignalPhase"  min="-360" max="360" value="180" step="any" onchange="ChangedComplex()"> \(^{\circ}\)
-        <br><canvas id="canvasFilterTime" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
-        <br><canvas id="canvasFilterSpectrum" width="1200" height="500" onclick="LabelFrequencyResponse(event)"></canvas> 
+        <br><canvas id="canvasFilterTime" width="1200" height="500" onclick="LabelFilterTime(event)"></canvas> 
+        <br><canvas id="canvasFilterSpectrum" width="1200" height="500" onclick="LabelFilterSpectrum(event)"></canvas> 
     </div>
 
     <div class="tabcontent" id="TransducerInterface">
@@ -677,7 +677,9 @@
         <p id="quantizationerror">Compute QE</p>
         Now let's add the concept of time by designing a signal (with multiple components) and a sampling rate:
         <br><button onclick="AddSignalFreq()">Add Signal Component</button>
-        <button onclick="AutoSquare()">Auto-Square</button>
+        <button onclick="AutoSquare()">Square Wave</button>
+        <button onclick="ChangedTransducer()">Update Graph</button>
+        <button onclick="PlayADCInputSound()">Listen To Me (I'm really loud!)</button>
         <div id="signalcomponent1" class="addablesignal">
             Voltage: <input class="adcsignalv" type="number" id="adcsignalv0" min="-999" max="999" value="1" step="any" onchange="ChangedTransducer()">
             <select class="adcsignalvp" id="adcsignalv0p" onchange="ChangedTransducer()">
@@ -707,6 +709,7 @@
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
+        <br><canvas id="canvasADCtime" width="1200" height="500" onclick="LabelADCTime(event)"></canvas> 
         <hr />
     </div>
 
