@@ -984,6 +984,7 @@ function ChangedTransducer(){
     //draw the dots
     if(document.getElementById("ShowDigitized").checked) PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",false,false,true);
     if(document.getElementById("ShowBlockStyle").checked) PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",false,true,false);
+    
     //DFT The dots!
     var N = numsamples;
     var xkm = new Array(N);
@@ -1002,13 +1003,14 @@ function ChangedTransducer(){
         xkf[f] = adcsamplerate*f/N;
         xkp[f] = Math.atan2(imagsum,realsum); //in radians!
     }
-    //var dacopts = Math.round(N/2)+1;
-    var dacopts = N;
+    var dacopts = Math.round(N/2+0.5);
     var dacsigs = new Array(dacopts);
+
+    //put the transform into the dacsigs, folded over for symmetry
     for(s = 0; s < dacopts; s++){
-        //var m = 0;
         dacsigs[s] = new Array(3);
-        //if(xkm[s] > 0.1) m = xkm[s];
+        if(s > 0 && s < dacopts-1)
+            xkm[s] += xkm[N-s];
         dacsigs[s][0] = xkm[s];
         dacsigs[s][1] = xkf[s];
         dacsigs[s][2] = xkp[s];
@@ -1017,7 +1019,6 @@ function ChangedTransducer(){
     if(document.getElementById("ShowDACOut").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
 
-    var hinge = N/2;
     var LPF = adcsamplerate/2;
     if(!document.getElementById("AutoLPF").checked){
         LPF = parseFloat(document.getElementById("dacfco").value)*Math.pow(10,parseFloat(document.getElementById("dacfcop").value));
@@ -1035,14 +1036,16 @@ function ChangedTransducer(){
     if(LPF > adcsamplerate) LPF = adcsamplerate;
     var passedN = Math.round(LPF/adcsamplerate*N+0.5); //N is now even by above code
     var filteredDAC = new Array(passedN);
+    var filteredms  = new Array(passedN);
     for(var s = 0; s < passedN; s++){
         filteredDAC[s] = new Array(3);
-        if(s==0 || s==hinge)
-            filteredDAC[s][0] = dacsigs[s][0];
-        else
-            filteredDAC[s][0] = 2*dacsigs[s][0];
+        filteredDAC[s][0] = dacsigs[s][0];
         filteredDAC[s][1] = dacsigs[s][1];
         filteredDAC[s][2] = dacsigs[s][2];
+        filteredms[s] = dacsigs[s][0];
+    }
+    for(var s = passedN; s < dacopts; s++){
+        filteredms[s] = 0;
     }
     //console.log("Filtered",filteredDAC);
     FillCosineSum(filteredDAC, 0, 1, 0);
@@ -1052,12 +1055,13 @@ function ChangedTransducer(){
     canvas = document.getElementById("canvasADCSpectrum");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
-    var stopfreq = adcsamplerate;
+    var stopfreq = adcsamplerate/2;
     var stopmag = 1;
     initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/20,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
-    PlotEvaldFunction(ctx,N,xkf,xkm,"blue",true,false,true);
+    PlotEvaldFunction(ctx,dacopts,xkf,xkm,"green",true,false,true);
+    PlotEvaldFunction(ctx,dacopts,xkf,filteredms,"purple",true,false,true);
     //console.log(xkm);
 }
 function PlayADCInputSound(){
