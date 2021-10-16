@@ -56,6 +56,7 @@ const minRCS = Math.pow(10,-12);
 const maxRCS = Math.pow(10, 12);
 const minangle = -360;
 const maxangle = 360;
+const maxsamples = 2500;
 var multiplier; //for remembering scale :(
 //********************************************  MATH *********************************************************/
 
@@ -922,7 +923,7 @@ function ChangedTransducer(){
         +evald.toFixed(3)+" levels\\rightarrow QL=Floor(EL)="+(evald-0.5).toFixed(0);
     NewMathAtItem(evaleqn,"evallevel");
     var QE = res*(evald - parseFloat((evald-0.5).toFixed(0)));
-    console.log(parseFloat((evald-0.5).toFixed(0)),res,QE);
+    //console.log(parseFloat((evald-0.5).toFixed(0)),res,QE);
     var QEeqn = "QE = \\Delta V\\times(EL - QL) ="+writeEng(QE,"V",false,true);
     NewMathAtItem(QEeqn,"quantizationerror");
 
@@ -942,12 +943,12 @@ function ChangedTransducer(){
         sigs[s][1] = parseFloat(htmladcsigfreqs[s].value)*Math.pow(10,parseFloat(htmladcsigfreqps[s].value));
         sigs[s][2] = Math.PI/180*parseFloat(htmladcsigphis[s].value);
     }
-    var width = 0.01; 
+    var width = 1; 
     var mid = (upper+lower)/2;
     var height = (upper - lower)*1.2;
     var graphlower = mid - height/2;
     var graphupper = mid + height/2;
-    console.log(graphlower,graphupper,height,mid);
+    //console.log(graphlower,graphupper,height,mid);
     var canvas = document.getElementById("canvasADCtime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     var ctx = canvas.getContext("2d");
@@ -955,59 +956,99 @@ function ChangedTransducer(){
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
     var size = FillCosineSum(sigs, sigB, Kval, Bval);
-    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
-    //var numsamples = width * adcsamplerate;
-
-    var numsamples = size;
+    if(document.getElementById("ShowADCIn").checked)
+        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    var numsamples = Math.round(width * adcsamplerate-0.5);
+    if(numsamples > maxsamples) numsamples = maxsamples;
 
     var samplesety = new Array(numsamples);
     var samplesett = new Array(numsamples);
-    //Sample Data. use nearest for determining the sample
-    //console.log("START");
+    
+    //Sample data using the math sigs function again
     for(var t = 0; t < numsamples; t++){
-        //samplesett[t] = adcsampleperiod*t;
-        samplesety[t] = sumofsig[t];
-        samplesett[t] = sumofsigt[t];
+        var ctime = adcsampleperiod*t;
+        samplesett[t] = ctime;
+        samplesety[t] = sigB;
+        for(var c = 0; c < numcomps; c++){
+            samplesety[t] += sigs[c][0]*Math.cos(TWOPI*ctime*sigs[c][1]+sigs[c][2]);
+        }
     }
-    //var nextset = 1;
-    //samplesety[0] = sumofsig[0];
-    //for(var i = 1; i < size; i++){
-    //    if(sumofsigt[i] >= samplesett[nextset]){
-    //        samplesety[nextset] = sumofsig[i];
-    //        nextset++;
-    //        console.log("P",sumofsigt[i],samplesett[nextset-1],samplesety[nextset-1],sumofsig[i]);
-    //    }
-    //}
 
     //draw the dots
-    PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",true);
+    if(document.getElementById("ShowDigitized").checked)
+        PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",true);
+
+    //DFT The dots!
+    var N = numsamples;
+    var xkm = new Array(N);
+    var xkp = new Array(N);
+    var xkf = new Array(N);
+    for(var f = 0; f < N; f++){
+        var realsum = 0;
+        var imagsum = 0;
+        for(var n = 0; n < N; n++){
+            realsum += samplesety[n]*Math.cos(-TWOPI*f*n/N);
+            imagsum += samplesety[n]*Math.sin(-TWOPI*f*n/N);
+        }
+        realsum = realsum / N;
+        imagsum = imagsum / N;
+        xkm[f] = Math.sqrt(realsum*realsum+imagsum*imagsum);
+        xkf[f] = adcsamplerate*f/N;
+        xkp[f] = Math.atan2(imagsum,realsum); //in radians!
+        //console.log("f",xkf[f],"m",xkm[f]);
+    }
+    //var dacopts = Math.round(N/2)+1;
+    var dacopts = N;
+    var dacsigs = new Array(dacopts);
+    for(s = 0; s < dacopts; s++){
+        var m = 0;
+        dacsigs[s] = new Array(3);
+        if(xkm[s] > 0.1) m = xkm[s];
+        dacsigs[s][0] = m;
+        dacsigs[s][1] = xkf[s];
+        dacsigs[s][2] = xkp[s];
+    }
+    //console.log(dacsigs);
+    FillCosineSum(dacsigs, 0, 1, 0);
+    //console.log(sumofsig);
+    if(document.getElementById("ShowDACOut").checked)
+        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
+
+    var isHingePoint = false;
+    var halfN = Math.round(N/2);
+    if (halfN/2 > Math.round(halfN/2)){
+        //isHingePoint = true;
+        //halfN++;
+    }
+    else{
+        isHingePoint = true;
+        halfN++;
+    }
+    var filteredDAC = new Array(halfN);
+    for(var s = 0; s < halfN; s++){
+        filteredDAC[s] = new Array(3);
+        if((isHingePoint && s==halfN-1) || s==0)
+            filteredDAC[s][0] = dacsigs[s][0];
+        else
+            filteredDAC[s][0] = 2*dacsigs[s][0];
+        filteredDAC[s][1] = dacsigs[s][1];
+        filteredDAC[s][2] = dacsigs[s][2];
+    }
+    //console.log("Filtered",filteredDAC);
+    FillCosineSum(filteredDAC, 0, 1, 0);
+    if(document.getElementById("ShowFilteredOut").checked)
+        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"purple");
 
     canvas = document.getElementById("canvasADCSpectrum");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
-    
-    initPlot(0,0,20000,1,canvas.width,canvas.height,20000/50,1/20,false,100,100,25,25);
-    GridSetAxisUnits("Hz","X");
+    var stopfreq = adcsamplerate;
+    var stopmag = 1;
+    initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/20,false,100,100,25,25);
+    GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
-    //DFT The dots!
-    var numfreqs = 1000;
-    var xkm = new Array(numfreqs);
-    var xkp = new Array(numfreqs);
-    var xkf = new Array(numfreqs);
-    var k = 1;
-    for(var f = 0; f < numfreqs; f++){
-        var realsum = 0;
-        var imagsum = 0;
-        for(var n = 0; n < numsamples; n++){
-            realsum += samplesety[n]*Math.cos(TWOPI*k*n/numsamples);
-            imagsum -= samplesety[n]*Math.sin(TWOPI*k*n/numsamples);
-        }
-        xkm[f] = Math.sqrt(realsum*realsum+imagsum*imagsum)/numsamples;
-        xkf[f] = k;
-        console.log(k,xkm[f]);
-        k*=1.01;
-    }
-    PlotEvaldFunction(ctx,numfreqs,xkf,xkm,"blue",false);
+    PlotEvaldFunction(ctx,N,xkf,xkm,"blue",false);
+    //console.log(xkm);
 }
 function PlayADCInputSound(){
     var htmladcsigvs = document.getElementsByClassName("adcsignalv");
@@ -1474,18 +1515,18 @@ function LabelFrequencyResponse(event,manual=false){
         currentplotindex = px-plotleft;
     }
     var py = plotdataypix[ix]+plottop;
-    console.log("px",px,"py",py);
+    //console.log("px",px,"py",py);
     var x = plotdatax[ix];
     var y = plotdatay[ix];
     ctx.font = "15px Helvetica";
     ctx.fillStyle = "black";
     ctx.textAlign = "right";
-    console.log(px,py);
+    //console.log(px,py);
     ctx.fillRect(px-2,py-2,5,5);
     var labeltext1 = writeEng(x,"Hz",false,true);
     var labeltext2 = writeTripleString(y,"",false,false);
     var search = labeltext2.search('x');
-    console.log("search",search,"text",labeltext2);
+    //console.log("search",search,"text",labeltext2);
     var exptext = "";
     if(search > -1){
         exptext = labeltext2.substr(search+4,labeltext2.length);
@@ -1533,7 +1574,7 @@ function PlotFrequencyResponse(ctx){
 function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,blockstyle=false){
     var ix, px, py;
     ctx.beginPath();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     ctx.strokeStyle = color;
     //ctx.moveTo(0,0);
     var lastpy = 0;
@@ -1541,9 +1582,10 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,blockstyle=false){
         px = plotxzero+sumofsigt[ix]*plotxfact;
         py = plotyzero-sumofsig[ix]*plotyfact;
         if(blockstyle){
-            if(ix > 0) ctx.lineTo(px,lastpy);
-            ctx.lineTo(px,py);
-            lastpy = py;
+            //if(ix > 0) ctx.lineTo(px,lastpy);
+            //ctx.lineTo(px,py);
+            //lastpy = py;
+            ctx.fillRect(px-2,py-2,5,5);
         }
         else
             ctx.lineTo(px,py);
@@ -1551,7 +1593,7 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,blockstyle=false){
     }
     ctx.stroke();
     ctx.closePath();
-    console.log("done");
+    //console.log("done");
 }
 
 function drawVector(ctx,r,i,x=0,y=0,color="red"){
@@ -1655,11 +1697,11 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
             minor = 0;
             ctx.textAlign = "right";
             ctx.font = "15px Helvetica";
-            console.log("y",y,"plotystart",plotystart,"plotyend",plotyend,"ploytygridstep",plotygridstep);
+            //console.log("y",y,"plotystart",plotystart,"plotyend",plotyend,"ploytygridstep",plotygridstep);
             for(y = 0; y >= plotystart; y-= plotygridstep){
                 py = plotyzero-(y)*plotyfact;
                 ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
-                console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
                 if(minor == 0){
                     minor = 5;
                     ctx.fillRect(plotleft-6,py-1,6,3);
@@ -1672,7 +1714,7 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
             for(y = 0; y <= plotyend; y+= plotygridstep){
                 py = plotyzero-(y)*plotyfact;
                 ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
-                console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
                 if(minor == 0){
                     minor = 5;
                     if(y > 0){
