@@ -887,6 +887,7 @@ function animatecomplex(){
 }
 
 function ChangedTransducer(){
+    document.getElementById("numsamples").textContent = maxsamples;
     var sensora = GrabNumber("sensora","sensorap",true,-999,999);
     var sensorb = GrabNumber("sensorb","sensorbp",true,-999,999);
     var adca = GrabNumber("adca","adcap",true,-999,999);
@@ -958,13 +959,17 @@ function ChangedTransducer(){
     var size = FillCosineSum(sigs, sigB, Kval, Bval);
     if(document.getElementById("ShowADCIn").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
-    var numsamples = Math.round(width * adcsamplerate-0.5);
+    var numsamples = Math.round(width * adcsamplerate);
     if(numsamples > maxsamples) numsamples = maxsamples;
 
+    console.log("number of samples:",numsamples);
+    if(numsamples % 2 > 0)
+        numsamples -= 1;
+    console.log("rounded number of samples:",numsamples);
     var samplesety = new Array(numsamples);
     var samplesett = new Array(numsamples);
     
-    //Sample data using the math sigs function again
+    //Sample data using the math sigs function again (not based on window size of picture)
     for(var t = 0; t < numsamples; t++){
         var ctime = adcsampleperiod*t;
         samplesett[t] = ctime;
@@ -975,9 +980,8 @@ function ChangedTransducer(){
     }
 
     //draw the dots
-    if(document.getElementById("ShowDigitized").checked)
-        PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",true);
-
+    if(document.getElementById("ShowDigitized").checked) PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",false,false,true);
+    if(document.getElementById("ShowBlockStyle").checked) PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",false,true,false);
     //DFT The dots!
     var N = numsamples;
     var xkm = new Array(N);
@@ -1001,10 +1005,10 @@ function ChangedTransducer(){
     var dacopts = N;
     var dacsigs = new Array(dacopts);
     for(s = 0; s < dacopts; s++){
-        var m = 0;
+        //var m = 0;
         dacsigs[s] = new Array(3);
-        if(xkm[s] > 0.1) m = xkm[s];
-        dacsigs[s][0] = m;
+        //if(xkm[s] > 0.1) m = xkm[s];
+        dacsigs[s][0] = xkm[s];
         dacsigs[s][1] = xkf[s];
         dacsigs[s][2] = xkp[s];
     }
@@ -1014,27 +1018,19 @@ function ChangedTransducer(){
     if(document.getElementById("ShowDACOut").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
 
-    var isHingePoint = false;
-    var halfN = Math.round(N/2);
-    if (halfN/2 > Math.round(halfN/2)){
-        //isHingePoint = true;
-        //halfN++;
-    }
-    else{
-        isHingePoint = true;
-        halfN++;
-    }
+    var halfN = Math.round(N/2); //N is now even by above code
+
     var filteredDAC = new Array(halfN);
     for(var s = 0; s < halfN; s++){
         filteredDAC[s] = new Array(3);
-        if((isHingePoint && s==halfN-1) || s==0)
+        if(s==halfN-1 || s==0)
             filteredDAC[s][0] = dacsigs[s][0];
         else
             filteredDAC[s][0] = 2*dacsigs[s][0];
         filteredDAC[s][1] = dacsigs[s][1];
         filteredDAC[s][2] = dacsigs[s][2];
     }
-    //console.log("Filtered",filteredDAC);
+    console.log("Filtered",filteredDAC);
     FillCosineSum(filteredDAC, 0, 1, 0);
     if(document.getElementById("ShowFilteredOut").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"purple");
@@ -1047,7 +1043,7 @@ function ChangedTransducer(){
     initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/20,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
-    PlotEvaldFunction(ctx,N,xkf,xkm,"blue",false);
+    PlotEvaldFunction(ctx,N,xkf,xkm,"blue",true,false,true);
     //console.log(xkm);
 }
 function PlayADCInputSound(){
@@ -1385,7 +1381,7 @@ var plotxpixperdecade;
 var plotypixperdecade;
 var plotleft, plotbottom;
 var plotright, plottop;
-const ArrayLength = 1920;
+const ArrayLength = maxsamples;
 var plotdatax = new Array(ArrayLength);
 var plotdatay = new Array(ArrayLength);
 var plotdataypix = new Array(ArrayLength);
@@ -1571,7 +1567,7 @@ function PlotFrequencyResponse(ctx){
     ctx.closePath();
 }
 
-function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,blockstyle=false){
+function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,blockstyle=false,includedots=false){
     var ix, px, py;
     ctx.beginPath();
     ctx.lineWidth = 1;
@@ -1581,13 +1577,14 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,blockstyle=false){
     for(var ix = 0; ix < size && ix < ArrayLength; ix++){
         px = plotxzero+sumofsigt[ix]*plotxfact;
         py = plotyzero-sumofsig[ix]*plotyfact;
-        if(blockstyle){
-            //if(ix > 0) ctx.lineTo(px,lastpy);
-            //ctx.lineTo(px,py);
-            //lastpy = py;
+        if(includedots)
             ctx.fillRect(px-2,py-2,5,5);
+        if(blockstyle){
+            if(ix > 0) ctx.lineTo(px,lastpy);
+            ctx.lineTo(px,py);
+            lastpy = py;
         }
-        else
+        else if(connectdots)
             ctx.lineTo(px,py);
         //console.log(plotxzero,sumofsigt[ix],sumofsig[ix],plotxfact,px,py);
     }

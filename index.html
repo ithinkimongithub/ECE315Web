@@ -684,8 +684,8 @@
             <select id="adcsignalvbp" onchange="ChangedTransducer()">
                 <option value="-9">nV</option>
                 <option value="-6" >&#181;V</option>
-                <option value="-3">mV</option>
-                <option value="0" selected>V</option>
+                <option value="-3"selected >mV</option>
+                <option value="0" >V</option>
                 <option value="3">kV</option>
                 <option value="6">MV</option>
             </select><br>
@@ -710,16 +710,19 @@
             Phase \(\phi\): <input type="number" class="adcsignalphi" id="adcsignalphi0" min="-360" max="360" value="0" step="any" onchange="ChangedTransducer()"> \(^{\circ}\)
         </div>
         <br>ADC Sampling Rate: 
-        <input type="number" class="adcsample" id="adcsamplerate" min="1" max="999" value="4" step="any" onchange="ChangedTransducer()">
+        <input type="number" class="adcsample" id="adcsamplerate" min="1" max="999" value="21" step="any" onchange="ChangedTransducer()">
         <select id="adcsamplefp" onchange="ChangedTransducer()">
             <option value="0"selected>Hz</option>
             <option value="3">kHz</option>
             <option value="6" >MHz</option>
             <option value="9">GHz</option>
             <option value="12">THz</option>
-        </select><br>
+        </select>
+        <br>The Digital Processing step is limited to <a id="numsamples"></a> samples. If the sample rate is too high,
+        only a portion of the input will be seen and the output will be distorted.<br>
         <input type="checkbox" id="ShowADCIn" onchange="ChangedTransducer()" checked><label for="ShowADCIn">Input Signal</label>
         <input type="checkbox" id="ShowDigitized" onchange="ChangedTransducer()" checked><label for="ShowDigitized">Quantized</label>
+        <input type="checkbox" id="ShowBlockStyle" onchange="ChangedTransducer()" checked><label for="ShowBlockStyle">Block Style</label>
         <input type="checkbox" id="ShowDACOut" onchange="ChangedTransducer()" checked><label for="ShowDACOut">Digitally Processed</label>
         <input type="checkbox" id="ShowFilteredOut" onchange="ChangedTransducer()" checked><label for="ShowFilteredOut">Filtered Output</label>
         <br><canvas id="canvasADCtime" width="1200" height="400" onclick="LabelADCTime(event)"></canvas> 
