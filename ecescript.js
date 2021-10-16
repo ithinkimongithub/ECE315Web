@@ -602,7 +602,7 @@ function ChangedFilter(){
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
 }
 
-function FillCosineSum(signals){
+function FillCosineSum(signals, sigbias=0, xdcrK=1, xdcrB=0){
     var tpi = Math.PI*2;
     var count = 0;
     for(var t = plotxstart; t < plotxend; t+= plotxpixelstep){
@@ -610,7 +610,7 @@ function FillCosineSum(signals){
         for(var f = 0; f < signals.length; f++){
             sum += signals[f][0]*Math.cos(tpi*signals[f][1]*t+signals[f][2]);
         }
-        sumofsig[count]=sum;
+        sumofsig[count]=(sum+sigbias)*xdcrK+xdcrB;
         sumofsigt[count]=t;
         count++;
     }
@@ -931,28 +931,78 @@ function ChangedTransducer(){
     var htmladcsigfreqs = document.getElementsByClassName("adcsignalf");
     var htmladcsigfreqps = document.getElementsByClassName("adcsignalfp");
     var htmladcsigphis = document.getElementsByClassName("adcsignalphi");
+    var adcsamplerate = parseFloat(document.getElementById("adcsamplerate").value)*Math.pow(10,parseFloat(document.getElementById("adcsamplefp").value));
+    var adcsampleperiod = 1/adcsamplerate;
     var numcomps = htmladcsigvs.length;
     var sigs = new Array(numcomps);
-    
+    var sigB = parseFloat(document.getElementById("adcsignalvb").value)*Math.pow(10,parseFloat(document.getElementById('adcsignalvbp').value));
     for(var s = 0; s < numcomps; s++){
         sigs[s] = new Array(3);
-        sigs[s][0] =    parseFloat(htmladcsigvs[s].value)*Math.pow(10,parseFloat(htmladcsigvps[s].value));
+        sigs[s][0] = parseFloat(htmladcsigvs[s].value)*Math.pow(10,parseFloat(htmladcsigvps[s].value));
         sigs[s][1] = parseFloat(htmladcsigfreqs[s].value)*Math.pow(10,parseFloat(htmladcsigfreqps[s].value));
         sigs[s][2] = Math.PI/180*parseFloat(htmladcsigphis[s].value);
     }
     var width = 0.01; 
-    var height = 10;
+    var mid = (upper+lower)/2;
+    var height = (upper - lower)*1.2;
+    var graphlower = mid - height/2;
+    var graphupper = mid + height/2;
+    console.log(graphlower,graphupper,height,mid);
     var canvas = document.getElementById("canvasADCtime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     var ctx = canvas.getContext("2d");
-    initPlot(0,-height*0.6,width,height*0.6,canvas.width,canvas.height,width/50,height/20,false,100,100,25,25);
+    initPlot(0,graphlower,width,graphupper,canvas.width,canvas.height,width/50,height/20,false,100,100,25,25);
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
-    var size = FillCosineSum(sigs);
+    var size = FillCosineSum(sigs, sigB, Kval, Bval);
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
-    
-}
+    var numsamples = width * adcsamplerate;
+    var samplesety = new Array(numsamples);
+    var samplesett = new Array(numsamples);
+    //Sample Data. use nearest for determining the sample
+    console.log("START");
+    for(var t = 0; t < numsamples; t++){
+        samplesett[t] = adcsampleperiod*t;
+    }
+    var nextset = 1;
+    samplesety[0] = sumofsig[0];
+    for(var i = 1; i < size; i++){
+        if(sumofsigt[i] >= samplesett[nextset]){
+            samplesety[nextset] = sumofsig[i];
+            nextset++;
+            console.log("P",sumofsigt[i],samplesett[nextset-1],samplesety[nextset-1],sumofsig[i]);
+        }
+    }
+    //draw the dots
+    PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",true);
 
+    canvas = document.getElementById("canvasADCSpectrum");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+    
+    initPlot(0,0,1000,1,canvas.width,canvas.height,1000/50,1/20,false,100,100,25,25);
+    GridSetAxisUnits("Hz","X");
+    showGrid(ctx,true,false,true);
+    //DFT The dots!
+    var numfreqs = 1000;
+    var xkm = new Array(numfreqs);
+    var xkp = new Array(numfreqs);
+    var xkf = new Array(numfreqs);
+    var k = 100;
+    for(var f = 0; f < numfreqs; f++){
+        var realsum = 0;
+        var imagsum = 0;
+        for(var n = 0; n < numsamples; n++){
+            realsum += samplesety[n]*Math.cos(TWOPI*k*n/numsamples);
+            imagsum -= samplesety[n]*Math.sin(TWOPI*k*n/numsamples);
+        }
+        xkm[f] = Math.sqrt(realsum*realsum+imagsum*imagsum)/numsamples;
+        xkf[f] = k;
+        console.log(k,xkm[f]);
+        k*=1.001;
+    }
+    PlotEvaldFunction(ctx,numfreqs,xkf,xkm,"blue",false);
+}
 function PlayADCInputSound(){
     var htmladcsigvs = document.getElementsByClassName("adcsignalv");
     var htmladcsigvps = document.getElementsByClassName("adcsignalvp");
@@ -1323,7 +1373,7 @@ function initPlot(xmin,ymin,xmax,ymax,canvaswidth,canvasheight,xgridstep,ygridst
     plotxpixgridstep = plotxfact/xgridstep;
     plotypixgridstep = plotyfact/ygridstep;
     plotxzero = (-xmin)/(plotxspan)*plotpixw+left;
-    plotyzero = (-ymin)/(plotyspan)*plotpixh+top;
+    plotyzero = top+(plotpixh-(-ymin)/(plotyspan)*plotpixh);
     plotxfirst = Math.round(plotxstart/plotxgridstep)*plotxgridstep;
     plotyfirst = Math.round(plotystart/plotygridstep)*plotygridstep;
     plotxpixelstep = (plotxspan)/plotpixw;
@@ -1474,16 +1524,23 @@ function PlotFrequencyResponse(ctx){
     ctx.closePath();
 }
 
-function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color){
+function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,blockstyle=false){
     var ix, px, py;
     ctx.beginPath();
     ctx.lineWidth = 2;
     ctx.strokeStyle = color;
     //ctx.moveTo(0,0);
+    var lastpy = 0;
     for(var ix = 0; ix < size && ix < ArrayLength; ix++){
         px = plotxzero+sumofsigt[ix]*plotxfact;
         py = plotyzero-sumofsig[ix]*plotyfact;
-        ctx.lineTo(px,py);
+        if(blockstyle){
+            if(ix > 0) ctx.lineTo(px,lastpy);
+            ctx.lineTo(px,py);
+            lastpy = py;
+        }
+        else
+            ctx.lineTo(px,py);
         //console.log(plotxzero,sumofsigt[ix],sumofsig[ix],plotxfact,px,py);
     }
     ctx.stroke();
@@ -1592,10 +1649,11 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
             minor = 0;
             ctx.textAlign = "right";
             ctx.font = "15px Helvetica";
+            console.log("y",y,"plotystart",plotystart,"plotyend",plotyend,"ploytygridstep",plotygridstep);
             for(y = 0; y >= plotystart; y-= plotygridstep){
                 py = plotyzero-(y)*plotyfact;
                 ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
-                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+                console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
                 if(minor == 0){
                     minor = 5;
                     ctx.fillRect(plotleft-6,py-1,6,3);
@@ -1608,7 +1666,7 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
             for(y = 0; y <= plotyend; y+= plotygridstep){
                 py = plotyzero-(y)*plotyfact;
                 ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
-                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+                console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
                 if(minor == 0){
                     minor = 5;
                     if(y > 0){
