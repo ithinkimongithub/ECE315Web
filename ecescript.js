@@ -482,32 +482,32 @@ function GetResponse(R,L,C,w,topo){
             helper = 1.0-w*w*C*L;
             denom = helper*helper+w*w*R*R*C*C;
             mag = 1.0/Math.sqrt(denom);
-            phi = 180/Math.PI*Math.atan2(w*R*C,helper);
+            phi = -180/Math.PI*Math.atan2(w*R*C,helper);
         break;
         case "SRC":
             mag = 1.0/Math.sqrt(1+w*w*R*R*C*C);
-            phi = 180/Math.PI*Math.atan2(w*R*C,1);
+            phi = -180/Math.PI*Math.atan2(w*R*C,1);
         break;
         case "SCR":
             mag = 1.0/Math.sqrt(1+1/(w*w*R*R*C*C));
-            phi = 180/Math.PI*Math.atan2(-1/(w*R*C),1);
+            phi = -180/Math.PI*Math.atan2(-1/(w*R*C),1);
         break;
         case "SRL":
             mag = 1.0/Math.sqrt(1+R*R/(w*w*L*L));
-            phi = 180/Math.PI*Math.atan2(-R/(w*L),1);
+            phi = -180/Math.PI*Math.atan2(-R/(w*L),1);
         break;
         case "SLR":
             mag = 1.0/Math.sqrt(1+w*w*L*L/(R*R));
-            phi = 180/Math.PI*Math.atan2(w*L/R,1);
+            phi = -180/Math.PI*Math.atan2(w*L/R,1);
         break ;
         case "SLC":
             mag = 1-(w*w*L*C);
-            phi = 180/Math.PI*Math.atan2(0,mag);
+            phi = -180/Math.PI*Math.atan2(0,mag);
             mag = Math.abs(mag);
         break;
         case "SCL":
             mag = 1-1.0/(w*w*L*C);
-            phi = 180/Math.PI*Math.atan2(0,mag);
+            phi = -180/Math.PI*Math.atan2(0,mag);
             mag = Math.abs(mag);
         break;
     }
