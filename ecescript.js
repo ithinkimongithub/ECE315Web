@@ -956,23 +956,29 @@ function ChangedTransducer(){
     showGrid(ctx,true,false,true);
     var size = FillCosineSum(sigs, sigB, Kval, Bval);
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
-    var numsamples = width * adcsamplerate;
+    //var numsamples = width * adcsamplerate;
+
+    var numsamples = size;
+
     var samplesety = new Array(numsamples);
     var samplesett = new Array(numsamples);
     //Sample Data. use nearest for determining the sample
-    console.log("START");
+    //console.log("START");
     for(var t = 0; t < numsamples; t++){
-        samplesett[t] = adcsampleperiod*t;
+        //samplesett[t] = adcsampleperiod*t;
+        samplesety[t] = sumofsig[t];
+        samplesett[t] = sumofsigt[t];
     }
-    var nextset = 1;
-    samplesety[0] = sumofsig[0];
-    for(var i = 1; i < size; i++){
-        if(sumofsigt[i] >= samplesett[nextset]){
-            samplesety[nextset] = sumofsig[i];
-            nextset++;
-            console.log("P",sumofsigt[i],samplesett[nextset-1],samplesety[nextset-1],sumofsig[i]);
-        }
-    }
+    //var nextset = 1;
+    //samplesety[0] = sumofsig[0];
+    //for(var i = 1; i < size; i++){
+    //    if(sumofsigt[i] >= samplesett[nextset]){
+    //        samplesety[nextset] = sumofsig[i];
+    //        nextset++;
+    //        console.log("P",sumofsigt[i],samplesett[nextset-1],samplesety[nextset-1],sumofsig[i]);
+    //    }
+    //}
+
     //draw the dots
     PlotEvaldFunction(ctx,numsamples,samplesett,samplesety,"red",true);
 
@@ -980,7 +986,7 @@ function ChangedTransducer(){
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
     
-    initPlot(0,0,1000,1,canvas.width,canvas.height,1000/50,1/20,false,100,100,25,25);
+    initPlot(0,0,20000,1,canvas.width,canvas.height,20000/50,1/20,false,100,100,25,25);
     GridSetAxisUnits("Hz","X");
     showGrid(ctx,true,false,true);
     //DFT The dots!
@@ -988,7 +994,7 @@ function ChangedTransducer(){
     var xkm = new Array(numfreqs);
     var xkp = new Array(numfreqs);
     var xkf = new Array(numfreqs);
-    var k = 100;
+    var k = 1;
     for(var f = 0; f < numfreqs; f++){
         var realsum = 0;
         var imagsum = 0;
@@ -999,7 +1005,7 @@ function ChangedTransducer(){
         xkm[f] = Math.sqrt(realsum*realsum+imagsum*imagsum)/numsamples;
         xkf[f] = k;
         console.log(k,xkm[f]);
-        k*=1.001;
+        k*=1.01;
     }
     PlotEvaldFunction(ctx,numfreqs,xkf,xkm,"blue",false);
 }
