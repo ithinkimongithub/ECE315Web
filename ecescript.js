@@ -962,10 +962,10 @@ function ChangedTransducer(){
     var numsamples = Math.round(width * adcsamplerate);
     if(numsamples > maxsamples) numsamples = maxsamples;
 
-    console.log("number of samples:",numsamples);
+    //console.log("number of samples:",numsamples);
     if(numsamples % 2 > 0)
         numsamples -= 1;
-    console.log("rounded number of samples:",numsamples);
+    //console.log("rounded number of samples:",numsamples);
     var samplesety = new Array(numsamples);
     var samplesett = new Array(numsamples);
     
@@ -999,7 +999,6 @@ function ChangedTransducer(){
         xkm[f] = Math.sqrt(realsum*realsum+imagsum*imagsum);
         xkf[f] = adcsamplerate*f/N;
         xkp[f] = Math.atan2(imagsum,realsum); //in radians!
-        //console.log("f",xkf[f],"m",xkm[f]);
     }
     //var dacopts = Math.round(N/2)+1;
     var dacopts = N;
@@ -1012,25 +1011,28 @@ function ChangedTransducer(){
         dacsigs[s][1] = xkf[s];
         dacsigs[s][2] = xkp[s];
     }
-    //console.log(dacsigs);
     FillCosineSum(dacsigs, 0, 1, 0);
-    //console.log(sumofsig);
     if(document.getElementById("ShowDACOut").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
 
-    var halfN = Math.round(N/2); //N is now even by above code
-
-    var filteredDAC = new Array(halfN);
-    for(var s = 0; s < halfN; s++){
+    var hinge = N/2;
+    var LPF = adcsamplerate/2;
+    if(!document.getElementById("AutoLPF").checked){
+        LPF = parseFloat(document.getElementById("dacfco").value)*Math.pow(10,parseFloat(document.getElementById("dacfcop").value));
+    }
+    if(LPF > adcsamplerate) LPF = adcsamplerate;
+    var passedN = Math.round(LPF/adcsamplerate*N+0.5); //N is now even by above code
+    var filteredDAC = new Array(passedN);
+    for(var s = 0; s < passedN; s++){
         filteredDAC[s] = new Array(3);
-        if(s==halfN-1 || s==0)
+        if(s==0 || s==hinge)
             filteredDAC[s][0] = dacsigs[s][0];
         else
             filteredDAC[s][0] = 2*dacsigs[s][0];
         filteredDAC[s][1] = dacsigs[s][1];
         filteredDAC[s][2] = dacsigs[s][2];
     }
-    console.log("Filtered",filteredDAC);
+    //console.log("Filtered",filteredDAC);
     FillCosineSum(filteredDAC, 0, 1, 0);
     if(document.getElementById("ShowFilteredOut").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"purple");
@@ -1685,8 +1687,8 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
                 px = plotleft+(x-plotxstart)*plotxfact;
                 ctx.moveTo(px,plottop);   ctx.lineTo(px,plotpixh+plottop);
                 if(minor == 5){
-                    ctx.fillRect(px-1,plottop+plotpixh,3,6);
-                    ctx.fillText(writeEng(x,plotxunit,false,true),px-5,plotpixh+plottop+20);
+                    ctx.fillRect(px-1,plottop+plotpixh,3,10);
+                    ctx.fillText(writeEng(x,plotxunit,false,true),px+30,plotpixh+plottop+25);
                     minor = 0;
                 }
                 minor++;
