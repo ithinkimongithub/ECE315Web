@@ -969,7 +969,7 @@ function ChangedTransducer(){
     var samplesety = new Array(numsamples);
     var samplesett = new Array(numsamples);
     
-    //Sample data using the math sigs function again (not based on window size of picture)
+    //Sample data using the math sigs function again (and quantize for b value)
     for(var t = 0; t < numsamples; t++){
         var ctime = adcsampleperiod*t;
         samplesett[t] = ctime;
@@ -977,6 +977,8 @@ function ChangedTransducer(){
         for(var c = 0; c < numcomps; c++){
             samplesety[t] += sigs[c][0]*Math.cos(TWOPI*ctime*sigs[c][1]+sigs[c][2]);
         }
+        //quantize step:
+        samplesety[t] = lower+res*Math.round((samplesety[t]-lower)/res-0.5);
     }
 
     //draw the dots
@@ -1019,6 +1021,16 @@ function ChangedTransducer(){
     var LPF = adcsamplerate/2;
     if(!document.getElementById("AutoLPF").checked){
         LPF = parseFloat(document.getElementById("dacfco").value)*Math.pow(10,parseFloat(document.getElementById("dacfcop").value));
+    }
+    else{
+        var LPFshow = LPF;
+        var LPFpow = "0";
+        if(LPF >= 1000){
+            LPFshow = LPF/1000;
+            LPFpow = "3";
+        }
+        document.getElementById("dacfco").value = LPFshow;
+        document.getElementById("dacfcop").value = LPFpow;
     }
     if(LPF > adcsamplerate) LPF = adcsamplerate;
     var passedN = Math.round(LPF/adcsamplerate*N+0.5); //N is now even by above code
