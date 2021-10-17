@@ -1212,8 +1212,30 @@ function ChangedDR(){
     "="+writeEng(bitrate2,"bps",false,true); 
     NewMathAtItem(eqnsolvebitrate2,"DRsolveBR");
 
-    
-
+    var bitrate3 = GrabNumber("DRrate3","DRrate3p",true,1,999);
+    var time3 = parseFloat(document.getElementById("DRtime3").value);
+    var timeunit3 = document.getElementById("DRtimeM3").value;
+    var multiplier3 = getmultiplier(timeunit3);
+    var timeconv3 = "";
+    if(timeunit3 == "min") timeconv3 = "\\times\\frac{60s}{1min}";
+    if(timeunit3 == "hr") timeconv3 = "\\times\\frac{3600s}{1hr}";
+    var memorybits = bitrate3*time3*multiplier3;
+    var memorybytes = memorybits/8;
+    var KBs = memorybytes/1024;
+    var MBs = KBs/1024;
+    var GBs = MBs/1024;
+    var TBs = GBs/1024;
+    var memanswer = memorybytes;
+    var mempower3 = 0;
+    var memconv = "";
+    if(TBs >= 1){      memconv = "\\times\\frac{1TB}{2^{40}B}";mempower3 = 40; memanswer=TBs }
+    else if(GBs >= 1){ memconv = "\\times\\frac{1GB}{2^{30}B}";mempower3 = 30; memanswer=GBs }
+    else if(MBs >= 1){ memconv = "\\times\\frac{1MB}{2^{20}B}";mempower3 = 20; memanswer=MBs }
+    else if(KBs >= 1){ memconv = "\\times\\frac{1KB}{2^{10}B}";mempower3 = 10; memanswer=KBs }
+    var DRprob3exp = "Memory=DataRate\\times Time="+writeEng(bitrate3,"bps")+"\\times"+time3.toFixed(2)+timeunit3+"=\\frac{"+
+        writeTripleLatex(bitrate3,"b")+"}{s}\\times\\frac{1B}{8b}"+memconv+"\\times"+time3.toFixed(2)+timeunit3+timeconv3+"="+
+        writeMemory(memanswer,mempower3);
+    NewMathAtItem(DRprob3exp,"DRsolveMem");
 }
 
 
