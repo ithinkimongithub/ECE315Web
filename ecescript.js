@@ -577,11 +577,11 @@ function ChangedFilter(){
     showGrid(ctx,true,false,true);
     FillFrequencyResponse(R,L,C,topo);
     PlotFrequencyResponse(ctx,R,L,C,topo);
-    var SignalVs = document.getElementsByClassName("SignalV");
-    var SignalVPs = document.getElementsByClassName("SignalVP");
-    var SignalFs = document.getElementsByClassName("SignalF");
-    var SignalFPs = document.getElementsByClassName("SignalFP");
-    var SignalPhis = document.getElementsByClassName("SignalPhase");
+    var SignalVs = document.getElementsByClassName("filtervoltage");
+    var SignalVPs = document.getElementsByClassName("filtervoltagep");
+    var SignalFs = document.getElementsByClassName("filterfreq");
+    var SignalFPs = document.getElementsByClassName("filterfreqp");
+    var SignalPhis = document.getElementsByClassName("filterphi");
     var sig = new Array(SignalVs.length);
     var height = 1;
     var width  = 0.1;
@@ -1258,12 +1258,12 @@ function HideCanvasD(){
     ToggleCanvas("canvasDACtime");
 }
 
-function PlayADCInputSound(){
-    var htmladcsigvs = document.getElementsByClassName("adcsignalv");
-    var htmladcsigvps = document.getElementsByClassName("adcsignalvp");
-    var htmladcsigfreqs = document.getElementsByClassName("adcsignalf");
-    var htmladcsigfreqps = document.getElementsByClassName("adcsignalfp");
-    var htmladcsigphis = document.getElementsByClassName("adcsignalphi");
+function PlaySound(vs, vps, fs, fps, phis){
+    var htmladcsigvs = document.getElementsByClassName(vs);
+    var htmladcsigvps = document.getElementsByClassName(vps);
+    var htmladcsigfreqs = document.getElementsByClassName(fs);
+    var htmladcsigfreqps = document.getElementsByClassName(fps);
+    var htmladcsigphis = document.getElementsByClassName(phis);
     var audioCtx = new (window.AudioContext || window.webkitAudioContext || window.audioContext);
     for(var s = 0; s < htmladcsigvs.length; s++){
         var oscillator = audioCtx.createOscillator();
@@ -1276,6 +1276,18 @@ function PlayADCInputSound(){
         oscillator.start(audioCtx.currentTime);
         oscillator.stop(audioCtx.currentTime + ((1000 || 500) / 1000));
     }
+}
+
+function PlayFilterInput(){
+    PlaySound("filtervoltage","filtervoltagep","filterfreq","filterfreqp","filterphi");
+}
+
+function PlayFilterOutput(){
+    PlaySound("outv","outvp","outf","outfp","outphi");
+}
+
+function PlayADCInputSound(){
+    PlaySound("adcsignalv","adcsignalvp","adcsignalf","adcsignalfp","adcsignalphi");
 }
 
 function beep(duration, frequency, volume, type, callback) {
@@ -1294,6 +1306,17 @@ function beep(duration, frequency, volume, type, callback) {
     oscillator.stop(audioCtx.currentTime + ((duration || 500) / 1000));
 };
 
+var currentoutput = 0;
+function AddOutputComponent(){
+    currentoutput++;
+    var newid = currentoutput.toFixed(0);
+    var signalhtmls = document.getElementsByClassName("outputadd");
+    var element = signalhtmls[signalhtmls.length-1];
+    var clone = element.cloneNode(true);
+    clone.id = "outputpart"+newid;
+    element.after(clone);
+}
+
 var currentfreq = 0;
 function AddSignalFreq(){
     currentfreq++;
@@ -1306,12 +1329,25 @@ function AddSignalFreq(){
     element.after(clone);
 }
 
-function AutoSquare(){
-    var htmladcsigvs = document.getElementsByClassName("adcsignalv");
-    var htmladcsigvps = document.getElementsByClassName("adcsignalvp");
-    var htmladcsigfreqs = document.getElementsByClassName("adcsignalf");
-    var htmladcsigfreqps = document.getElementsByClassName("adcsignalfp");
-    var htmladcsigphis = document.getElementsByClassName("adcsignalphi");
+var currentfilterfreq = 0;
+function AddFilterComponent(){
+    currentfilterfreq++;
+    var newid = currentfilterfreq.toFixed(0);
+    var signalhtmls = document.getElementsByClassName("addablepart");
+    var element = signalhtmls[signalhtmls.length-1];
+    var clone = element.cloneNode(true);
+    clone.id = "filterpart"+newid;
+    element.after(clone);
+    AddOutputComponent();
+}
+
+function AutoSquareWhat(vs, vps, fs, fps, phis)
+{
+    var htmladcsigvs = document.getElementsByClassName(vs);
+    var htmladcsigvps = document.getElementsByClassName(vps);
+    var htmladcsigfreqs = document.getElementsByClassName(fs);
+    var htmladcsigfreqps = document.getElementsByClassName(fps);
+    var htmladcsigphis = document.getElementsByClassName(phis);
     var q = htmladcsigvs.length;
     var v0 = htmladcsigvs[0].value;
     var vx;
@@ -1342,8 +1378,14 @@ function AutoSquare(){
         htmladcsigfreqs[t].value=fx;
         htmladcsigfreqps[t].value=fp;
         htmladcsigphis[t].value=phase;
-        //console.log(vx,vp,fx,fp);
     }    
+}
+function AutoSquareFilter(){
+    AutoSquareWhat("filtervoltage","filtervoltagep","filterfreq","filterfreqp","filterphi");
+}
+
+function AutoSquare(){
+    AutoSquareWhat("adcsignalv","adcsignalvp","adcsignalf","adcsignalfp","adcsignalphi");
 }
 
 function ChangedAC(){
