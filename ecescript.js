@@ -969,7 +969,7 @@ function ChangedTransducer(){
     var samplesety = new Array(numsamples);
     var samplesett = new Array(numsamples);
     
-    //Sample data using the math sigs function again (and quantize for b value)
+    //Sample data using the math sigs function again (and use the bias, K, and B to quantize for b value)
     for(var t = 0; t < numsamples; t++){
         var ctime = adcsampleperiod*t;
         samplesett[t] = ctime;
@@ -977,6 +977,8 @@ function ChangedTransducer(){
         for(var c = 0; c < numcomps; c++){
             samplesety[t] += sigs[c][0]*Math.cos(TWOPI*ctime*sigs[c][1]+sigs[c][2]);
         }
+        //scale for the XDCR interface:
+        samplesety[t] = samplesety[t]*Kval+Bval;
         //quantize step:
         samplesety[t] = lower+res*Math.round((samplesety[t]-lower)/res-0.5);
     }
@@ -1034,6 +1036,10 @@ function ChangedTransducer(){
         document.getElementById("dacfcop").value = LPFpow;
     }
     if(LPF > adcsamplerate) LPF = adcsamplerate;
+    var HPF = xkf[1];
+    if(!document.getElementById("AutoHPF").checked){
+        HPF = parseFloat(document.getElementById("dachfco").value)*Math.pow(10,parseFloat(document.getElementById("dachfcop").value));
+    }
     var passedN = Math.round(LPF/adcsamplerate*N+0.5); //N is now even by above code
     var filteredDAC = new Array(passedN);
     var filteredms  = new Array(passedN);
@@ -1043,6 +1049,7 @@ function ChangedTransducer(){
         filteredDAC[s][1] = dacsigs[s][1];
         filteredDAC[s][2] = dacsigs[s][2];
         filteredms[s] = dacsigs[s][0];
+        if(filteredDAC[s][1]<HPF) filteredms[s] = 0;
     }
     for(var s = passedN; s < dacopts; s++){
         filteredms[s] = 0;
@@ -1056,7 +1063,7 @@ function ChangedTransducer(){
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
     var stopfreq = adcsamplerate/2;
-    var stopmag = 1;
+    var stopmag = upper*0.7;
     initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/20,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
@@ -1588,7 +1595,7 @@ function PlotFrequencyResponse(ctx){
 function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,blockstyle=false,includedots=false){
     var ix, px, py;
     ctx.beginPath();
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
     ctx.strokeStyle = color;
     //ctx.moveTo(0,0);
     var lastpy = 0;
