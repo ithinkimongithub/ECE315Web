@@ -894,10 +894,14 @@ function ChangedTransducer(){
     var adcb = GrabNumber("adcb","adcbp",true,-999,999);
     var testv = GrabNumber("testvoltage","testvoltagep",true,-999,999);
     var bitsize = GrabNumber("bitsize","",false,1,128);
+    bitsize = Math.round(bitsize);
+    document.getElementById("bitsize").value = bitsize;
     var deltay = adca-adcb;
     var deltax = sensora-sensorb;
     var Kval = deltay/deltax;
     var Bval = adca-Kval*sensora;
+    var inverseK = 1/Kval;
+    var inverseB = sensora-inverseK*adca;
     var Kexpanswer = writeTripleLatex(Kval,"");
     if(Kval < 1) Kexpanswer = Kval.toFixed(4);
     var Keqn = "K=\\frac{V_{Out,Max}-V_{Out,Min}}{V_{In,Max}-V_{In,Min}}=\\frac{V_{ADC,A}-V_{ADC,B}}{V_{Sensor,A}-V_{Sensor,B}}=\\frac{"
@@ -917,15 +921,15 @@ function ChangedTransducer(){
         upper = adca;
     }
     res = Math.abs(adcb-adca)/Math.pow(2,bitsize);
-    var deltaveqn = "\\Delta V=\\frac{V_{Max}-V_{Min}}{2^b}=\\frac{"+writeEng(upper,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{2^"+bitsize.toFixed(0)+"}="+writeEng(res,"V/level",false,true);
+    var deltaveqn = "\\text{Resolution: }\\Delta V=\\frac{V_{Max}-V_{Min}}{2^b}=\\frac{"+writeEng(upper,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{2^"+bitsize.toFixed(0)+"}="+writeEng(res,"V/level",false,true);
     NewMathAtItem(deltaveqn,"deltaV");
     var evald = (vout-lower)/res;
-    var evaleqn = "EL=\\frac{V_{In}-V_{Min}}{\\Delta V}=\\frac{"+writeEng(vout,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{"+writeEng(res,"V/level",false,true)+"}="
+    var evaleqn = "\\text{Evaluated Level: }EL=\\frac{V_{In}-V_{Min}}{\\Delta V}=\\frac{"+writeEng(vout,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{"+writeEng(res,"V/level",false,true)+"}="
         +evald.toFixed(3)+" levels\\rightarrow QL=Floor(EL)="+(evald-0.5).toFixed(0);
     NewMathAtItem(evaleqn,"evallevel");
     var QE = res*(evald - parseFloat((evald-0.5).toFixed(0)));
     //console.log(parseFloat((evald-0.5).toFixed(0)),res,QE);
-    var QEeqn = "QE = \\Delta V\\times(EL - QL) ="+writeEng(QE,"V",false,true);
+    var QEeqn = "\\text{Quantization Error: }QE = \\Delta V\\times(EL - QL) ="+writeEng(QE,"V",false,true);
     NewMathAtItem(QEeqn,"quantizationerror");
 
     var htmladcsigvs = document.getElementsByClassName("adcsignalv");
@@ -945,20 +949,47 @@ function ChangedTransducer(){
         sigs[s][2] = Math.PI/180*parseFloat(htmladcsigphis[s].value);
     }
     var width = 1; 
+    var canvas, ctx;
+    
+    //sensor Plot
+    var sensormin = sensora;
+    var sensormax = sensorb;
+    if(sensora > sensorb){
+        sensormin = sensorb;
+        sensormax = sensora;
+    }
+    var sensorrange = sensormax-sensormin;
+    canvas = document.getElementById("canvasXDCRtime");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+    initPlot(0,sensormin,width,sensormax,canvas.width,canvas.height,width/50,sensorrange/20,false,100,100,25,25);
+    GridSetAxisUnits("s","V");
+    showGrid(ctx,true,false,true);
+    var size = FillCosineSum(sigs, sigB, 1, 0);
+    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Sensor Output / XDCR Interface Input v(t)",100,20);
+
+    //ADC Input and Output Plot
     var mid = (upper+lower)/2;
     var height = (upper - lower)*1.2;
     var graphlower = mid - height/2;
     var graphupper = mid + height/2;
     //console.log(graphlower,graphupper,height,mid);
-    var canvas = document.getElementById("canvasADCtime");
+    canvas = document.getElementById("canvasADCtime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
-    var ctx = canvas.getContext("2d");
+    ctx = canvas.getContext("2d");
     initPlot(0,graphlower,width,graphupper,canvas.width,canvas.height,width/50,height/20,false,100,100,25,25);
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
     var size = FillCosineSum(sigs, sigB, Kval, Bval);
     if(document.getElementById("ShowADCIn").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("XDCR Interface Output / ADC Input v(t) through DAC Output",100,20);
     var numsamples = Math.round(width * adcsamplerate);
     if(numsamples > maxsamples) numsamples = maxsamples;
 
@@ -970,6 +1001,7 @@ function ChangedTransducer(){
     var samplesett = new Array(numsamples);
     
     //Sample data using the math sigs function again (and use the bias, K, and B to quantize for b value)
+    var bitmax = Math.pow(2,bitsize)-1;
     for(var t = 0; t < numsamples; t++){
         var ctime = adcsampleperiod*t;
         samplesett[t] = ctime;
@@ -979,8 +1011,11 @@ function ChangedTransducer(){
         }
         //scale for the XDCR interface:
         samplesety[t] = samplesety[t]*Kval+Bval;
-        //quantize step:
-        samplesety[t] = lower+res*Math.round((samplesety[t]-lower)/res-0.5);
+        //quantize step and clip
+        var q = Math.round((samplesety[t]-lower)/res-0.5);
+        if (q > bitmax) q = bitmax;
+        if (q < 0) q = 0;
+        samplesety[t] = lower+res*q;
     }
 
     //draw the dots
@@ -1021,11 +1056,9 @@ function ChangedTransducer(){
     if(document.getElementById("ShowDACOut").checked)
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
 
-    var LPF = adcsamplerate/2;
-    if(!document.getElementById("AutoLPF").checked){
-        LPF = parseFloat(document.getElementById("dacfco").value)*Math.pow(10,parseFloat(document.getElementById("dacfcop").value));
-    }
-    else{
+    var LPF;
+    if(document.getElementById("AutoLPF").checked){
+        LPF = adcsamplerate/2;
         var LPFshow = LPF;
         var LPFpow = "0";
         if(LPF >= 1000){
@@ -1034,6 +1067,11 @@ function ChangedTransducer(){
         }
         document.getElementById("dacfco").value = LPFshow;
         document.getElementById("dacfcop").value = LPFpow;
+    }
+    else{
+        var checkLPF;
+        checkLPF = parseFloat(document.getElementById("dacfco").value)*Math.pow(10,parseFloat(document.getElementById("dacfcop").value));
+        if(checkLPF < LPF) LPF = checkLPF;
     }
     if(LPF > adcsamplerate) LPF = adcsamplerate;
     var HPF = xkf[1];
@@ -1049,28 +1087,70 @@ function ChangedTransducer(){
         filteredDAC[s][1] = dacsigs[s][1];
         filteredDAC[s][2] = dacsigs[s][2];
         filteredms[s] = dacsigs[s][0];
-        if(filteredDAC[s][1]<HPF) filteredms[s] = 0;
+        if(filteredDAC[s][1]<HPF){
+            filteredms[s] = 0;
+            filteredDAC[s][0] = 0;
+        }
     }
     for(var s = passedN; s < dacopts; s++){
         filteredms[s] = 0;
     }
-    //console.log("Filtered",filteredDAC);
-    FillCosineSum(filteredDAC, 0, 1, 0);
-    if(document.getElementById("ShowFilteredOut").checked)
-        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"purple");
+    
 
     canvas = document.getElementById("canvasADCSpectrum");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
     var stopfreq = adcsamplerate/2;
     var stopmag = upper*0.7;
-    initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/20,false,100,100,25,25);
+    initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
-    PlotEvaldFunction(ctx,dacopts,xkf,xkm,"green",true,false,true);
-    PlotEvaldFunction(ctx,dacopts,xkf,filteredms,"purple",true,false,true);
+    PlotEvaldFunction(ctx,dacopts,xkf,xkm,"green",false,false,true,true);
+    PlotEvaldFunction(ctx,dacopts,xkf,filteredms,"purple",false,false,true,true);
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Spectrum of Sampled Data and Filtered DAC Output",100,20);
     //console.log(xkm);
+
+    //DAC Plot
+    canvas = document.getElementById("canvasDACtime");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+    initPlot(0,sensormin,width,sensormax,canvas.width,canvas.height,width/50,sensorrange/20,false,100,100,25,25);
+    GridSetAxisUnits("s","V");
+    showGrid(ctx,true,false,true);
+    console.log(filteredDAC);
+    FillCosineSum(filteredDAC, 0, inverseK, 0);
+    console.log(sumofsig);
+    console.log(size);
+    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"purple");
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Filtered DAC Output",100,20);
+    console.log(inverseK,inverseB);
 }
+
+
+
+function ToggleCanvas(which){
+    if(document.getElementById(which).style.display == "none")
+        document.getElementById(which).style.display = "block";
+    else
+        document.getElementById(which).style.display = "none";
+}
+function HideCanvasX(){
+    ToggleCanvas("canvasXDCRtime");
+}
+function HideCanvasA(){
+    ToggleCanvas("canvasADCtime");
+}
+function HideCanvasS(){
+    ToggleCanvas("canvasADCSpectrum");
+}
+function HideCanvasD(){
+    ToggleCanvas("canvasDACtime");
+}
+
 function PlayADCInputSound(){
     var htmladcsigvs = document.getElementsByClassName("adcsignalv");
     var htmladcsigvps = document.getElementsByClassName("adcsignalvp");
@@ -1592,10 +1672,13 @@ function PlotFrequencyResponse(ctx){
     ctx.closePath();
 }
 
-function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,blockstyle=false,includedots=false){
+function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,blockstyle=false,includedots=false,discretespikes=false){
     var ix, px, py;
     ctx.beginPath();
-    ctx.lineWidth = 2;
+    if(discretespikes)
+        ctx.lineWidth = 5;
+    else
+        ctx.lineWidth = 2;
     ctx.strokeStyle = color;
     //ctx.moveTo(0,0);
     var lastpy = 0;
@@ -1604,6 +1687,7 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,bl
         py = plotyzero-sumofsig[ix]*plotyfact;
         if(includedots)
             ctx.fillRect(px-2,py-2,5,5);
+
         if(blockstyle){
             if(ix > 0) ctx.lineTo(px,lastpy);
             ctx.lineTo(px,py);
@@ -1611,6 +1695,10 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,bl
         }
         else if(connectdots)
             ctx.lineTo(px,py);
+        else if(discretespikes){
+            ctx.moveTo(px,plotyzero);
+            ctx.lineTo(px,py);
+        }
         //console.log(plotxzero,sumofsigt[ix],sumofsig[ix],plotxfact,px,py);
     }
     ctx.stroke();

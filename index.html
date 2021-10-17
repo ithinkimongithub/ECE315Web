@@ -621,7 +621,10 @@
     </div>
 
     <div class="tabcontent" id="TransducerInterface">
-        Build and test a Transducer Interface
+        Design and Inspect a Transducer Interface and ADC/DAC. For those who care: frequencies are constrained to the range of 0..\(\frac{1}{2}f_s\)
+         due to the use of a DFT to model the DAC's output filtering. 
+        <br>Enter sensor and ADC voltage ranges and we'll find \(K\) and \(B\) to generate a XDCR interface. (Sensor voltages can be increasing or
+        decreasing, so it is not called \(Min\) & \(Max\)):
         <br>Sensor Voltage A: <input type="number" id="sensora" min="-999" max="999" value="-20" step="any" onchange="ChangedTransducer()">
         <select id="sensorap" onchange="ChangedTransducer()">
             <option value="-9">nV</option>
@@ -658,7 +661,9 @@
             <option value="3">kV</option>
             <option value="6">MV</option>
         </select>
-        <br>Test Sensor Voltage: <input type="number" id="testvoltage" min="-999" max="999" value="10" step="any" onchange="ChangedTransducer()">
+        <p id="Keqn">Compute K</p>
+        <p id="Beqn">Compute B</p>
+        Test the interface with a specific voltage \(V_{In}\): <input type="number" id="testvoltage" min="-999" max="999" value="11" step="any" onchange="ChangedTransducer()">
         <select id="testvoltagep" onchange="ChangedTransducer()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -667,15 +672,13 @@
             <option value="3">kV</option>
             <option value="6">MV</option>
         </select>
-        <p>Beware that the ADC Min may match to the Sensor Max. For that reason, assign the values "A" and "B" as opposed to Min/Max.</p>
-        <p id="Keqn">Compute K</p>
-        <p id="Beqn">Compute B</p>
         <p id="Vout">Compute Vout</p>
-        <br>ADC Sample Size (b=): <input type="number" id="bitsize" min="1" max="128" value="8" step="any" onchange="ChangedTransducer()">
+        Finish designing the ADC by defining \(b\): <input type="number" id="bitsize" min="1" max="128" value="8" step="1" onchange="ChangedTransducer()">
         <p id="deltaV">Compute DV</p>
         <p id="evallevel">Compute ELandQL</p>
         <p id="quantizationerror">Compute QE</p>
-        Now let's push the signal through the interface and plot how the sampling will occur over time:
+        Now let's specify a sensor as a function of time and watch how it is sampled, quantized, encoded, and then recreated over a 1-second
+        time period. The vertical range of each graph is determined by the transducer interface design from above.
         <br><button onclick="AddSignalFreq()">Add Signal Component</button>
         <button onclick="AutoSquare()">Square Wave</button>
         <button onclick="ChangedTransducer()">Update Graph</button>
@@ -709,6 +712,8 @@
             </select>
             Phase \(\phi\): <input type="number" class="adcsignalphi" id="adcsignalphi0" min="-360" max="360" value="0" step="any" onchange="ChangedTransducer()"> \(^{\circ}\)
         </div>
+        <button onclick="HideCanvasX()" id="buttonHideX">Show/Hide Sensor</button>
+        <br><canvas id="canvasXDCRtime" width="1200" height="400" onclick="LabelXDCRTime(event)"></canvas>
         <br>ADC Sampling Rate: 
         <input type="number" class="adcsample" id="adcsamplerate" min="1" max="999" value="49" step="any" onchange="ChangedTransducer()">
         <select id="adcsamplefp" onchange="ChangedTransducer()">
@@ -724,7 +729,6 @@
         <input type="checkbox" id="ShowDigitized" onchange="ChangedTransducer()" checked><label for="ShowDigitized">Quantized</label>
         <input type="checkbox" id="ShowBlockStyle" onchange="ChangedTransducer()" ><label for="ShowBlockStyle">Block Style</label>
         <input type="checkbox" id="ShowDACOut" onchange="ChangedTransducer()" ><label for="ShowDACOut">Digitally Processed</label>
-        <input type="checkbox" id="ShowFilteredOut" onchange="ChangedTransducer()" ><label for="ShowFilteredOut">Filtered Output</label>
         <br><input type="checkbox" id="AutoHPF" onchange="ChangedTransducer()" checked><label for="AutoHPF">Auto DAC HPF \(F_{co}\):</label>
         <input type="number" id="dachfco" min="1" max="999" value="1" step="any" onchange="ChangedTransducer()">
                 <select id="dachfcop" onchange="ChangedTransducer()">
@@ -742,9 +746,13 @@
                 <option value="6" >MHz</option>
                 <option value="9">GHz</option>
                 <option value="12">THz</option>
-            </select>
-        <br><canvas id="canvasADCtime" width="1200" height="400" onclick="LabelADCTime(event)"></canvas> 
-        <br><canvas id="canvasADCSpectrum" width="1200" height="200" onclick="LabelADCSpectrum(event)"></canvas> 
+            </select> If \(f_{co}\nleq \frac{1}{2}f_{s}\) then the entry is ignored. This page only models frequencies up to \(\frac{1}{2}f_s\)
+        <br><button onclick="HideCanvasA()" id="buttonHideX">Show/Hide ADC</button>
+        <br><canvas id="canvasADCtime" width="1200" height="400" onclick="LabelADCTime(event)"></canvas>
+        <br><button onclick="HideCanvasS()" id="buttonHideX">Show/Hide Spectrum</button>
+        <br><canvas id="canvasADCSpectrum" width="1200" height="200" onclick="LabelADCSpectrum(event)"></canvas>
+        <br><button onclick="HideCanvasD()" id="buttonHideX">Show/Hide DAC</button>
+        <br><canvas id="canvasDACtime" width="1200" height="400" onclick="LabelDACTime(event)"></canvas>
         <hr />
     </div>
 
