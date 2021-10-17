@@ -541,13 +541,13 @@
         <button id="BodeRight" onclick="BodeSlew(1)">Step Right</button>
         <button id="BodeRightDec" onclick="BodeSlew(10)">Decade Right</button>
         <hr />
-        <br><button onclick="AddFilterComponent()">Add Signal Component</button>
+        Input: Construct a signal on your own or add a bunch of components and hit the "Square Wave." Then hit "Update System"<br>
+        <button onclick="AddFilterComponent()">Add Signal Component</button>
         <button onclick="AutoSquareFilter()">Square Wave</button>
         <button onclick="ChangedFilter()">Update System</button>
         <button onclick="PlayFilterInput()">Input Sound</button>
         <button onclick="PlayFilterOutput()">Output Sound</button><br>
-        Input:<br>
-        Bias (V): <input type="number" id="filterbias" min="-999" max="999" value="100" step="any" onchange="ChangedFilter()">
+        Bias (V): <input type="number" id="filterbias" min="-999" max="999" value="0" step="any" onchange="ChangedFilter()">
             <select id="filterbiasp" onchange="ChangedFilter()">
                 <option value="-9">nV</option>
                 <option value="-6" >&#181;V</option>
@@ -557,16 +557,16 @@
                 <option value="6">MV</option>
             </select><br>
         <div id="inputpart1" class="addablepart">
-            Voltage: <input class="filtervoltage" type="number" id="filtersig0" min="-999" max="999" value="800" step="any" onchange="ChangedFilter()">
+            Voltage: <input class="filtervoltage" type="number" id="filtersig0" min="-999" max="999" value="1" step="any" onchange="ChangedFilter()">
             <select class="filtervoltagep" id="filtersig0p" onchange="ChangedFilter()">
                 <option value="-9">nV</option>
                 <option value="-6" >&#181;V</option>
-                <option value="-3"selected>mV</option>
-                <option value="0" >V</option>
+                <option value="-3">mV</option>
+                <option value="0" selected>V</option>
                 <option value="3">kV</option>
                 <option value="6">MV</option>
             </select>
-            Frequency: <input class="filterfreq" type="number" id="filtersigf0" min="1" max="999" value="100" step="any" onchange="ChangedFilter()">
+            Frequency: <input class="filterfreq" type="number" id="filtersigf0" min="1" max="999" value="400" step="any" onchange="ChangedFilter()">
             <select class="filterfreqp" id="filtersigf0p" onchange="ChangedFilter()">
                 <option value="0"selected >Hz</option>
                 <option value="3">kHz</option>
@@ -576,7 +576,7 @@
             </select>
             Phase \(\phi\): <input type="number" class="filterphi" id="filtersigphi" min="-360" max="360" value="0" step="any" onchange="ChangedFilter()"> \(^{\circ}\)
         </div>
-        Output: 
+        <br>Output (as determined by the magnitude and phase response of the above chosen R, L, C and topology): 
         <br>Bias (V): <input type="number" id="outputbias" min="-999" max="999" value="100" step="any" disabled>
             <select id="outputbiasp" disabled>
                 <option value="-9">nV</option>
@@ -606,6 +606,27 @@
             </select>
             Phase \(\phi\): <input type="number" class="outphi" id="outphi0" min="-360" max="360" value="0" step="any" disabled> \(^{\circ}\)
         </div>
+        <br>Time Window: <input type="number" id="timewindow" min="1" max="999" value="10" step="any" onchange="ChangedFilter()">
+        <select id="timewindowp" onchange="ChangedFilter()">
+            <option value=-15>fs</option>
+            <option value=-12>ps</option>
+            <option value=-9>ns</option>
+            <option value=-6>&#181;s</option>
+            <option value=-3 selected>ms</option>
+            <option value=0>s</option>
+        </select>
+        <input type="checkbox" id="checktimewindow" onchange="ChangedFilter()" checked><label for="checktimewindow">Auto Scale Time</label>
+        <br>Voltage Window: <input type="number" id="vwindow" min="1" max="999" value="1" step="any" onchange="ChangedFilter()">
+        <select id="vwindowp" onchange="ChangedFilter()">
+            <option value=-15>fV</option>
+            <option value=-12>pV</option>
+            <option value=-9>nV</option>
+            <option value=-6>&#181;V</option>
+            <option value=-3 >mV</option>
+            <option value=0 selected>V</option>
+            <option value=3>kV</option>
+        </select>
+        <input type="checkbox" id="checkvoltagewindow" onchange="ChangedFilter()" checked><label for="checkvoltagewindow">Auto Scale Voltage</label>
         <br><canvas id="canvasFilterTime" width="1200" height="500" onclick="LabelFilterTime(event)"></canvas> 
         <br><canvas id="canvasFilterSpectrum" width="1200" height="500" onclick="LabelFilterSpectrum(event)"></canvas> 
     </div>

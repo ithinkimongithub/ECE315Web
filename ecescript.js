@@ -582,9 +582,9 @@ function ChangedFilter(){
     var SignalFs = document.getElementsByClassName("filterfreq");
     var SignalFPs = document.getElementsByClassName("filterfreqp");
     var SignalPhis = document.getElementsByClassName("filterphi");
-    var sig = new Array(SignalVs.length);
+    var sig = new Array(SignalVs.length+1);
     var height = 1;
-    var width  = 0.1;
+    var width  = GrabNumber("timewindow","timewindowp",true,1,999);
     for(var i = 0; i < SignalVs.length; i++){
         sig[i] = new Array(3); //mag, freq,phase
         sig[i][0] = parseFloat(SignalVs[i].value)*Math.pow(10,parseFloat(SignalVPs[i].value));
@@ -592,6 +592,10 @@ function ChangedFilter(){
         sig[i][1] = parseFloat(SignalFs[i].value)*Math.pow(10,parseFloat(SignalFPs[i].value));
         sig[i][2] = Math.PI/180*parseFloat(SignalPhis[i].value);
     }
+    sig[SignalVs.length]=new Array(3); //mag, freq,phase
+    sig[SignalVs.length][0]=GrabNumber("filterbias","filterbiasp",true,0,999);
+    sig[SignalVs.length][1]=0;
+    sig[SignalVs.length][2]=0;
     canvas = document.getElementById("canvasFilterTime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
@@ -601,6 +605,31 @@ function ChangedFilter(){
     showGrid(ctx,true,false,true);
     var size = FillCosineSum(sig);
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    
+    //reset the outputs for each Filter response given an input
+    var outvs = document.getElementsByClassName("outv");
+    var outvps = document.getElementsByClassName("outvp");
+    var outfs = document.getElementsByClassName("outf");
+    var outfps = document.getElementsByClassName("outfp");
+    var outphis = document.getElementsByClassName("outphi");
+    for(var i = 0; i < SignalVs.length; i++){
+        omega = Math.PI*2*sig[i][1];
+        GPolar = GetResponse(R,L,C,omega,topo);
+        console.log(GPolar);
+        //sig[i] = new Array(3); //mag, freq,phase
+        sig[i][0] = sig[i][0]*GPolar[0];
+        sig[i][2] = sig[i][2]+Math.PI/180*GPolar[1];
+        outvs[i].value=sig[i][0];
+        outvps[i].value="0";
+        outfs[i].value=parseFloat(SignalFs[i].value);
+        outfps[i].value=parseFloat(SignalFPs[i].value);
+        outphis[i].value=180/Math.PI*sig[i][2];
+    }
+    GPolar = GetResponse(R,L,C,0,topo);
+    document.getElementById("outputbias").value=sig[SignalVs.length][0]*GPolar[0];
+    document.getElementById("outputbiasp").value="0";
+    var size = FillCosineSum(sig);
+    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"red");
 }
 
 function FillCosineSum(signals, sigbias=0, xdcrK=1, xdcrB=0){
@@ -1271,7 +1300,7 @@ function PlaySound(vs, vps, fs, fps, phis){
         var gain = htmladcsigvs[s].value*Math.pow(10,htmladcsigvps[s].value);
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        gainNode.gain.value = 
+        gainNode.gain.value = gain;
         oscillator.frequency.value = htmladcsigfreqs[s].value*Math.pow(10,htmladcsigfreqps[s].value);
         oscillator.start(audioCtx.currentTime);
         oscillator.stop(audioCtx.currentTime + ((1000 || 500) / 1000));
