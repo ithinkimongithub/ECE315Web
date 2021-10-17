@@ -329,7 +329,7 @@ function ChangedContent(whichtype){
         case 6  : ChangedIC();              break;
         case 7  : ChangedFilter();          break;
         case 8  : ChangedTransducer();      break;
-        case 9  : ChangedADC();             break;
+        case 9  : ChangedDR();              break;
         case 10 : ChangedComm();            break;
         case 11 : ChangedCommPicture();     break;
         case 12 : ChangedRadar();           break;
@@ -1130,6 +1130,91 @@ function ChangedTransducer(){
     console.log(inverseK,inverseB);
 }
 
+function writeMemory(number, power){
+    var suffix="";
+    switch(power){
+        case 0: suffix = "B"; break;
+        case 10: suffix="KB"; break;
+        case 20: suffix="MB"; break;
+        case 30: suffix="GB"; break;
+        case 40: suffix="TB"; break;
+        case 50: suffix="PB"; break;
+        default: suffix="?B"; break;
+    }
+    return number.toFixed(2)+" "+suffix;
+}
+
+function getmultiplier(unit){
+    switch(unit){
+        case "s": multiplier = 1; break;
+        case "min": multiplier=60; break;
+        case "hr": multiplier=3600; break;
+        case "day": multiplier=86400; break;
+        case "year": multiplier=31536000; break;
+        default: multiplier = 1; break;
+    }
+    return multiplier;
+}
+function GetNumberOfBits(number, power){
+    return number*Math.pow(2,power)*8;
+}
+
+function ChangedDR(){
+    var fs = GrabNumber("DRsamplerate","DRsampleratep",true,minnorm,maxnorm);
+    var b = Math.round(document.getElementById("DRbitsize").value);
+    var maxvalue = Math.pow(2,b)-1;
+    document.getElementById("DRbitsize").value = b;
+    var decimal = Math.round(document.getElementById("DRdecimal").value);
+    if(decimal < 0) decimal = 0;
+    if(decimal > maxvalue) decimal = maxvalue;
+    document.getElementById("DRdecimal").value = decimal;
+    var binarytext = decimal.toString(2);
+    while(binarytext.length < b)
+        binarytext = "0"+binarytext;
+    var eqnbinary = "\\text{The decimal number }"+decimal.toFixed(0)+"\\text{ in } "+b.toFixed(0)+"\\text{-bit binary is }"+binarytext;
+    NewMathAtItem(eqnbinary,"eqnDRbinary");
+    var bitrate = fs*b;
+    var bitrateexp = "\\text{bit rate = }f_s\\times b="+writeEng(fs,"Hz",false,true,false)+"\\times "+b.toFixed(0)+"="+writeEng(bitrate,"bps",false,true);
+    NewMathAtItem(bitrateexp,"eqnbitrate");
+    var usermemory = parseFloat(document.getElementById("DRmemory").value);
+    var usermempower = parseFloat(document.getElementById("DRmemoryp").value);
+    var resbits = GetNumberOfBits(usermemory,usermempower);
+    var resseconds = resbits/bitrate;
+    var eqnsolveforT = "T=\\frac{Memory}{DataRate}=\\frac{"+writeMemory(usermemory,usermempower)+"}{"+writeEng(bitrate,"bps",false,true)+"}="+
+        "\\frac{"+usermemory.toFixed(2)+"\\times 2^{"+usermempower.toFixed(0)+"}B s}{"+writeTripleLatex(bitrate,"b",false)+"}\\times\\frac{8b}{1B}="+resseconds.toFixed(1)+"s";
+    NewMathAtItem(eqnsolveforT,"DRsolveT");
+    var resminutes, reshours;
+    var eqnextratime = "";
+    if(resseconds >= 60 && resseconds < 3600){
+        resminutes = resseconds / 60;
+        eqnextratime = resseconds.toFixed(1)+"s\\times\\frac{1 min}{60s}="+resminutes.toFixed(2)+"min";
+    }
+    else if(resseconds >= 3600){
+        reshours = resseconds / 3600;
+        eqnextratime = resseconds.toFixed(1)+"s\\times\\frac{1 hr}{3600s}="+reshours.toFixed(2)+"hr";
+    }
+    NewMathAtItem(eqnextratime,"DRsolveTsecond");
+    var usermemory2 = parseFloat(document.getElementById("DRmemory2").value);
+    var usermempower2 = parseFloat(document.getElementById("DRmemory2p").value); 
+    var drtimebase = parseFloat(document.getElementById("DRtime").value);
+    var drtimeunit = document.getElementById("DRtimeM").value;
+    var timeconv = "";
+    if(drtimeunit == "min"){
+        timeconv = "\\times\\frac{1 min}{60 s}";
+    }
+    if(drtimeunit == "hr"){
+        timeconv = "\\times\\frac{1 hr}{3600 s}";
+    }
+    var drtimemultiplier = getmultiplier(drtimeunit);
+    var bitrate2 = GetNumberOfBits(usermemory2,usermempower2)/(drtimebase*drtimemultiplier);
+    var eqnsolvebitrate2 = "bit rate=\\frac{Memory}{Time}=\\frac{"+writeMemory(usermemory2,usermempower2)+"}{"+drtimebase.toFixed(2)+drtimeunit+"}"+
+    "=\\frac{"+usermemory2.toFixed(2)+"\\times 2^{"+usermempower2.toFixed(0)+"}B}{"+drtimebase.toFixed(2)+drtimeunit+"}\\times\\frac{8b}{1B}"+timeconv+
+    "="+writeEng(bitrate2,"bps",false,true); 
+    NewMathAtItem(eqnsolvebitrate2,"DRsolveBR");
+
+    
+
+}
 
 
 function ToggleCanvas(which){

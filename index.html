@@ -46,8 +46,8 @@
     <button class="tablink" onclick="openBigTab('ComplexNumbers',this)">Complex Numbers</button>
     <button class="tablink" onclick="openBigTab('InductorCapacitor',this)" >Inductor Capacitor</button>
     <button class="tablink" onclick="openBigTab('AnalogFilter',this)" >Analog Filter</button>
-    <button class="tablink" onclick="openBigTab('TransducerInterface',this)"id="defaultOpen">Signal Conditioning</button>
-    <button class="tablink" onclick="openBigTab('ADC',this)">ADC Data Rates</button>
+    <button class="tablink" onclick="openBigTab('TransducerInterface',this)">Signal Conditioning</button>
+    <button class="tablink" onclick="openBigTab('DataRates',this)" id="defaultOpen" >ADC Data Rates</button>
     <br>
     <button class="tablink" onclick="openBigTab('commequations',this)">Communications</button>
     <button class="tablink" onclick="openBigTab('commpicture',this)">Comm Picture</button>
@@ -753,6 +753,83 @@
         <br><canvas id="canvasADCSpectrum" width="1200" height="200" onclick="LabelADCSpectrum(event)"></canvas>
         <br><button onclick="HideCanvasD()" id="buttonHideX">Show/Hide DAC</button>
         <br><canvas id="canvasDACtime" width="1200" height="400" onclick="LabelDACTime(event)"></canvas>
+        <hr />
+    </div>
+
+    <div class="tabcontent" id="DataRates">
+        You will need to be familiar with relating data rates, time, and memory usage. We will start with an ADC:
+        <br>\(b\) per sample: <input type="number" id="DRbitsize" min="1" max="1024" value="16" step="1" onchange="ChangedDR()">
+        <br><br>An ADC encodes its values from \(0..2^b-1\) in binary form. Each sample, regardless of value,
+        results in the same number of bits. For example:
+        <br>Decimal value: <input type="number" id="DRdecimal" min="0" value="1" step="1" onchange="ChangedDR()">
+        <p id="eqnDRbinary">binary</p>
+        An ADC's bit rate is the product of its sample rate and its sample size. 
+        <br>ADC Sample Frequency: 
+        <input type="number" id="DRsamplerate" min="1" max="999" value="88.2" step="any" onchange="ChangedDR()">
+        <select id="DRsampleratep" onchange="ChangedDR()">
+            <option value="0">Hz</option>
+            <option value="3"selected>kHz</option>
+            <option value="6" >MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        <p id="eqnbitrate">bitrate</p>
+        It should be emphasized that the prefixes for magnitude (such as \(k\), \(M\), or \(G\)) in the context of 
+        bit rates are their powers of 10 (that is, \(10^3\), \(10^6\), \(10^9\)). This is \(not\) true for memory sizes.
+        Memory size prefixes will be powers of 2 as in:\[1KB = 2^{10}B\] \[1MB = 2^{20}B\] \[1GB=2^{30}B\] \[1TB=2^{40}B\]
+        You might also notice \(KB\) uses a capitalized \(K\). 
+        <p>The following expression will guide how to arrange solutions to memory size questions:</p>
+        \[Data Rate=\frac{Memory}{Time}\]
+        For example, let's solve for \(Time\) given the previous bit rate and the following memory size:
+        <br>Memory Size:<input type="number" id="DRmemory" min="1" max="999" value="700" step="any" onchange="ChangedDR()">
+        <select id="DRmemoryp" onchange="ChangedDR()">
+            <option value=0>B</option>
+            <option value=10 >kB</option>
+            <option value=20 selected>MB</option>
+            <option value=30>GB</option>
+            <option value=40>TB</option>
+        </select>
+        <p id="DRsolveT">solve for T</p>
+        If the result is large enough, convert to minutes or even seconds. It is fine to use decimal minutes (as opposed to the English MM:SS).
+        <p id="DRsolveTsecond"></p>
+        <hr />
+        Another example (Solve for bit rate):
+        <br>Memory Size:<input type="number" id="DRmemory2" min="1" max="999" value="1" step="any" onchange="ChangedDR()">
+        <select id="DRmemory2p" onchange="ChangedDR()">
+            <option value=0>B</option>
+            <option value=10 >kB</option>
+            <option value=20>MB</option>
+            <option value=30 selected>GB</option>
+            <option value=40>TB</option>
+        </select>
+        <br>Time: <input type="number" id="DRtime" min="1" max="60" value="30" step="any" onchange="ChangedDR()">
+        <select id="DRtimeM" onchange="ChangedDR()">
+            <option value="s">s</option>
+            <option value="min" selected>min</option>
+            <option value="hr">hr</option>
+            <option value="day">day</option>
+            <option value="year">year</option>
+        </select>
+        <p id="DRsolveBR">solve for bit rate</p>
+        <hr />
+        Lastly, solve for a memory size:
+        <br>Bit Rate:<input type="number" id="DRrate3" min="1" max="999" value="1" step="any" onchange="ChangedDR()">
+        <select id="DRrate3p" onchange="ChangedDR()">
+            <option value=0>bps</option>
+            <option value=3 selected>kbps</option>
+            <option value=6>Mbps</option>
+            <option value=9 >Gbps</option>
+            <option value=12>Tbps</option>
+        </select>
+        <br>Time: <input type="number" id="DRtime3" min="1" max="60" value="30" step="any" onchange="ChangedDR()">
+        <select id="DRtimeM3" onchange="ChangedDR()">
+            <option value="s">s</option>
+            <option value="min" selected>min</option>
+            <option value="hr">hr</option>
+            <option value="day">day</option>
+            <option value="year">year</option>
+        </select>
+        <p id="DRsolveMem">solve for memory</p>
         <hr />
     </div>
 
