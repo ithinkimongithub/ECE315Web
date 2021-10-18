@@ -1007,6 +1007,18 @@ function ChangedTransducer(){
         lower = adcb;
         upper = adca;
     }
+    var msg = "";
+    var clipping = false;
+    if(vout > upper){
+        msg = "\\text{Voltage to ADC clipped to maximum}";
+        clipping = true;
+    }
+    if(vout < lower){
+        msg = "\\text{Voltage to ADC clipped to minimum}";
+        clipping = true;
+    }
+    NewMathAtItem(msg,"clippingmessage");
+
     res = Math.abs(adcb-adca)/Math.pow(2,bitsize);
     var deltaveqn = "\\text{Resolution: }\\Delta V=\\frac{V_{Max}-V_{Min}}{2^b}=\\frac{"+writeEng(upper,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{2^"+bitsize.toFixed(0)+"}="+writeEng(res,"V/level",false,true);
     NewMathAtItem(deltaveqn,"deltaV");
@@ -1100,6 +1112,7 @@ function ChangedTransducer(){
         samplesety[t] = samplesety[t]*Kval+Bval;
         //quantize step and clip
         var q = Math.round((samplesety[t]-lower)/res-0.5);
+        console.log(q);
         if (q > bitmax) q = bitmax;
         if (q < 0) q = 0;
         samplesety[t] = lower+res*q;
