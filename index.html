@@ -700,7 +700,7 @@
         <br><button onclick="AddSignalFreq()">Add Signal Component</button>
         <button onclick="AutoSquare()">Square Wave</button>
         <button onclick="ChangedTransducer()">Update Graph</button>
-        <button onclick="PlayADCInputSound()">Listen To Me (I'm really loud!)</button><br>
+        <button onclick="PlayADCInputSound()" disabled>Listen To Me (I'm really loud!)</button><br>
         Bias (V): <input type="number" id="adcsignalvb" min="-999" max="999" value="0" step="any" onchange="ChangedTransducer()">
             <select id="adcsignalvbp" onchange="ChangedTransducer()">
                 <option value="-9">nV</option>

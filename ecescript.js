@@ -612,7 +612,6 @@ function ChangedFilter(){
         if(lowestf < 0 ||(f < lowestf && f > 0)) lowestf = f;
         omega = Math.PI*2*f;
         GPolar = GetResponse(R,L,C,omega,topo);
-        console.log(GPolar);
         out[i] = new Array(3); //mag, freq,phase
         out[i][0] = sig[i][0]*GPolar[0];
         outputh += out[i][0];
@@ -1027,7 +1026,6 @@ function ChangedTransducer(){
         +evald.toFixed(3)+" levels\\rightarrow QL=Floor(EL)="+(evald-0.5).toFixed(0);
     NewMathAtItem(evaleqn,"evallevel");
     var QE = res*(evald - parseFloat((evald-0.5).toFixed(0)));
-    //console.log(parseFloat((evald-0.5).toFixed(0)),res,QE);
     var QEeqn = "\\text{Quantization Error: }QE = \\Delta V\\times(EL - QL) ="+writeEng(QE,"V",false,true);
     NewMathAtItem(QEeqn,"quantizationerror");
 
@@ -1075,7 +1073,7 @@ function ChangedTransducer(){
     var height = (upper - lower)*1.2;
     var graphlower = mid - height/2;
     var graphupper = mid + height/2;
-    //console.log(graphlower,graphupper,height,mid);
+
     canvas = document.getElementById("canvasADCtime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
@@ -1092,10 +1090,9 @@ function ChangedTransducer(){
     var numsamples = Math.round(width * adcsamplerate);
     if(numsamples > maxsamples) numsamples = maxsamples;
 
-    //console.log("number of samples:",numsamples);
     if(numsamples % 2 > 0)
         numsamples -= 1;
-    //console.log("rounded number of samples:",numsamples);
+
     var samplesety = new Array(numsamples);
     var samplesett = new Array(numsamples);
     
@@ -1112,7 +1109,6 @@ function ChangedTransducer(){
         samplesety[t] = samplesety[t]*Kval+Bval;
         //quantize step and clip
         var q = Math.round((samplesety[t]-lower)/res-0.5);
-        console.log(q);
         if (q > bitmax) q = bitmax;
         if (q < 0) q = 0;
         samplesety[t] = lower+res*q;
@@ -1205,12 +1201,12 @@ function ChangedTransducer(){
     initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
+
     PlotEvaldFunction(ctx,dacopts,xkf,xkm,"green",false,false,true,true);
     PlotEvaldFunction(ctx,dacopts,xkf,filteredms,"purple",false,false,true,true);
     ctx.textAlign = "left";
     ctx.font = "15px Helvetica";
     ctx.fillText("Spectrum of Sampled Data and Filtered DAC Output",100,20);
-    //console.log(xkm);
 
     //DAC Plot
     canvas = document.getElementById("canvasDACtime");
@@ -1219,15 +1215,11 @@ function ChangedTransducer(){
     initPlot(0,sensormin,width,sensormax,canvas.width,canvas.height,width/50,sensorrange/20,false,100,100,25,25);
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
-    console.log(filteredDAC);
     FillCosineSum(filteredDAC, 0, inverseK, 0);
-    console.log(sumofsig);
-    console.log(size);
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"purple");
     ctx.textAlign = "left";
     ctx.font = "15px Helvetica";
     ctx.fillText("Filtered DAC Output",100,20);
-    console.log(inverseK,inverseB);
 }
 
 function writeMemory(number, power){
@@ -1395,7 +1387,7 @@ function PlaySound(vs, vps, fs, fps, phis){
         real[f] = 0;
         imag[f] = 0;
     }
-    console.log("cleared freq");
+
     var ac = new AudioContext();
     var osc = ac.createOscillator();
 
@@ -1412,7 +1404,6 @@ function PlaySound(vs, vps, fs, fps, phis){
         }
     }
     
-    console.log(real,imag);
     osc.frequency.value = 1;
     var wave = ac.createPeriodicWave(real,imag);
     osc.setPeriodicWave(wave);
@@ -1915,18 +1906,18 @@ function LabelFrequencyResponse(event,manual=false){
         currentplotindex = px-plotleft;
     }
     var py = plotdataypix[ix]+plottop;
-    //console.log("px",px,"py",py);
+
     var x = plotdatax[ix];
     var y = plotdatay[ix];
     ctx.font = "15px Helvetica";
     ctx.fillStyle = "black";
     ctx.textAlign = "right";
-    //console.log(px,py);
+
     ctx.fillRect(px-2,py-2,5,5);
     var labeltext1 = writeEng(x,"Hz",false,true);
     var labeltext2 = writeTripleString(y,"",false,false);
     var search = labeltext2.search('x');
-    //console.log("search",search,"text",labeltext2);
+
     var exptext = "";
     if(search > -1){
         exptext = labeltext2.substr(search+4,labeltext2.length);
@@ -1998,11 +1989,9 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,bl
             ctx.moveTo(px,plotyzero);
             ctx.lineTo(px,py);
         }
-        //console.log(plotxzero,sumofsigt[ix],sumofsig[ix],plotxfact,px,py);
     }
     ctx.stroke();
     ctx.closePath();
-    //console.log("done");
 }
 
 function drawVector(ctx,r,i,x=0,y=0,color="red"){
@@ -2106,11 +2095,11 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
             minor = 0;
             ctx.textAlign = "right";
             ctx.font = "15px Helvetica";
-            //console.log("y",y,"plotystart",plotystart,"plotyend",plotyend,"ploytygridstep",plotygridstep);
+
             for(y = 0; y >= plotystart; y-= plotygridstep){
                 py = plotyzero-(y)*plotyfact;
                 ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
-                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+
                 if(minor == 0){
                     minor = 5;
                     ctx.fillRect(plotleft-6,py-1,6,3);
@@ -2123,7 +2112,7 @@ function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false
             for(y = 0; y <= plotyend; y+= plotygridstep){
                 py = plotyzero-(y)*plotyfact;
                 ctx.moveTo(plotleft,py);   ctx.lineTo(plotleft+plotpixw,py);
-                //console.log("y",y,"py",py,"ystart",plotystart,"yend",plotyend,"yzero",plotyzero,"ygrid",plotygridstep,"yfact",plotyfact);
+
                 if(minor == 0){
                     minor = 5;
                     if(y > 0){
