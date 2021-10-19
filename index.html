@@ -45,15 +45,15 @@
     <br>
     <button class="tablink" onclick="openBigTab('ComplexNumbers',this)">Complex Numbers</button>
     <button class="tablink" onclick="openBigTab('InductorCapacitor',this)" >Inductor Capacitor</button>
-    <button class="tablink" onclick="openBigTab('AnalogFilter',this)" id="defaultOpen" >Analog Filter</button>
+    <button class="tablink" onclick="openBigTab('AnalogFilter',this)" >Analog Filter</button>
     <button class="tablink" onclick="openBigTab('TransducerInterface',this)">Signal Conditioning</button>
     <button class="tablink" onclick="openBigTab('DataRates',this)"  >ADC Data Rates</button>
     <br>
+    <button class="tablink" onclick="openBigTab('modulation',this)"id="defaultOpen" >Modulation</button>
     <button class="tablink" onclick="openBigTab('commequations',this)">Communications</button>
     <button class="tablink" onclick="openBigTab('commpicture',this)">Comm Picture</button>
     <button class="tablink" onclick="openBigTab('radarequations',this)">RADAR</button>
-    <button class="tablink" onclick="openBigTab('radardoppler',this)" >Doppler</button>
-    <button class="tablink" onclick="openBigTab('radarjamming',this)">Jamming</button>
+    <button class="tablink" onclick="openBigTab('radardoppler',this)" >Doppler & Jamming</button>
 
     <div class="tabcontent" id="DCCircuits">
         <hr />
@@ -847,6 +847,85 @@
         </select>
         <p id="DRsolveMem">solve for memory</p>
         <hr />
+    </div>
+
+    <div class="tabcontent" id="modulation">
+        <strong>Amplitude Modulation:</strong><br>
+        A generic "carrier" signal composed of a single cosine of amplitude \(A_c\) operating at frequency \(f_c\) with 
+        phase delay \(\phi_c\):
+        \[v_c(t)=A_c cos(360^{\circ}f_c t+\phi_c)\]
+        And a generic "message" signal composed of a single frequency and a DC bias \(B\):
+        \[v_m(t)=B+A_m cos(360^{\circ}f_m t+\phi_m)\]
+        If we multiply \(v_c(t)\) by our message function \(v_m(t)\), we would be effectively modulating the amplitude of the carrier:
+        The modulated waveform will be: \(v_{am}(t)\)
+        \[v_{am}=v_m(t) v_c(t)=[B+A_m cos(360^{\circ}f_m t)]A_c cos(360^{\circ}f_c t)
+            =BA_c cos(360^{\circ}f_c t)+A_mA_C cos(360^{\circ}f_m t)cos(360^{\circ}f_c t)\]
+        For reasons of mathematical simplicity, we've removed the phase terms \(\phi_m\) and \(\phi_c\) under the 
+        assumption that \(\phi_m=0\) and \(\phi_c=0\).
+        <br>The second term is not fundamentally a single frequency: it is the product of two dissimilar cosines. So what frequency is it?
+        <br><br><strong>Product Identity</strong><br>
+        \[cos(\alpha) cos(\beta) = \frac{1}{2}cos(\alpha+\beta)+\frac{1}{2}cos(\alpha-\beta) \]
+        Apply this identity to \(v_{am}(t)\):
+        \[v_{am}=BA_c cos(360^{\circ}f_c t)+\frac{1}{2}A_cA_m\times cos(360^{\circ}(f_c+f_m) t)+\frac{1}{2}A_cA_m\times cos(360^{\circ}(f_c-f_m) t)\]
+        <br><strong>Modulation Index</strong> describes modulation behavior based on the relative magnitude of \(B\) and \(A_m\).
+        \[\alpha=\frac{A_m}{B}\]
+        Over-modulated: When \(\alpha>1\), \(A_m>B\), and the upper envelope doesn't follow the message into negative amplitudes.
+        This will make demodulation more difficult.
+        <br>100%-modulated: When \(\alpha=1\), \(A_m=B\), the message will reach \(0V\) and the upper envelope will kiss (barely touch) the lower envelope.
+        <br>Under-modulated: When \(\alpha< 1\), \(A_m< B\), the message (seen in green) remains above \(0V\) and the carrier always 
+        takes on a positive amplitude. The upper envelope (edge) of the carrier approximates the message.
+        <br>Let's see it in action in time and then frequency domains:
+        <br>Carrier Frequency \(f_c\):
+        <input type="number" id="carrierf" min="1" max="999" value="100" step="any" onchange="ChangedModulation()">
+        <select id="carrierfp" onchange="ChangedModulation()">
+            <option value="0">Hz</option>
+            <option value="3"selected>kHz</option>
+            <option value="6" >MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        Carrier Amplitude \(A_c\): <input type="number" id="carrierv" min="1" max="999" value="1" step="any" onchange="ChangedModulation()">
+        <select id="carriervp" onchange="ChangedModulation()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        <br>Message Frequency \(f_m\):
+        <input type="number" id="messagef" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
+        <select id="messagefp" onchange="ChangedModulation()">
+            <option value="0">Hz</option>
+            <option value="3"selected>kHz</option>
+            <option value="6" >MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        Message Amplitude \(A_m\) : <input type="number" id="messagev" min="1" max="999" value="2" step="any" onchange="ChangedModulation()">
+        <select id="messagevp" onchange="ChangedModulation()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        Message Bias \(B\): <input type="number" id="messageb" min="0" max="999" value="0" step="any" onchange="ChangedModulation()">
+        <select id="messagebp" onchange="ChangedModulation()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3">mV</option>
+            <option value="0" selected>V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        <br><input type="checkbox" id="overlaymsg" onchange="ChangedModulation()" checked><label for="overlaymsg">Overlay Message</label>
+        <br><canvas id="canvasMODtime" width="1200" height="400"></canvas>
+        <br><canvas id="canvasMODspect" width="1200" height="300"></canvas>
+        <br>From the above values, we'll compute modulation index \(\alpha\) and modulation efficiency \(\eta\).
+        <p id="qalpha"></p>
+        <p id="qeta"></p>
     </div>
 
     <div class="tabcontent" id="commequations">

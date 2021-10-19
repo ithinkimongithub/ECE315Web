@@ -330,11 +330,11 @@ function ChangedContent(whichtype){
         case 7  : ChangedFilter();          break;
         case 8  : ChangedTransducer();      break;
         case 9  : ChangedDR();              break;
-        case 10 : ChangedComm();            break;
-        case 11 : ChangedCommPicture();     break;
-        case 12 : ChangedRadar();           break;
-        case 13 : ChangedDoppler();         break;
-        case 14 : ChangedJamming();         break;
+        case 10 : ChangedModulation();      break;
+        case 11 : ChangedComm();            break;
+        case 12 : ChangedCommPicture();     break;
+        case 13 : ChangedRadar();           break;
+        case 14 : ChangedDoppler();         break;
     }
 }
 
@@ -402,6 +402,8 @@ function SetLengthHTML(length, arghtml, exphtml){
 }
 
 //******************************************* CHANGE FUNCTIONS ****************************************************/
+
+
 
 function ChangedDC(){
     EnforceNumericalHTML("virvoltage",minnorm,maxnorm);
@@ -671,6 +673,94 @@ function ChangedFilter(){
 
     var size = FillCosineSum(out);
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"red");
+}
+
+function ChangedModulation(){
+    var fc = GrabNumber("carrierf","carrierfp",true,1,999);
+    var fm = GrabNumber("messagef","messagefp",true,1,999);
+    var Ac = GrabNumber("carrierv","carriervp",true,1,999);
+    var Am = GrabNumber("messagev","messagevp",true,1,999);
+    var B  = GrabNumber("messageb","messagebp",true,0,999);
+    var height = Ac*(Am+B)*1.1;
+    var width  = 4/fm;
+    var canvas, ctx, size;
+    canvas = document.getElementById("canvasMODtime");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+    initPlot(0,-height,width,height,canvas.width,canvas.height,width/50,height/10,false,100,100,25,25);
+    GridSetAxisUnits("s","V");
+    showGrid(ctx,true,false,true);
+    var msg = new Array(1);
+    msg[0] = new Array(3);
+    msg[0][0] = Am;
+    msg[0][1] = fm;
+    msg[0][2] = 0;
+    size = FillCosineSum(msg,B);
+    console.log(sumofsig);
+    if(document.getElementById("overlaymsg").checked){
+        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
+    }
+    var sig = new Array(3);
+    sig[0] = new Array(3);
+    sig[1] = new Array(3);
+    sig[2] = new Array(3);
+    sig[0][0] = 0.5*Ac*Am;
+    sig[0][1] = fc - fm;
+    sig[0][2] = 0;
+    sig[1][0] = B*Ac;
+    sig[1][1] = fc;
+    sig[1][2] = 0;
+    sig[2][0] = 0.5*Ac*Am;
+    sig[2][1] = fc+fm;
+    sig[2][2] = 0;
+    size = FillCosineSum(sig);
+    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Plot of Amplitude Modulated Signal, V_am(t)",100,20);
+
+    canvas = document.getElementById("canvasMODspect");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+    var stopfreq = fc+2*fm;
+    var stopmag = height;
+    initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
+    GridSetAxisUnits("Hz","V");
+    showGrid(ctx,true,false,true);
+    var freqs = new Array(3);
+    freqs[0] = fc-fm;
+    freqs[1] = fc;
+    freqs[2] = fc+fm;
+    var mags = new Array(3);
+    mags[0] = sig[0][0];
+    mags[1] = sig[1][0];
+    mags[2] = sig[2][0];
+    PlotEvaldFunction(ctx,3,freqs,mags,"green",false,false,true,true);
+    //PlotEvaldFunction(ctx,dacopts,xkf,filteredms,"purple",false,false,true,true);
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Spectrum of Amplitude Modulated Signal, V_am(f)",100,20);
+    drawLabeledPoint(ctx,freqs[0],mags[0],"("+writeEng(freqs[0],"Hz",false,true)+", "+writeEng(mags[0],"V",false,true)+")",0,-15,true);
+    drawLabeledPoint(ctx,freqs[1],mags[1],"("+writeEng(freqs[1],"Hz",false,true)+", "+writeEng(mags[1],"V",false,true)+")",0,-15,true);
+    drawLabeledPoint(ctx,freqs[2],mags[2],"("+writeEng(freqs[2],"Hz",false,true)+", "+writeEng(mags[2],"V",false,true)+")",-100,-15,false);
+
+    var alpha;
+    var qalpha = "\\alpha = \\frac{A_m}{B}";
+    var eta;
+    var qeta = "\\eta = \\frac{\\alpha^2}{\\alpha^2+2}";
+    if(B > 0){
+        alpha = Am/B;
+        qalpha += "=\\frac{"+writeEng(Am,"V",false,true)+"}{"+writeEng(B,"V",false,true)+"}="+alpha.toFixed(4);
+        eta = alpha*alpha/(alpha*alpha+2);
+        qeta += "=\\frac{{"+alpha.toFixed(4)+"}^2}{{"+alpha.toFixed(4)+"}^2+2}="+eta.toFixed(4);
+    }
+    else{
+        qalpha += "\\text{ approaches infinite for } B=0V";
+        eta = 1.0;
+        qeta += "=1.0";
+    }
+    NewMathAtItem(qalpha,"qalpha");
+    NewMathAtItem(qeta,"qeta");
 }
 
 function PushEngNotation(number, inputnumber, selectpower){
@@ -1019,7 +1109,7 @@ function ChangedTransducer(){
     NewMathAtItem(msg,"clippingmessage");
 
     res = Math.abs(adcb-adca)/Math.pow(2,bitsize);
-    var deltaveqn = "\\text{Resolution: }\\Delta V=\\frac{V_{Max}-V_{Min}}{2^b}=\\frac{"+writeEng(upper,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{2^"+bitsize.toFixed(0)+"}="+writeEng(res,"V/level",false,true);
+    var deltaveqn = "\\text{Resolution: }\\Delta V=\\frac{V_{Max}-V_{Min}}{2^b}=\\frac{"+writeEng(upper,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{2^{"+bitsize.toFixed(0)+"}}="+writeEng(res,"V/level",false,true);
     NewMathAtItem(deltaveqn,"deltaV");
     var evald = (vout-lower)/res;
     var evaleqn = "\\text{Evaluated Level: }EL=\\frac{V_{In}-V_{Min}}{\\Delta V}=\\frac{"+writeEng(vout,"V",false,true)+"-("+writeEng(lower,"V",false,true)+")}{"+writeEng(res,"V/level",false,true)+"}="
@@ -2033,12 +2123,15 @@ function drawLegend(ctx,number,names,colors){
     }
 }
 
-function drawLabeledPoint(ctx,xpos,ypos,labeltext,xoffset,yoffset){
+function drawLabeledPoint(ctx,xpos,ypos,labeltext,xoffset,yoffset,alignright=false){
     var xpix = plotxzero+xpos*plotxfact;
     var ypix = plotyzero-ypos*plotyfact;
     ctx.font = "20px Helvetica";
     ctx.fillStyle = "black";
-    ctx.textAlign = "left";
+    if(alignright)
+        ctx.textAlign = "right";
+    else
+        ctx.textAlign = "left";
     ctx.fillRect(xpix-2,ypix-2,5,5);
     ctx.fillText(labeltext,xpix+xoffset,ypix+yoffset+7);
 }
