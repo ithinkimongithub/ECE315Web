@@ -869,11 +869,14 @@
         \[v_{am}=BA_c cos(360^{\circ}f_c t)+\frac{1}{2}A_cA_m\times cos(360^{\circ}(f_c+f_m) t)+\frac{1}{2}A_cA_m\times cos(360^{\circ}(f_c-f_m) t)\]
         <br><strong>Modulation Index</strong> describes modulation behavior based on the relative magnitude of \(B\) and \(A_m\).
         \[\alpha=\frac{A_m}{B}\]
-        Over-modulated: When \(\alpha>1\), \(A_m>B\), and the upper envelope doesn't follow the message into negative amplitudes.
-        This will make demodulation more difficult.
+        Over-modulated: When \(\alpha>1\), \(A_m>B\), and the carrier is modulated to a negative amplitude. However, a negative amplitude to a cosine is 
+        also just a 180-degree phase shift, which complicates demodulation.
         <br>100%-modulated: When \(\alpha=1\), \(A_m=B\), the message will reach \(0V\) and the upper envelope will kiss (barely touch) the lower envelope.
         <br>Under-modulated: When \(\alpha< 1\), \(A_m< B\), the message (seen in green) remains above \(0V\) and the carrier always 
         takes on a positive amplitude. The upper envelope (edge) of the carrier approximates the message.
+        <p>Here are modulation index \(\alpha\) and modulation efficiency \(\eta\) for the following example system:</p>
+        <p id="qalpha"></p>
+        <p id="qeta"></p>
         <br>Let's see it in action in time and then frequency domains:
         <br>Carrier Frequency \(f_c\):
         <input type="number" id="carrierf" min="1" max="999" value="100" step="any" onchange="ChangedModulation()">
@@ -884,7 +887,7 @@
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
-        Carrier Amplitude \(A_c\): <input type="number" id="carrierv" min="1" max="999" value="1" step="any" onchange="ChangedModulation()">
+        Carrier Amplitude \(A_c\): <input type="number" id="carrierv" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
         <select id="carriervp" onchange="ChangedModulation()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -893,25 +896,7 @@
             <option value="3">kV</option>
             <option value="6">MV</option>
         </select>
-        <br>Message Frequency \(f_m\):
-        <input type="number" id="messagef" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
-        <select id="messagefp" onchange="ChangedModulation()">
-            <option value="0">Hz</option>
-            <option value="3"selected>kHz</option>
-            <option value="6" >MHz</option>
-            <option value="9">GHz</option>
-            <option value="12">THz</option>
-        </select>
-        Message Amplitude \(A_m\) : <input type="number" id="messagev" min="1" max="999" value="2" step="any" onchange="ChangedModulation()">
-        <select id="messagevp" onchange="ChangedModulation()">
-            <option value="-9">nV</option>
-            <option value="-6">&#181;V</option>
-            <option value="-3">mV</option>
-            <option value="0" selected>V</option>
-            <option value="3">kV</option>
-            <option value="6">MV</option>
-        </select>
-        Message Bias \(B\): <input type="number" id="messageb" min="0" max="999" value="0" step="any" onchange="ChangedModulation()">
+        <br><br>Message Bias \(B\): <input type="number" id="messageb" min="0" max="999" value="1" step="any" onchange="ChangedModulation()">
         <select id="messagebp" onchange="ChangedModulation()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -920,12 +905,39 @@
             <option value="3">kV</option>
             <option value="6">MV</option>
         </select>
+        <button onclick="AddMessageComponent()">Add Message Frequency</button>
+        <button onclick="RandomizeMessages()">Randomize Message Components</button>
+        <button onclick="CleanUpMessages()">Remove All Additional Components</button>
+        <div class = "messagecomponent">
+        Frequency \(f_m\):
+        <input type="number" id="messagef" class = "msgfreqs" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
+        <select id="messagefp" class = "msgfreqPs" onchange="ChangedModulation()">
+            <option value="0">Hz</option>
+            <option value="3"selected>kHz</option>
+            <option value="6" >MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
+        Amplitude \(A_m\) : <input type="number" class = "msgamps" id="messagev" min="1" max="999" value="500" step="any" onchange="ChangedModulation()">
+        <select id="messagevp" class = "msgampPs" onchange="ChangedModulation()">
+            <option value="-9">nV</option>
+            <option value="-6">&#181;V</option>
+            <option value="-3"selected>mV</option>
+            <option value="0" >V</option>
+            <option value="3">kV</option>
+            <option value="6">MV</option>
+        </select>
+        </div>
         <br><input type="checkbox" id="overlaymsg" onchange="ChangedModulation()" checked><label for="overlaymsg">Overlay Message</label>
         <br><canvas id="canvasMODtime" width="1200" height="400"></canvas>
-        <br><canvas id="canvasMODspect" width="1200" height="300"></canvas>
-        <br>From the above values, we'll compute modulation index \(\alpha\) and modulation efficiency \(\eta\).
-        <p id="qalpha"></p>
-        <p id="qeta"></p>
+        <br>Spectrum Overlays:<input type="checkbox" id="modshowmsg" onchange="ChangedModulation()" checked><label for="modshowmsg">Show Original Message</label>
+            <input type="checkbox" id="modshowam" onchange="ChangedModulation()" checked><label for="modshowam">Show AM Signal</label>
+            <input type="checkbox" id="modshowdemod" onchange="ChangedModulation()" checked><label for="modshowdemod">Show Demodulated Signal</label>
+        <br>View Window: <input type="checkbox" class="modview" id="modleft" onchange="SetModSpectrum('left')" checked><label for="modleft">0..fc+fm</label>
+            <input type="checkbox" class="modview" id="modfocus" onchange="SetModSpectrum('center')"><label for="modfocus">fc-fm..fc+fm</label>
+            <input type="checkbox" class="modview" id="modright" onchange="SetModSpectrum('right')"><label for="modright">2*fc-fm..2*fc+fm</label>
+            <input type="checkbox" class="modview" id="modfull" onchange="SetModSpectrum('full')"><label for="modfull">0..2*fc+fm</label>
+        <br><canvas id="canvasMODspect" width="1200" height="400"></canvas>
     </div>
 
     <div class="tabcontent" id="commequations">

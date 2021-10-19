@@ -675,44 +675,89 @@ function ChangedFilter(){
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"red");
 }
 
+var modleft = 0;
+var modright = 1;
+function SetModSpectrum(choice){
+    var checks = document.getElementsByClassName("modview");
+    var ch = 0;
+    for(var c = 0; c < checks.length; c++){
+        checks[c].checked = false;    
+    }
+    switch(choice){
+        case 'left': modleft = 0; modright = 1; ch=0; break;
+        case 'center':modleft=1; modright = 1; ch=1; break;
+        case 'right':modleft = 2; modright = 2; ch=2; break;
+        case 'full' :modleft = 0; modright = 2; ch=3; break;
+        default: break;        
+    }
+    checks[ch].checked = true;
+    ChangedModulation();
+}
+
+function drawSpectralPoint(ctx,index,freqs,mags,xoffset,yoffset,alignright){
+    drawLabeledPoint(ctx,freqs[index],mags[index],"("+writeEng(freqs[index],"Hz",false,true)+", "+writeEng(mags[index],"V",false,true)+")",xoffset,yoffset,alignright);
+}
+
 function ChangedModulation(){
     var fc = GrabNumber("carrierf","carrierfp",true,1,999);
-    var fm = GrabNumber("messagef","messagefp",true,1,999);
+    //var fm = GrabNumber("messagef","messagefp",true,1,999);
     var Ac = GrabNumber("carrierv","carriervp",true,1,999);
-    var Am = GrabNumber("messagev","messagevp",true,1,999);
+    //var Am = GrabNumber("messagev","messagevp",true,1,999);
     var B  = GrabNumber("messageb","messagebp",true,0,999);
-    var height = Ac*(Am+B)*1.1;
-    var width  = 4/fm;
+    var freqs = document.getElementsByClassName("msgfreqs");
+    var freqPs= document.getElementsByClassName("msgfreqPs");
+    var amps = document.getElementsByClassName("msgamps");
+    var ampPs = document.getElementsByClassName("msgampPs");
+    var nummsgs = freqs.length;
+    var lowestfreq = parseFloat(freqs[0].value)*Math.pow(10,parseFloat(freqPs[0].value));
+    var highestfreq = parseFloat(freqs[nummsgs-1].value)*Math.pow(10,parseFloat(freqPs[nummsgs-1].value));
+    var alphaisvalid = true;
+    var height = B;
+    if(nummsgs > 1)
+        alphaisvalid = false;
+    
+    var msg = new Array(nummsgs);
+    for(var m = 0; m < nummsgs; m++){
+        msg[m] = new Array(3);
+        msg[m][0] = parseFloat(amps[m].value)*Math.pow(10,parseFloat(ampPs[m].value));
+        height += msg[m][0]; 
+        msg[m][1] = parseFloat(freqs[m].value)*Math.pow(10,parseFloat(freqPs[m].value));
+        if(msg[m][1] > highestfreq) highestfreq = msg[m][1];
+        if(msg[m][1] < lowestfreq ) lowestfreq  = msg[m][1];
+        msg[m][2] = 0;
+    }
+
+    var sig = new Array(nummsgs*2+1);
+    for(var m = 0; m < nummsgs; m++){
+        sig[m] = new Array(3);
+        sig[m+nummsgs] = new Array(3);
+        sig[m][0] = 0.5*Ac*msg[m][0];
+        sig[m][1] = fc-msg[m][1];
+        sig[m][2] = 0;
+        sig[m+nummsgs][0] = 0.5*Ac*msg[m][0];
+        sig[m+nummsgs][1] = fc+msg[m][1];
+        sig[m+nummsgs][2] = 0;
+    }
+    sig[nummsgs*2] = new Array(3);
+    sig[nummsgs*2][0] = B*Ac;
+    sig[nummsgs*2][1] = fc;
+    sig[nummsgs*2][2] = 0;
+
+    height *= (Ac*1.1);
+    var width  = 4/lowestfreq;
     var canvas, ctx, size;
+
     canvas = document.getElementById("canvasMODtime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
     initPlot(0,-height,width,height,canvas.width,canvas.height,width/50,height/10,false,100,100,25,25);
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
-    var msg = new Array(1);
-    msg[0] = new Array(3);
-    msg[0][0] = Am;
-    msg[0][1] = fm;
-    msg[0][2] = 0;
-    size = FillCosineSum(msg,B);
-    console.log(sumofsig);
+
     if(document.getElementById("overlaymsg").checked){
+        size = FillCosineSum(msg,B,Ac,0);
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
     }
-    var sig = new Array(3);
-    sig[0] = new Array(3);
-    sig[1] = new Array(3);
-    sig[2] = new Array(3);
-    sig[0][0] = 0.5*Ac*Am;
-    sig[0][1] = fc - fm;
-    sig[0][2] = 0;
-    sig[1][0] = B*Ac;
-    sig[1][1] = fc;
-    sig[1][2] = 0;
-    sig[2][0] = 0.5*Ac*Am;
-    sig[2][1] = fc+fm;
-    sig[2][2] = 0;
     size = FillCosineSum(sig);
     PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
     ctx.textAlign = "left";
@@ -722,45 +767,50 @@ function ChangedModulation(){
     canvas = document.getElementById("canvasMODspect");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
-    var stopfreq = fc+2*fm;
+    var stopfreq = fc*modright+2*highestfreq;
+    var startfreq = 0;
+    if(modleft > 0) startfreq = fc*modleft-2*highestfreq;
     var stopmag = height;
-    initPlot(0,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
+    initPlot(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
+    console.log(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
-    var freqs = new Array(3);
-    freqs[0] = fc-fm;
-    freqs[1] = fc;
-    freqs[2] = fc+fm;
-    var mags = new Array(3);
-    mags[0] = sig[0][0];
-    mags[1] = sig[1][0];
-    mags[2] = sig[2][0];
-    PlotEvaldFunction(ctx,3,freqs,mags,"green",false,false,true,true);
-    //PlotEvaldFunction(ctx,dacopts,xkf,filteredms,"purple",false,false,true,true);
+    var freqs = new Array(nummsgs*2+1);
+    var mags = new Array(nummsgs*2+1);
+    for(var f = 0; f < nummsgs*2+1; f++){
+        freqs[f] = sig[f][1];
+        mags[f] = sig[f][0];
+    }
+    PlotEvaldFunction(ctx,nummsgs*2+1,freqs,mags,"green",false,false,true,true);
+    
     ctx.textAlign = "left";
     ctx.font = "15px Helvetica";
-    ctx.fillText("Spectrum of Amplitude Modulated Signal, V_am(f)",100,20);
-    drawLabeledPoint(ctx,freqs[0],mags[0],"("+writeEng(freqs[0],"Hz",false,true)+", "+writeEng(mags[0],"V",false,true)+")",0,-15,true);
-    drawLabeledPoint(ctx,freqs[1],mags[1],"("+writeEng(freqs[1],"Hz",false,true)+", "+writeEng(mags[1],"V",false,true)+")",0,-15,true);
-    drawLabeledPoint(ctx,freqs[2],mags[2],"("+writeEng(freqs[2],"Hz",false,true)+", "+writeEng(mags[2],"V",false,true)+")",-100,-15,false);
+    ctx.fillText("Spectrum of Amplitude Modulated Signal, |V_am(f)|,V",100,20);
+    drawSpectralPoint(ctx,nummsgs-1,freqs,mags,0,-15,true);
+    drawSpectralPoint(ctx,nummsgs*2-1,freqs,mags,0,-15,true);
+    drawSpectralPoint(ctx,nummsgs*2,freqs,mags,0,-15,true);
 
-    var alpha;
-    var qalpha = "\\alpha = \\frac{A_m}{B}";
-    var eta;
-    var qeta = "\\eta = \\frac{\\alpha^2}{\\alpha^2+2}";
-    if(B > 0){
-        alpha = Am/B;
-        qalpha += "=\\frac{"+writeEng(Am,"V",false,true)+"}{"+writeEng(B,"V",false,true)+"}="+alpha.toFixed(4);
-        eta = alpha*alpha/(alpha*alpha+2);
-        qeta += "=\\frac{{"+alpha.toFixed(4)+"}^2}{{"+alpha.toFixed(4)+"}^2+2}="+eta.toFixed(4);
+    if(alphaisvalid){
+        var Am = msg[0][0];
+        var alpha = Am/B;
+        var qalpha = "\\alpha = \\frac{A_m}{B} = \\frac{"+writeEng(Am,"V",false,true)+"}{"+writeEng(B,"V",false,true)+"}="+alpha.toFixed(4);;
+        var eta;
+        var qeta = "\\eta = \\frac{\\alpha^2}{\\alpha^2+2}"+"=\\frac{{"+alpha.toFixed(4)+"}^2}{{"+alpha.toFixed(4)+"}^2+2}";
+        if(B > 0){
+            eta = alpha*alpha/(alpha*alpha+2);
+            qeta += "="+eta.toFixed(4);
+        }
+        else{
+            eta = 1.0;
+            qeta += "=1.0";
+        }
+        NewMathAtItem(qalpha,"qalpha");
+        NewMathAtItem(qeta,"qeta");
     }
     else{
-        qalpha += "\\text{ approaches infinite for } B=0V";
-        eta = 1.0;
-        qeta += "=1.0";
+        NewMathAtItem("\\alpha\\text{ expression is invalid with more than one message component}","qalpha");
+        NewMathAtItem("\\eta\\text{ expression is invalid with more than one message component}","qeta");
     }
-    NewMathAtItem(qalpha,"qalpha");
-    NewMathAtItem(qeta,"qeta");
 }
 
 function PushEngNotation(number, inputnumber, selectpower){
@@ -1563,6 +1613,50 @@ function AddFilterComponent(){
     clone.id = "filterpart"+newid;
     element.after(clone);
     AddOutputComponent();
+}
+
+var currentmsgcomp = 0;
+function AddMessageComponent(){
+    currentmsgcomp++;
+    var newid = currentmsgcomp.toFixed(0);
+    var signalhtmls = document.getElementsByClassName("messagecomponent");
+    var element = signalhtmls[signalhtmls.length-1];
+    var clone = element.cloneNode(true);
+    clone.id = "messagepart"+newid;
+    element.after(clone);
+    ChangedModulation();
+}
+
+function RandomizeMessages(){
+    var freqs = document.getElementsByClassName("msgfreqs");
+    var freqPs= document.getElementsByClassName("msgfreqPs");
+    var amps = document.getElementsByClassName("msgamps");
+    var ampPs = document.getElementsByClassName("msgampPs");
+    var Normalize = 1000/freqs.length;
+    for(var q = 0; q < freqs.length; q++){
+        freqs[q].value = Math.random()*10;
+        freqPs[q].value = "3";
+        amps[q].value = Math.random()*(Normalize);
+        ampPs[q].value = "-3";
+    }
+    //then sort the frequencies?
+    var temp;
+    for(var q = 0; q < freqs.length; q++){
+        for(var r = 0; r <  freqs.length; r++){
+            if(freqs[q].value < freqs[r].value){
+                temp = freqs[q].value;
+                freqs[q].value = freqs[r].value;
+                freqs[r].value = temp;
+            }
+        }
+    }
+    ChangedModulation();
+}
+
+function CleanUpMessages(){
+    var signalhtmls = document.getElementsByClassName("messagecomponent");
+    while(signalhtmls.length > 1) signalhtmls[signalhtmls.length-1].remove();
+    ChangedModulation();
 }
 
 function CleanUpComponents(){
