@@ -896,6 +896,15 @@
             <option value="3">kV</option>
             <option value="6">MV</option>
         </select>
+        <br>Synchronous Demodulation Frequency \(f_x\):
+        <input type="number" id="demodf" min="1" max="999" value="100" step="any" onchange="ChangedModulation()">
+        <select id="demodfp" onchange="ChangedModulation()">
+            <option value="0">Hz</option>
+            <option value="3"selected>kHz</option>
+            <option value="6" >MHz</option>
+            <option value="9">GHz</option>
+            <option value="12">THz</option>
+        </select>
         <br><br>Message Bias \(B\): <input type="number" id="messageb" min="0" max="999" value="1" step="any" onchange="ChangedModulation()">
         <select id="messagebp" onchange="ChangedModulation()">
             <option value="-9">nV</option>
@@ -933,10 +942,12 @@
         <br>Spectrum Overlays:<input type="checkbox" id="modshowmsg" onchange="ChangedModulation()" checked><label for="modshowmsg">Show Original Message</label>
             <input type="checkbox" id="modshowam" onchange="ChangedModulation()" checked><label for="modshowam">Show AM Signal</label>
             <input type="checkbox" id="modshowdemod" onchange="ChangedModulation()" checked><label for="modshowdemod">Show Demodulated Signal</label>
-        <br>View Window: <input type="checkbox" class="modview" id="modleft" onchange="SetModSpectrum('left')" checked><label for="modleft">0..fc+fm</label>
+        <br>View Window: 
+            <input type="checkbox" class="modview" id="modwayleft" onchange="SetModSpectrum('wayleft')" ><label for="modwayleft">0..fm</label>
+            <input type="checkbox" class="modview" id="modleft" onchange="SetModSpectrum('left')" ><label for="modleft">0..fc+fm</label>
             <input type="checkbox" class="modview" id="modfocus" onchange="SetModSpectrum('center')"><label for="modfocus">fc-fm..fc+fm</label>
             <input type="checkbox" class="modview" id="modright" onchange="SetModSpectrum('right')"><label for="modright">2*fc-fm..2*fc+fm</label>
-            <input type="checkbox" class="modview" id="modfull" onchange="SetModSpectrum('full')"><label for="modfull">0..2*fc+fm</label>
+            <input type="checkbox" class="modview" id="modfull" onchange="SetModSpectrum('full')" checked><label for="modfull">0..2*fc+fm</label>
         <br><canvas id="canvasMODspect" width="1200" height="400"></canvas>
     </div>
 

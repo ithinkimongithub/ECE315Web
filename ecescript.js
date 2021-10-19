@@ -676,7 +676,7 @@ function ChangedFilter(){
 }
 
 var modleft = 0;
-var modright = 1;
+var modright = 2;
 function SetModSpectrum(choice){
     var checks = document.getElementsByClassName("modview");
     var ch = 0;
@@ -684,10 +684,11 @@ function SetModSpectrum(choice){
         checks[c].checked = false;    
     }
     switch(choice){
-        case 'left': modleft = 0; modright = 1; ch=0; break;
-        case 'center':modleft=1; modright = 1; ch=1; break;
-        case 'right':modleft = 2; modright = 2; ch=2; break;
-        case 'full' :modleft = 0; modright = 2; ch=3; break;
+        case 'wayleft': modleft = 0; modright = 0; ch = 0; break;
+        case 'left': modleft = 0; modright = 1; ch=1; break;
+        case 'center':modleft=1; modright = 1; ch=2; break;
+        case 'right':modleft = 2; modright = 2; ch=3; break;
+        case 'full' :modleft = 0; modright = 2; ch=4; break;
         default: break;        
     }
     checks[ch].checked = true;
@@ -709,6 +710,7 @@ function ChangedModulation(){
     var amps = document.getElementsByClassName("msgamps");
     var ampPs = document.getElementsByClassName("msgampPs");
     var nummsgs = freqs.length;
+    var numdemods = nummsgs*4;
     var lowestfreq = parseFloat(freqs[0].value)*Math.pow(10,parseFloat(freqPs[0].value));
     var highestfreq = parseFloat(freqs[nummsgs-1].value)*Math.pow(10,parseFloat(freqPs[nummsgs-1].value));
     var alphaisvalid = true;
@@ -743,6 +745,27 @@ function ChangedModulation(){
     sig[nummsgs*2][1] = fc;
     sig[nummsgs*2][2] = 0;
 
+    var fx = GrabNumber("demodf","demodfp",true,1,999);
+    var demod = new Array(2*2*nummsgs+2);
+    demod[numdemods] = new Array(3);
+    demod[numdemods+1] = new Array(3);
+    demod[numdemods][0] = 0.5*sig[nummsgs*2][0];
+    demod[numdemods][1] = fx+sig[nummsgs*2][1];
+    demod[numdemods][2] = 0;
+    demod[numdemods+1][0] = 0.5*sig[nummsgs*2][0];
+    demod[numdemods+1][1] = fx-sig[nummsgs*2][1];
+    demod[numdemods+1][2] = 0;
+    for(var d = 0; d < nummsgs*2; d++){
+        demod[d] = new Array(3);
+        demod[d][0] = 0.5*sig[d][0];
+        demod[d][1] = fx+sig[d][1];
+        demod[d][2] = 0;
+        demod[d+nummsgs*2] = new Array(3);
+        demod[d+nummsgs*2][0] = 0.5*sig[d][0];
+        demod[d+nummsgs*2][1] = fx-sig[d][1];
+        demod[d+nummsgs*2][2] = 0;
+    }
+
     height *= (Ac*1.1);
     var width  = 4/lowestfreq;
     var canvas, ctx, size;
@@ -771,24 +794,50 @@ function ChangedModulation(){
     var startfreq = 0;
     if(modleft > 0) startfreq = fc*modleft-2*highestfreq;
     var stopmag = height;
+    if(modright == 2 && modleft==0) startfreq = -2*highestfreq;
     initPlot(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
-    console.log(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Spectrum of Amplitude Modulated Signal, |V_am(f)|,V",100,20);
+
+    if(document.getElementById("modshowmsg").checked){
+        var mfreqs = new Array(nummsgs);
+        var mmags  = new Array(nummsgs);
+        for(var f = 0; f < nummsgs; f++){
+            mmags[f] = msg[f][0]*Ac;
+            mfreqs[f] = msg[f][1];
+        }
+        console.log(ctx,nummsgs,mfreqs,mmags,"blue",false,false,true,true);
+        PlotEvaldFunction(ctx,nummsgs,mfreqs,mmags,"blue",false,false,true,true);
+        drawSpectralPoint(ctx,0,mfreqs,mmags,0,-15,true);
+        console.log(mmags,mfreqs);
+    }
+
     var freqs = new Array(nummsgs*2+1);
     var mags = new Array(nummsgs*2+1);
     for(var f = 0; f < nummsgs*2+1; f++){
         freqs[f] = sig[f][1];
         mags[f] = sig[f][0];
     }
-    PlotEvaldFunction(ctx,nummsgs*2+1,freqs,mags,"green",false,false,true,true);
+    if(document.getElementById("modshowam").checked){
+        PlotEvaldFunction(ctx,nummsgs*2+1,freqs,mags,"green",false,false,true,true);
+        //drawSpectralPoint(ctx,nummsgs-1,freqs,mags,0,-15,true);
+        //drawSpectralPoint(ctx,nummsgs*2-1,freqs,mags,0,-15,true);
+        //drawSpectralPoint(ctx,nummsgs*2,freqs,mags,0,-15,true);
+    }
     
-    ctx.textAlign = "left";
-    ctx.font = "15px Helvetica";
-    ctx.fillText("Spectrum of Amplitude Modulated Signal, |V_am(f)|,V",100,20);
-    drawSpectralPoint(ctx,nummsgs-1,freqs,mags,0,-15,true);
-    drawSpectralPoint(ctx,nummsgs*2-1,freqs,mags,0,-15,true);
-    drawSpectralPoint(ctx,nummsgs*2,freqs,mags,0,-15,true);
+    var dfreqs = new Array(nummsgs*4+2);
+    var dmags  = new Array(nummsgs*4+2);
+    for(var f = 0; f < nummsgs*4+2; f++){
+        dmags[f]  = demod[f][0];
+        dfreqs[f] = demod[f][1];
+    }
+    if(document.getElementById("modshowdemod").checked){
+        //drawSpectralPoint(ctx,whichdemodpoint,dfreqs,dmags,0,-15,true);
+        PlotEvaldFunction(ctx,nummsgs*4+2,dfreqs,dmags,"red",false,false,true,true);
+    }
 
     if(alphaisvalid){
         var Am = msg[0][0];
@@ -808,8 +857,8 @@ function ChangedModulation(){
         NewMathAtItem(qeta,"qeta");
     }
     else{
-        NewMathAtItem("\\alpha\\text{ expression is invalid with more than one message component}","qalpha");
-        NewMathAtItem("\\eta\\text{ expression is invalid with more than one message component}","qeta");
+        NewMathAtItem("\\alpha = \\frac{A_m}{B} \\text{ expression is invalid with more than one message component}","qalpha");
+        NewMathAtItem("\\eta = \\frac{\\alpha^2}{\\alpha^2+2} \\text{ expression is invalid with more than one message component}","qeta");
     }
 }
 
