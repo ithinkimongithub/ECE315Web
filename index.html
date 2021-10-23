@@ -859,7 +859,7 @@
         If we multiply \(v_c(t)\) by our message function \(v_m(t)\), we would be effectively modulating the amplitude of the carrier:
         The modulated waveform will be: \(v_{am}(t)\)
         \[v_{am}=v_m(t) v_c(t)=[B+A_m cos(360^{\circ}f_m t)]A_c cos(360^{\circ}f_c t)
-            =BA_c cos(360^{\circ}f_c t)+A_mA_C cos(360^{\circ}f_m t)cos(360^{\circ}f_c t)\]
+            =BA_c cos(360^{\circ}f_c t)+A_mA_c cos(360^{\circ}f_m t)cos(360^{\circ}f_c t)\]
         For reasons of mathematical simplicity, we've removed the phase terms \(\phi_m\) and \(\phi_c\) under the 
         assumption that \(\phi_m=0\) and \(\phi_c=0\).
         <br>The second term is not fundamentally a single frequency: it is the product of two dissimilar cosines. So what frequency is it?
@@ -879,15 +879,15 @@
         <p id="qeta"></p>
         <br>Let's see it in action in time and then frequency domains:
         <br>Carrier Frequency \(f_c\):
-        <input type="number" id="carrierf" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
+        <input type="number" id="carrierf" min="1" max="999" value="100" step="any" onchange="ChangedModulation()">
         <select id="carrierfp" onchange="ChangedModulation()">
-            <option value="0"selected>Hz</option>
-            <option value="3">kHz</option>
+            <option value="0">Hz</option>
+            <option value="3"selected>kHz</option>
             <option value="6" >MHz</option>
             <option value="9">GHz</option>
             <option value="12">THz</option>
         </select>
-        Carrier Amplitude \(A_c\): <input type="number" id="carrierv" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
+        Carrier Amplitude \(A_c\): <input type="number" id="carrierv" min="1" max="999" value="1" step="any" onchange="ChangedModulation()">
         <select id="carriervp" onchange="ChangedModulation()">
             <option value="-9">nV</option>
             <option value="-6">&#181;V</option>
@@ -919,10 +919,10 @@
         <button onclick="CleanUpMessages()">Remove All Additional Components</button>
         <div class = "messagecomponent">
         Frequency \(f_m\):
-        <input type="number" id="messagef" class = "msgfreqs" min="1" max="999" value="1" step="any" onchange="ChangedModulation()">
+        <input type="number" id="messagef" class = "msgfreqs" min="1" max="999" value="2" step="any" onchange="ChangedModulation()">
         <select id="messagefp" class = "msgfreqPs" onchange="ChangedModulation()">
-            <option value="0"selected>Hz</option>
-            <option value="3">kHz</option>
+            <option value="0">Hz</option>
+            <option value="3"selected>kHz</option>
             <option value="6" >MHz</option>
             <option value="9">GHz</option>
             <option value="12">THz</option>
@@ -937,14 +937,17 @@
             <option value="6">MV</option>
         </select>
         </div>
-        <br><input type="checkbox" id="modtimemsg" onchange="ChangedModulation()" checked><label for="modtimemsg">Message +B, *\(A_c\)</label>
-            <input type="checkbox" id="modtimeam" onchange="ChangedModulation()" checked><label for="modtimeam">Amplitude Modulated</label>
-            <input type="checkbox" id="modtimerectified" onchange="ChangedModulation()" checked><label for="modtimerectified">Rectified</label>
-            <input type="checkbox" id="modtimesmooth" onchange="ChangedModulation()" checked><label for="modtimesmooth">Smoothed</label>
+        <br><input type="checkbox" id="modtimemsg" onchange="UpdateModulationView()" checked><label for="modtimemsg">Message with Bias</label>
+            <input type="checkbox" id="modtimeam" onchange="UpdateModulationView()" checked><label for="modtimeam">Amplitude Modulated</label>
+            <input type="checkbox" id="modtimerectified" onchange="UpdateModulationView()" checked><label for="modtimerectified">Rectified</label>
+            <input type="checkbox" id="modtimesmooth" onchange="UpdateModulationView()" checked><label for="modtimesmooth">Smoothed (LPF \(f_{co}>Max(f_m)\))</label>
+            <input type="checkbox" id="modtimedebiased" onchange="UpdateModulationView()" checked><label for="modtimedebiased">Bias-Removed (HPF \(f_{co}< Min(f_m)\))</label>
+            <br>Analysis Sample Size: <input type="number" id="modsamplesize" min="100" max="10000" value="1000" step="100" onchange="ChangedModulation()">
         <br><canvas id="canvasMODtime" width="1200" height="400"></canvas>
-        <br>Spectrum Overlays:<input type="checkbox" id="modshowmsg" onchange="ChangedModulation()" checked><label for="modshowmsg">Show Original Message</label>
-            <input type="checkbox" id="modshowam" onchange="ChangedModulation()" checked><label for="modshowam">Show AM Signal</label>
-            <input type="checkbox" id="modshowdemod" onchange="ChangedModulation()" checked><label for="modshowdemod">Show Demodulated Signal</label>
+        <br>Spectrum Overlays:<input type="checkbox" id="modshowmsg" onchange="UpdateModulationView()" checked><label for="modshowmsg">Show Original Message</label>
+            <input type="checkbox" id="modshowam" onchange="UpdateModulationView()" checked><label for="modshowam">Show AM Signal</label>
+            <input type="checkbox" id="modshowdemod" onchange="UpdateModulationView()" checked><label for="modshowdemod">Show Synch-Demodulated Signal</label>
+            <input type="checkbox" id="modshowdemodenv" onchange="UpdateModulationView()" checked><label for="modshowdemodenv">Show Envelope-Demodulated Signal</label>
         <br>View Window: 
             <input type="checkbox" class="modview" id="modwayleft" onchange="SetModSpectrum('wayleft')" ><label for="modwayleft">0..fm</label>
             <input type="checkbox" class="modview" id="modleft" onchange="SetModSpectrum('left')" ><label for="modleft">0..fc+fm</label>

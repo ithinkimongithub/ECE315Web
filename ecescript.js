@@ -688,29 +688,188 @@ function SetModSpectrum(choice){
     switch(choice){
         case 'wayleft': modleft = 0; modright = 0; ch = 0; break;
         case 'left': modleft = 0; modright = 1; ch=1; break;
-        case 'center':modleft=1; modright = 1; ch=2; break;
+        case 'center':modleft= 1; modright = 1; ch=2; break;
         case 'right':modleft = 2; modright = 2; ch=3; break;
         case 'full' :modleft = 0; modright = 2; ch=4; break;
         default: break;        
     }
     checks[ch].checked = true;
-    ChangedModulation();
+    UpdateModulationView();
 }
 
 function drawSpectralPoint(ctx,index,freqs,mags,xoffset,yoffset,alignright){
     drawLabeledPoint(ctx,freqs[index],mags[index],"("+writeEng(freqs[index],"Hz",false,true)+", "+writeEng(mags[index],"V",false,true)+")",xoffset,yoffset,alignright);
 }
 
+function Mix(freqs, mags, phases, fx, Ax, phasex){
+    //phases is ignored for now;
+    var inputlength = freqs.length;
+    var lastinput = inputlength-1;
+    var outputlength = inputlength*2;
+    var haszero = false;
+    var hasfx = false;
+    var offsetzero = 0;
+    var thezero = -1; //would like data to be org'd from lowest f to highest f.
+    for(var i = 0; i< inputlength; i++){
+        //check for f = 0 or f = fx
+        if(freqs[i]==0){
+            haszero = true;
+            thezero = i;
+            offsetzero = 1;
+        }
+        if(freqs[i]==fx) hasfx = true;
+    }
+    if(haszero){
+        outputlength -= 1;
+        if(thezero > 0){ 
+            //put the zero at the last slot
+            var tempf, tempm, tempp;
+            tempf = freqs[thezero];
+            tempm = mags[thezero];
+            //tempp = phases[thezero];
+            freqs[thezero] = freqs[lastinput];
+            mags[thezero] = mags[lastinput];
+            //phases[thezero] = phases[lastinput];
+            freqs[lastinput] = tempf;
+            mags[lastinput] = tempm;
+            //phases[lastinput] = tempp;
+        }
+        thezero = lastinput;
+    }
+    var newfreqs = new Float32Array(outputlength);
+    //var newphases = new Float32Array(outputlength-offsetzero);
+    var newmags   = new Float32Array(outputlength);
+    for(var i = 0; i < inputlength; i++){
+        if(i == thezero){
+            newfreqs[lastinput] = fx;
+            newmags[lastinput] = Ax*mags[lastinput];
+            //newphases[lastinput] = phasex;
+        }
+        else{
+            newfreqs[i]=fx-freqs[i];
+            newfreqs[i+inputlength]=fx+freqs[i];
+            //newphases[i]=phases[i]+phasex;
+            //newphases[i+inputlength]=phases[i]-phasex;
+            newmags[i]=0.5*mags[i]*Ax;
+            newmags[i+inputlength]=0.5*mags[i]*Ax;
+        }
+    }
+    //return {newfreqs,newmags,newphases};
+    return {newfreqs,newmags};
+}
+
+function IFT(freqs, mags, phases, t0, dt, numsamples){
+    var resulty = new Float32Array(numsamples);
+    var resultt = new Float32Array(numsamples);
+    var gosimple = true; //force simple regardless of phases passed
+    var sum;
+    var i, t, s;
+    var numsigs = freqs.length;
+    for(i = 0; i < numsamples; i++){
+        t = i*dt+t0;
+        resultt[i] = t;
+        sum = 0;
+        for(s = 0; s < numsigs; s++){
+            //if(gosimple)
+                sum += mags[s]*Math.cos(2*Math.PI*freqs[s]*t);
+            //else
+            //    sum += mags[s]*Math.cos(2*Math.PI*freqs[s]*t+phases[s]);
+        }
+        resulty[i] = sum;
+    }
+    return {resultt, resulty};
+}
+
+function isEven(number){
+    var mod = number%2;
+    if(mod > 0) return true;
+    return false;
+}
+
+function DFT(ydata){
+    //returns the DFT of the data provided, provided that it was properly spaced in time. magnitude only.
+    //will also folder over the upper half, where position 0 is N, 1 to N-1, etc.
+    var N = ydata.length;
+    var result = new Float32Array(N);
+    for(var k = 0; k < N; k++){
+        var rsum = 0;
+        var isum = 0;
+        for(var n = 0; n < N; n++){
+            rsum += ydata[n]*Math.cos(-n*k/N*Math.PI*2);
+            isum += ydata[n]*Math.sin(-n*k/N*Math.PI*2);
+        }
+        if(rsum < Math.pow(10,-5)&& isum < Math.pow(10,-5)){
+            result[k] = 0;
+        }
+        else
+            result[k] = Math.sqrt(rsum*rsum+isum*isum)/N;
+    }
+    var lastindex;
+    if(isEven(N))   lastindex = N/2-1;
+    else            lastindex = Math.round(N/2);
+    for(var n = 1; n < N/2; n++){
+        if(N-n > n)
+            result[n] += result[N-n]; 
+    }
+    return result.subarray(0,lastindex);
+}
+
+var mod_width;
+var mod_message_timet, mod_message_timey;
+var mod_message_spectrumf, mod_message_spectruma;
+var mod_am_timet, mod_am_timey;
+var mod_am_spectrumf, mod_am_spectruma;
+var mod_rectified_timet, mod_rectified_timey;
+var mod_rectified_spectrumf, mod_rectified_spectruma;
+var mod_demod_env_timet, mod_demod_env_timey;
+var mod_demod_env_spectrumf, mod_demod_env_spectruma;
+var mod_demod_sync_timet, mod_demod_sync_timey;
+var mod_demod_sync_spectrumf, mod_demod_sync_spectruma;
+var mod_demod_sync_time_filteredt, mod_demod_sync_time_filteredy;
+var mod_demod_sync_spectrum_filteredt, mod_demod_sync_spectrum_filtereda;
+var mod_time_max, mod_spectrum_max;
+var mod_fx, mod_fc, mod_fm;
+
+function maxvalueofarray(argument){
+    var result = 0;
+    for(var i = 0; i < argument.length; i++){
+        if(argument[i]>result) result = argument[i];
+    }
+    return result;
+}
+
+function maxvaluetime(){
+    var next, result;
+    result = maxvalueofarray(mod_message_timey);
+    next   = maxvalueofarray(mod_am_timey);
+    if(next > result) result = next;
+    next   = maxvalueofarray(mod_demod_sync_timey);
+    if(next > result) result = next;
+    return result;
+}
+function maxvaluespectrum(){
+    var next, result;
+    result = maxvalueofarray(mod_message_spectruma);
+    next   = maxvalueofarray(mod_am_spectruma);
+    if(next > result) result = next;
+    next   = maxvalueofarray(mod_demod_sync_spectruma);
+    if(next > result) result = next;
+    return result;
+}
+
 function ChangedModulation(){
+
     var fc = GrabNumber("carrierf","carrierfp",true,1,999);
-    //var fm = GrabNumber("messagef","messagefp",true,1,999);
     var Ac = GrabNumber("carrierv","carriervp",true,1,999);
-    //var Am = GrabNumber("messagev","messagevp",true,1,999);
     var B  = GrabNumber("messageb","messagebp",true,0,999);
+    var fx = GrabNumber("demodf","demodfp",true,1,999);
+    var numsamples = GrabNumber("modsamplesize","",false,100,10000);
+
     var freqs = document.getElementsByClassName("msgfreqs");
     var freqPs= document.getElementsByClassName("msgfreqPs");
     var amps = document.getElementsByClassName("msgamps");
     var ampPs = document.getElementsByClassName("msgampPs");
+    var nummsgcos = freqs.length;
     var nummsgs = freqs.length;
     var numdemods = nummsgs*4;
     var lowestfreq = parseFloat(freqs[0].value)*Math.pow(10,parseFloat(freqPs[0].value));
@@ -721,174 +880,79 @@ function ChangedModulation(){
     if(nummsgs > 1)
         alphaisvalid = false;
     
-    var msg = new Array(nummsgs);
-    for(var m = 0; m < nummsgs; m++){
-        msg[m] = new Array(3);
-        msg[m][0] = parseFloat(amps[m].value)*Math.pow(10,parseFloat(ampPs[m].value));
-        height += msg[m][0];
-        if(msg[m][0] > tallest) tallest = msg[m][0];
-        msg[m][1] = parseFloat(freqs[m].value)*Math.pow(10,parseFloat(freqPs[m].value));
-        if(msg[m][1] > highestfreq) highestfreq = msg[m][1];
-        if(msg[m][1] < lowestfreq ) lowestfreq  = msg[m][1];
-        msg[m][2] = 0;
+    //assign message freq's and the bias into the last position of the message
+    mod_message_spectrumf = new Float32Array(nummsgcos+1);
+    mod_message_spectruma = new Float32Array(nummsgcos+1);
+    for(var m = 0; m < nummsgcos; m++){
+        var thismag = parseFloat(amps[m].value)*Math.pow(10,parseFloat(ampPs[m].value));
+        var thisfreq = parseFloat(freqs[m].value)*Math.pow(10,parseFloat(freqPs[m].value));
+        mod_message_spectrumf[m] = thisfreq;
+        mod_message_spectruma[m] = thismag;
+        height += thismag;
+        if(thismag > tallest) tallest = thismag;
+        if(thisfreq > highestfreq) highestfreq = thisfreq;
+        if(thisfreq < lowestfreq ) lowestfreq  = thisfreq;
     }
 
-    var sig = new Array(nummsgs*2+1);
-    for(var m = 0; m < nummsgs; m++){
-        sig[m] = new Array(3);
-        sig[m+nummsgs] = new Array(3);
-        sig[m][0] = 0.5*Ac*msg[m][0];
-        sig[m][1] = fc-msg[m][1];
-        sig[m][2] = 0;
-        sig[m+nummsgs][0] = 0.5*Ac*msg[m][0];
-        sig[m+nummsgs][1] = fc+msg[m][1];
-        sig[m+nummsgs][2] = 0;
-        if(sig[m][0] > tallest) tallest = sig[m][0];
-    }
-    sig[nummsgs*2] = new Array(3);
-    sig[nummsgs*2][0] = B*Ac;
-    sig[nummsgs*2][1] = fc;
-    sig[nummsgs*2][2] = 0;
-    if(sig[nummsgs*2][0] > tallest) tallest = sig[nummsgs*2][0];
-
-    var fx = GrabNumber("demodf","demodfp",true,1,999);
-    var demod = new Array(2*2*nummsgs+2);
-    demod[numdemods] = new Array(3);
-    demod[numdemods+1] = new Array(3);
-    demod[numdemods][0] = 0.5*sig[nummsgs*2][0];
-    demod[numdemods][1] = fx+sig[nummsgs*2][1];
-    demod[numdemods][2] = 0;
-    demod[numdemods+1][0] = 0.5*sig[nummsgs*2][0];
-    demod[numdemods+1][1] = fx-sig[nummsgs*2][1];
-    demod[numdemods+1][2] = 0;
-    for(var d = 0; d < nummsgs*2; d++){
-        demod[d] = new Array(3);
-        demod[d][0] = 0.5*sig[d][0];
-        demod[d][1] = fx+sig[d][1];
-        demod[d][2] = 0;
-        demod[d+nummsgs*2] = new Array(3);
-        demod[d+nummsgs*2][0] = 0.5*sig[d][0];
-        demod[d+nummsgs*2][1] = fx-sig[d][1];
-        demod[d+nummsgs*2][2] = 0;
-    }
-
-    height *= (Ac*1.1);
-    var width  = 1/lowestfreq;
-    var canvas, ctx, size;
-
-    canvas = document.getElementById("canvasMODtime");
-    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
-    ctx = canvas.getContext("2d");
-    initPlot(0,-height,width,height,canvas.width,canvas.height,width/50,height/10,false,100,100,25,25);
-    GridSetAxisUnits("s","V");
-    showGrid(ctx,true,false,true);
-
-    if(document.getElementById("modtimemsg").checked){
-        size = FillCosineSum(msg,B,Ac,0);
-        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
-    }
-
-    size = FillCosineSum(sig);
-    if(document.getElementById("modtimeam").checked){
-        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
-    }
-
-    //work on the rectified now: go through sumofsig and zero out negatives
-    for(var i = 0; i < size; i++){
-        if(sumofsig[i]<0) sumofsig[i] = 0;
-    }
-    if(document.getElementById("modtimerectified").checked){
-        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"red");
-    }
     
-    //now do the averaging by way of low-pass filter and high-pass filter using the "highestfreq" and "lowestfreq" data and use a FFT?
-    //prep data:
-    var samplerate = 100000;
-    var samplesize = 100000;
-    var stoplooking = 100/samplerate*samplesize; //1 kHz
-    FillCosineSumForDFT(sig, samplerate, samplesize);
-    var N = samplesize;
-    for(var x = 0; x < N; x++){
-        if(bigdata[x]<0) bigdata[x] = 0;
-    }
-    const reallysmall = Math.pow(10,-10);
-    var DFT = new Array(stoplooking);
-    for(var k = 0; k < stoplooking; k++){
-        var realsum = 0;
-        var imagsum = 0;
-        for(var n = 0; n < N; n++){
-            realsum += bigdata[n]*Math.cos(-2*TWOPI*k*n/N); 
-            imagsum += bigdata[n]*Math.sin(-2*TWOPI*k*n/N);
-        }
-        realsum = realsum / N;
-        imagsum = imagsum / N;
-        DFT[k] = new Array(3);
-        DFT[k][0] = Math.sqrt(realsum*realsum+imagsum*imagsum);
-        if(DFT[k][0]<reallysmall) DFT[k][0]=0;
-        DFT[k][1] = k/(N)*samplerate;
-        //DFT[k][2] = Math.atan2(imagsum, realsum);
-        DFT[k][2] = 0;
-    }
-    //for(var g = 0; g < N; g++){
-    //    if(DFT[g][0]>0) console.log(DFT[g][0],DFT[g][1]);
-    //}
-    //console.log("no more");
-    console.log(DFT);
+    mod_fx = fx;
+    mod_fc = fc;
+    mod_fm = highestfreq;
 
-    ctx.textAlign = "left";
-    ctx.font = "15px Helvetica";
-    ctx.fillText("Plot of Amplitude Modulated Signal, V_am(t)",100,20);
+    mod_message_spectrumf[nummsgcos] = 0;
+    mod_message_spectruma[nummsgcos] = B;
+    //console.log(mod_message_spectrumf,mod_message_spectruma);
 
-    canvas = document.getElementById("canvasMODspect");
-    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
-    ctx = canvas.getContext("2d");
-    var stopfreq = fc*modright+2*highestfreq;
-    var startfreq = fc*modleft-2*highestfreq;
-    var stopmag = tallest;
-    initPlot(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
-    GridSetAxisUnits("Hz","V");
-    showGrid(ctx,true,false,true);
-    ctx.textAlign = "left";
-    ctx.font = "15px Helvetica";
-    ctx.fillText("Spectrum of Amplitude Modulated Signal, |V_am(f)|,V",100,20);
+    var t0 = 0;
+    mod_width = 1/lowestfreq;
+    var dt = mod_width/numsamples;
 
-    if(document.getElementById("modshowmsg").checked){
-        var mfreqs = new Array(nummsgs);
-        var mmags  = new Array(nummsgs);
-        for(var f = 0; f < nummsgs; f++){
-            mmags[f] = msg[f][0]*Ac;
-            mfreqs[f] = msg[f][1];
-        }
-        PlotEvaldFunction(ctx,nummsgs,mfreqs,mmags,"blue",false,false,true,true);
-        drawSpectralPoint(ctx,0,mfreqs,mmags,0,-15,true);
-    }
+    //IFT the input
+    var iftresult = IFT(mod_message_spectrumf, mod_message_spectruma, 0, t0, dt, numsamples);
+    mod_message_timet = iftresult.resultt;
+    mod_message_timey = iftresult.resulty;
+    //console.log(mod_message_timet,mod_message_timey);
+    console.log(mod_message_timet[numsamples-1]);
 
-    var freqs = new Array(nummsgs*2+1);
-    var mags = new Array(nummsgs*2+1);
-    for(var f = 0; f < nummsgs*2+1; f++){
-        freqs[f] = sig[f][1];
-        mags[f] = sig[f][0];
+    //create the mix with the carrier:
+    var mixresult = Mix(mod_message_spectrumf, mod_message_spectruma, 0, fc, Ac, 0);
+    mod_am_spectrumf = mixresult.newfreqs;
+    mod_am_spectruma = mixresult.newmags;
+    //console.log(mod_am_spectrumf,mod_am_spectruma);
+
+    //IFT the am (mix)
+    var amift = IFT(mod_am_spectrumf, mod_am_spectruma, 0, t0, dt, numsamples);
+    mod_am_timet = amift.resultt;
+    mod_am_timey = amift.resulty;
+    //console.log(mod_am_timet,mod_am_timey);
+
+    //rectify the am time signal
+    mod_rectified_timet = new Float32Array(mod_am_timet.length);
+    mod_rectified_timey = new Float32Array(mod_am_timey.length);
+    for(var i = 0; i < mod_am_timey.length; i++){
+        mod_rectified_timet[i] = mod_am_timet[i];
+        if(mod_am_timey[i] < 0) mod_rectified_timey[i] = 0;
+        else mod_rectified_timey[i] = mod_am_timey[i];
     }
-    if(document.getElementById("modshowam").checked){
-        PlotEvaldFunction(ctx,nummsgs*2+1,freqs,mags,"green",false,false,true,true);
-        //drawSpectralPoint(ctx,nummsgs-1,freqs,mags,0,-15,true);
-        //drawSpectralPoint(ctx,nummsgs*2-1,freqs,mags,0,-15,true);
-        //drawSpectralPoint(ctx,nummsgs*2,freqs,mags,0,-15,true);
-    }
-    
-    var dfreqs = new Array(nummsgs*4+2);
-    var dmags  = new Array(nummsgs*4+2);
-    for(var f = 0; f < nummsgs*4+2; f++){
-        dmags[f]  = demod[f][0];
-        dfreqs[f] = demod[f][1];
-    }
-    if(document.getElementById("modshowdemod").checked){
-        //drawSpectralPoint(ctx,whichdemodpoint,dfreqs,dmags,0,-15,true);
-        PlotEvaldFunction(ctx,nummsgs*4+2,dfreqs,dmags,"red",false,false,true,true);
-    }
+    //DFT the rectified signal
+    var dft_of_rectified = DFT(mod_rectified_timey);
+    //console.log(dft_of_rectified);
+
+    //create the de-mix with the synchronizer
+    var syncresult = Mix(mod_am_spectrumf, mod_am_spectruma, 0, fx, 1, 0);
+    mod_demod_sync_spectruma = syncresult.newmags;
+    mod_demod_sync_spectrumf = syncresult.newfreqs;
+
+    //IFT the de-mix
+    var syncift = IFT(mod_demod_sync_spectrumf, mod_demod_sync_spectruma, 0, t0, dt, numsamples);
+    mod_demod_sync_timet = syncift.resultt;
+    mod_demod_sync_timey = syncift.resulty;
+
+    mod_time_max = maxvaluetime();
+    mod_spectrum_max = maxvaluespectrum();
 
     if(alphaisvalid){
-        var Am = msg[0][0];
+        var Am = mod_message_spectruma[0];
         var alpha = Am/B;
         var qalpha = "\\alpha = \\frac{A_m}{B} = \\frac{"+writeEng(Am,"V",false,true)+"}{"+writeEng(B,"V",false,true)+"}="+alpha.toFixed(4);;
         var eta;
@@ -907,6 +971,72 @@ function ChangedModulation(){
     else{
         NewMathAtItem("\\alpha = \\frac{A_m}{B} \\text{ expression is invalid with more than one message component}","qalpha");
         NewMathAtItem("\\eta = \\frac{\\alpha^2}{\\alpha^2+2} \\text{ expression is invalid with more than one message component}","qeta");
+    }
+
+    UpdateModulationView()
+}
+
+function UpdateModulationView(){
+    var canvas, ctx, height;
+    
+    height = mod_time_max;
+    canvas = document.getElementById("canvasMODtime");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+
+    initPlot(0,-height,mod_width,height,canvas.width,canvas.height,mod_width/50,height/10,false,100,100,25,25);
+    GridSetAxisUnits("s","V");
+    showGrid(ctx,true,false,true);
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Plot of Amplitude Modulated Signal, V_am(t)",100,20);
+
+    if(document.getElementById("modtimemsg").checked)
+        PlotEvaldFunction(ctx,mod_message_timet.length,mod_message_timet,mod_message_timey,"green");
+    if(document.getElementById("modtimeam").checked)
+        PlotEvaldFunction(ctx,mod_am_timet.length,mod_am_timet,mod_am_timey,"blue");
+    if(document.getElementById("modtimerectified").checked)
+        PlotEvaldFunction(ctx,mod_rectified_timet.length,mod_rectified_timet,mod_rectified_timey,"red");
+    if(document.getElementById("modtimesmooth").checked)
+        //PlotEvaldFunction(ctx,mod_rectified_timet.length,mod_rectified_timet,mod_rectified_timey,"magenta");
+        var j = 9;
+    if(document.getElementById("modtimedebiased").checked)
+        //PlotEvaldFunction(ctx,mod_rectified_timet.length,mod_rectified_timet,mod_rectified_timey,"magenta");
+        var k = 9;
+
+    canvas = document.getElementById("canvasMODspect");
+    if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
+    ctx = canvas.getContext("2d");
+    console.log("mod's",mod_fc, mod_fm, modright, modleft);
+    var stopfreq = modright*mod_fc+2*mod_fm;
+    var startfreq = modleft*mod_fc-2*mod_fm;
+    var stopmag = mod_spectrum_max;
+    initPlot(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
+    GridSetAxisUnits("Hz","V");
+    showGrid(ctx,true,false,true);
+    ctx.textAlign = "left";
+    ctx.font = "15px Helvetica";
+    ctx.fillText("Spectrum of Amplitude Modulated Signal, |V_am(f)|,V",100,20);
+
+    if(document.getElementById("modshowmsg").checked){
+        PlotEvaldFunction(ctx,mod_message_spectrumf.length,mod_message_spectrumf,mod_message_spectruma,"green",false,false,true,true);
+        drawSpectralPoint(ctx,0,mod_message_spectrumf,mod_message_spectruma,0,-15,true);
+    }
+    if(document.getElementById("modshowam").checked){
+        PlotEvaldFunction(ctx,mod_am_spectrumf.length,mod_am_spectrumf,mod_am_spectruma,"blue",false,false,true,true);
+        //drawSpectralPoint(ctx,nummsgs-1,freqs,mags,0,-15,true);
+        //drawSpectralPoint(ctx,nummsgs*2-1,freqs,mags,0,-15,true);
+        //drawSpectralPoint(ctx,nummsgs*2,freqs,mags,0,-15,true);
+    }
+    if(document.getElementById("modshowdemod").checked){
+        //drawSpectralPoint(ctx,whichdemodpoint,dfreqs,dmags,0,-15,true);
+        PlotEvaldFunction(ctx,mod_demod_sync_spectrumf.length,mod_demod_sync_spectrumf,mod_demod_sync_spectruma,"red",false,false,true,true);
+    }
+
+    if(document.getElementById("modshowdemodenv").checked){
+        //PlotEvaldFunction(ctx,mod_rectified_spectrumf.length,mod_rectified_spectrumf,mod_rectified_spectruma,"magenta",false,false,true,true);
+        //drawSpectralPoint(ctx,whichdemodpoint,dfreqs,dmags,0,-15,true);
+        //PlotEvaldFunction(ctx,nummsgs*4+2,dfreqs,dmags,"red",false,false,true,true);
     }
 }
 
@@ -2268,7 +2398,7 @@ function PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,color,connectdots=true,bl
     ctx.strokeStyle = color;
     //ctx.moveTo(0,0);
     var lastpy = 0;
-    for(var ix = 0; ix < size && ix < ArrayLength; ix++){
+    for(var ix = 0; ix < size; ix++){
         px = plotxzero+sumofsigt[ix]*plotxfact;
         py = plotyzero-sumofsig[ix]*plotyfact;
         if(includedots)
