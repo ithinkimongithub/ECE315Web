@@ -58,6 +58,7 @@ const minangle = -360;
 const maxangle = 360;
 const maxsamples = 2500;
 var multiplier; //for remembering scale :(
+var darkmode = false;
 //********************************************  MATH *********************************************************/
 
 function GetPolar(real,imag){
@@ -280,6 +281,7 @@ function InitPage () {
 }
 
 const tabbackgroundcolor = '#33F';
+const darktabbackgroundcolor = '#030';
 
 function NextSection(){
     //figure out which one is next, then call OpenBigTab
@@ -715,6 +717,7 @@ function ChangedModulation(){
     var highestfreq = parseFloat(freqs[nummsgs-1].value)*Math.pow(10,parseFloat(freqPs[nummsgs-1].value));
     var alphaisvalid = true;
     var height = B;
+    var tallest = B;
     if(nummsgs > 1)
         alphaisvalid = false;
     
@@ -722,7 +725,8 @@ function ChangedModulation(){
     for(var m = 0; m < nummsgs; m++){
         msg[m] = new Array(3);
         msg[m][0] = parseFloat(amps[m].value)*Math.pow(10,parseFloat(ampPs[m].value));
-        height += msg[m][0]; 
+        height += msg[m][0];
+        if(msg[m][0] > tallest) tallest = msg[m][0];
         msg[m][1] = parseFloat(freqs[m].value)*Math.pow(10,parseFloat(freqPs[m].value));
         if(msg[m][1] > highestfreq) highestfreq = msg[m][1];
         if(msg[m][1] < lowestfreq ) lowestfreq  = msg[m][1];
@@ -739,11 +743,13 @@ function ChangedModulation(){
         sig[m+nummsgs][0] = 0.5*Ac*msg[m][0];
         sig[m+nummsgs][1] = fc+msg[m][1];
         sig[m+nummsgs][2] = 0;
+        if(sig[m][0] > tallest) tallest = sig[m][0];
     }
     sig[nummsgs*2] = new Array(3);
     sig[nummsgs*2][0] = B*Ac;
     sig[nummsgs*2][1] = fc;
     sig[nummsgs*2][2] = 0;
+    if(sig[nummsgs*2][0] > tallest) tallest = sig[nummsgs*2][0];
 
     var fx = GrabNumber("demodf","demodfp",true,1,999);
     var demod = new Array(2*2*nummsgs+2);
@@ -767,7 +773,7 @@ function ChangedModulation(){
     }
 
     height *= (Ac*1.1);
-    var width  = 4/lowestfreq;
+    var width  = 1/lowestfreq;
     var canvas, ctx, size;
 
     canvas = document.getElementById("canvasMODtime");
@@ -777,12 +783,58 @@ function ChangedModulation(){
     GridSetAxisUnits("s","V");
     showGrid(ctx,true,false,true);
 
-    if(document.getElementById("overlaymsg").checked){
+    if(document.getElementById("modtimemsg").checked){
         size = FillCosineSum(msg,B,Ac,0);
         PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"green");
     }
+
     size = FillCosineSum(sig);
-    PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    if(document.getElementById("modtimeam").checked){
+        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"blue");
+    }
+
+    //work on the rectified now: go through sumofsig and zero out negatives
+    for(var i = 0; i < size; i++){
+        if(sumofsig[i]<0) sumofsig[i] = 0;
+    }
+    if(document.getElementById("modtimerectified").checked){
+        PlotEvaldFunction(ctx,size,sumofsigt,sumofsig,"red");
+    }
+    
+    //now do the averaging by way of low-pass filter and high-pass filter using the "highestfreq" and "lowestfreq" data and use a FFT?
+    //prep data:
+    var samplerate = 100000;
+    var samplesize = 100000;
+    var stoplooking = 100/samplerate*samplesize; //1 kHz
+    FillCosineSumForDFT(sig, samplerate, samplesize);
+    var N = samplesize;
+    for(var x = 0; x < N; x++){
+        if(bigdata[x]<0) bigdata[x] = 0;
+    }
+    const reallysmall = Math.pow(10,-10);
+    var DFT = new Array(stoplooking);
+    for(var k = 0; k < stoplooking; k++){
+        var realsum = 0;
+        var imagsum = 0;
+        for(var n = 0; n < N; n++){
+            realsum += bigdata[n]*Math.cos(-2*TWOPI*k*n/N); 
+            imagsum += bigdata[n]*Math.sin(-2*TWOPI*k*n/N);
+        }
+        realsum = realsum / N;
+        imagsum = imagsum / N;
+        DFT[k] = new Array(3);
+        DFT[k][0] = Math.sqrt(realsum*realsum+imagsum*imagsum);
+        if(DFT[k][0]<reallysmall) DFT[k][0]=0;
+        DFT[k][1] = k/(N)*samplerate;
+        //DFT[k][2] = Math.atan2(imagsum, realsum);
+        DFT[k][2] = 0;
+    }
+    //for(var g = 0; g < N; g++){
+    //    if(DFT[g][0]>0) console.log(DFT[g][0],DFT[g][1]);
+    //}
+    //console.log("no more");
+    console.log(DFT);
+
     ctx.textAlign = "left";
     ctx.font = "15px Helvetica";
     ctx.fillText("Plot of Amplitude Modulated Signal, V_am(t)",100,20);
@@ -791,10 +843,8 @@ function ChangedModulation(){
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
     var stopfreq = fc*modright+2*highestfreq;
-    var startfreq = 0;
-    if(modleft > 0) startfreq = fc*modleft-2*highestfreq;
-    var stopmag = height;
-    if(modright == 2 && modleft==0) startfreq = -2*highestfreq;
+    var startfreq = fc*modleft-2*highestfreq;
+    var stopmag = tallest;
     initPlot(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,stopfreq/50,stopmag/10,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
@@ -809,10 +859,8 @@ function ChangedModulation(){
             mmags[f] = msg[f][0]*Ac;
             mfreqs[f] = msg[f][1];
         }
-        console.log(ctx,nummsgs,mfreqs,mmags,"blue",false,false,true,true);
         PlotEvaldFunction(ctx,nummsgs,mfreqs,mmags,"blue",false,false,true,true);
         drawSpectralPoint(ctx,0,mfreqs,mmags,0,-15,true);
-        console.log(mmags,mfreqs);
     }
 
     var freqs = new Array(nummsgs*2+1);
@@ -891,6 +939,21 @@ function FillCosineSum(signals, sigbias=0, xdcrK=1, xdcrB=0){
         count++;
     }
     return count;
+}
+
+var bigdata;
+function  FillCosineSumForDFT(signals, samplerate, samplesize){
+    bigdata = new Array(samplesize);
+    var tpi = Math.PI*2;
+    var time;
+    for(var t = 0; t < samplesize; t++){
+        var sum = 0;    
+        time = t/samplerate;
+        for(var f = 0; f < signals.length; f++){
+            sum += signals[f][0]*Math.cos(tpi*signals[f][1]*time+signals[f][2]);
+        }
+        bigdata[t]=sum;
+    }
 }
 
 function ChangedIC(){
@@ -2281,17 +2344,27 @@ function drawLabeledPoint(ctx,xpos,ypos,labeltext,xoffset,yoffset,alignright=fal
 
 function showGrid(ctx,gridsquares = true, tickmarks = false, includeaxes = false){
     //initPlot has to have been already done
-    ctx.fillStyle="#dddddd";
-    ctx.fillRect(0,0,plotpixw+plotleft+plotright,plotpixh+plotbottom+plotbottom);
-    ctx.fillStyle="#77dddd";
-    ctx.fillRect(plotleft,plottop,plotpixw,plotpixh);
+    if(darkmode){
+        ctx.fillstyle="#000000";
+        ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+        ctx.fillStyle="#111111";
+        ctx.fillRect(plotleft,plottop,plotpixw,plotpixh);
+    }
+    else{
+        ctx.fillStyle="#dddddd";
+        ctx.fillRect(0,0,plotpixw+plotleft+plotright,plotpixh+plotbottom+plotbottom);
+        ctx.fillStyle="#77dddd";
+        ctx.fillRect(plotleft,plottop,plotpixw,plotpixh);
+    }
     var px, py, x, y;
     if(gridsquares){
         ctx.beginPath();
         ctx.lineWidth = 1;
         ctx.strokeStyle = "gray";
+        if(darkmode) ctx.strokeStyle = "#222222";
         ctx.font = "15px Helvetica";
         ctx.fillStyle = "black";
+        if(darkmode) ctx.strokeStyle = "#444444";
         ctx.textAlign = "left";
         //start at the first xgridstep value above xstart. e.g. -4.5 start at -4. round up to next value by finding: xstart/xgridstep = 4
         if(plotislog){

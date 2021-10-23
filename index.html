@@ -16,10 +16,12 @@
     </script>
     <style>
         body{
+            dark-background-color: rgb(0,0,0);
             background-color: rgb(240,240,240);
         }
         .tablink {
             background-color: rgb(70,71,117);
+            dark-background-color: rgb(0,20,0);
             color: white;
             float: left;
             border: none;
@@ -31,6 +33,7 @@
         }
         .tablink:hover {
             background-color: #33F;
+            dark-background-color: #040;
         }
     </style>
 </head>
@@ -49,7 +52,7 @@
     <button class="tablink" onclick="openBigTab('TransducerInterface',this)">Signal Conditioning</button>
     <button class="tablink" onclick="openBigTab('DataRates',this)"  >ADC Data Rates</button>
     <br>
-    <button class="tablink" onclick="openBigTab('modulation',this)"id="defaultOpen" >Modulation</button>
+    <button class="tablink" onclick="openBigTab('modulation',this)" id="defaultOpen">Modulation</button>
     <button class="tablink" onclick="openBigTab('commequations',this)">Communications</button>
     <button class="tablink" onclick="openBigTab('commpicture',this)">Comm Picture</button>
     <button class="tablink" onclick="openBigTab('radarequations',this)">RADAR</button>
@@ -879,10 +882,10 @@
         <p id="qeta"></p>
         <br>Let's see it in action in time and then frequency domains:
         <br>Carrier Frequency \(f_c\):
-        <input type="number" id="carrierf" min="1" max="999" value="100" step="any" onchange="ChangedModulation()">
+        <input type="number" id="carrierf" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
         <select id="carrierfp" onchange="ChangedModulation()">
-            <option value="0">Hz</option>
-            <option value="3"selected>kHz</option>
+            <option value="0"selected>Hz</option>
+            <option value="3">kHz</option>
             <option value="6" >MHz</option>
             <option value="9">GHz</option>
             <option value="12">THz</option>
@@ -919,10 +922,10 @@
         <button onclick="CleanUpMessages()">Remove All Additional Components</button>
         <div class = "messagecomponent">
         Frequency \(f_m\):
-        <input type="number" id="messagef" class = "msgfreqs" min="1" max="999" value="10" step="any" onchange="ChangedModulation()">
+        <input type="number" id="messagef" class = "msgfreqs" min="1" max="999" value="1" step="any" onchange="ChangedModulation()">
         <select id="messagefp" class = "msgfreqPs" onchange="ChangedModulation()">
-            <option value="0">Hz</option>
-            <option value="3"selected>kHz</option>
+            <option value="0"selected>Hz</option>
+            <option value="3">kHz</option>
             <option value="6" >MHz</option>
             <option value="9">GHz</option>
             <option value="12">THz</option>
@@ -937,7 +940,10 @@
             <option value="6">MV</option>
         </select>
         </div>
-        <br><input type="checkbox" id="overlaymsg" onchange="ChangedModulation()" checked><label for="overlaymsg">Overlay Message</label>
+        <br><input type="checkbox" id="modtimemsg" onchange="ChangedModulation()" checked><label for="modtimemsg">Message +B, *\(A_c\)</label>
+            <input type="checkbox" id="modtimeam" onchange="ChangedModulation()" checked><label for="modtimeam">Amplitude Modulated</label>
+            <input type="checkbox" id="modtimerectified" onchange="ChangedModulation()" checked><label for="modtimerectified">Rectified</label>
+            <input type="checkbox" id="modtimesmooth" onchange="ChangedModulation()" checked><label for="modtimesmooth">Smoothed</label>
         <br><canvas id="canvasMODtime" width="1200" height="400"></canvas>
         <br>Spectrum Overlays:<input type="checkbox" id="modshowmsg" onchange="ChangedModulation()" checked><label for="modshowmsg">Show Original Message</label>
             <input type="checkbox" id="modshowam" onchange="ChangedModulation()" checked><label for="modshowam">Show AM Signal</label>
