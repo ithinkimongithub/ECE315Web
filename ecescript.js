@@ -766,9 +766,7 @@ function Mix(freqs, mags, phases, fx, Ax, phasex){
             newmags[i+inputlength]=0.5*mags[i]*Ax;
         }
     }
-    console.log("mix",newfreqs,newmags,newphases);
     return {newfreqs,newmags,newphases};
-    //return {newfreqs,newmags};
 }
 
 function IFT(freqs, mags, phases, t0, dt, numsamples){
@@ -813,17 +811,11 @@ function DFT(ydata, samplerate){
             rsum += ydata[n]*Math.cos(-n*k/N*Math.PI*2);
             isum += ydata[n]*Math.sin(-n*k/N*Math.PI*2);
         }
-        if(rsum < Math.pow(10,-5)&& isum < Math.pow(10,-5)){
-            result[k] = 0;
-            phases[k] = 0;
-        }
-        else{
-            rsum = rsum/N;
-            isum = isum/N;
-            result[k] = Math.sqrt(rsum*rsum+isum*isum);
-            phases[k] = Math.atan2(isum, rsum);
-            console.log("mag", result[k],"phasee:", phases[k]);
-        }
+        rsum = rsum/N;
+        isum = isum/N;
+        result[k] = Math.sqrt(rsum*rsum+isum*isum);
+        phases[k] = Math.atan2(isum, rsum);
+
     }
     var lastindex;
     if(isEven(N))   lastindex = N/2-1;
@@ -899,7 +891,6 @@ function ChangedModulation(){
     var amps = document.getElementsByClassName("msgamps");
     var ampPs = document.getElementsByClassName("msgampPs");
     var phis = document.getElementsByClassName("msgphis");
-    console.log(amps[0].value);
     var nummsgcos = freqs.length;
     var nummsgs = freqs.length;
     var numdemods = nummsgs*4;
@@ -927,7 +918,6 @@ function ChangedModulation(){
         if(thisfreq < lowestfreq ) lowestfreq  = thisfreq;
     }
 
-    
     mod_fx = fx;
     mod_fc = fc;
     mod_fm = highestfreq;
@@ -935,7 +925,6 @@ function ChangedModulation(){
     mod_message_spectrumf[nummsgcos] = 0;
     mod_message_spectruma[nummsgcos] = B;
     mod_message_spectrump[nummsgcos] = 0;
-    console.log(mod_message_spectrumf,mod_message_spectruma,mod_message_spectrump);
 
     var t0 = 0;
     mod_width = timewindow;
@@ -946,10 +935,6 @@ function ChangedModulation(){
     var iftresult = IFT(mod_message_spectrumf, mod_message_spectruma, mod_message_spectrump, t0, dt, numsamples);
     mod_message_timet = iftresult.resultt;
     mod_message_timey = iftresult.resulty;
-    //console.log(mod_message_timet,mod_message_timey);
-    //console.log(mod_message_timet[numsamples-1]);
-    //var dfttest = DFT(mod_message_timey, samplerate);
-    //console.log("test",dfttest);
 
     //create the mix with the carrier:
     var mixresult = Mix(mod_message_spectrumf, mod_message_spectruma, mod_message_spectrump, fc, Ac, 0);
@@ -977,7 +962,7 @@ function ChangedModulation(){
     mod_rectified_spectruma = dft_of_rectified.newmags;
     mod_rectified_spectrumf = dft_of_rectified.newfreqs;
     mod_rectified_spectrump = dft_of_rectified.newphases;
-    console.log(mod_rectified_spectrumf, mod_rectified_spectruma, mod_rectified_spectrump );
+    console.log("dft of rect:",mod_rectified_spectrumf, mod_rectified_spectruma, mod_rectified_spectrump);
 
     //Filter the rectified signal for LPF > fm-max (highest)
     //var lpf_fco = highestfreq*1.01;
@@ -987,7 +972,7 @@ function ChangedModulation(){
     mod_demod_env_lpf_spectrump = mod_rectified_spectrump;
 
     //IFT the LPF output for time display
-    var lpfoutput = IFT(mod_demod_env_lpf_spectrumf,mod_demod_env_lpf_spectruma, 0, t0, dt, numsamples);
+    var lpfoutput = IFT(mod_demod_env_lpf_spectrumf,mod_demod_env_lpf_spectruma, mod_demod_env_lpf_spectrump, t0, dt, numsamples);
     mod_demod_env_lpf_timet = lpfoutput.resultt;
     mod_demod_env_lpf_timey = lpfoutput.resulty;
 
@@ -999,7 +984,7 @@ function ChangedModulation(){
     mod_demod_env_hpf_spectrump = mod_rectified_spectrump;
 
     //IFT the HPF output for time display
-    var hpfoutput = IFT(mod_demod_env_hpf_spectrumf,mod_demod_env_hpf_spectruma, 0, t0, dt, numsamples);
+    var hpfoutput = IFT(mod_demod_env_hpf_spectrumf,mod_demod_env_hpf_spectruma, mod_demod_env_hpf_spectrump, t0, dt, numsamples);
     mod_demod_env_hpf_timet = hpfoutput.resultt;
     mod_demod_env_hpf_timey = hpfoutput.resulty;
 
@@ -1992,11 +1977,14 @@ function AutoSquareWhat(vs, vps, fs, fps, phis)
     var f0 = htmladcsigfreqs[0].value;
     var fx;
     var fp = parseFloat(htmladcsigfreqps[0].value);
+    htmladcsigphis[0].value = 0;
+    //var p0 = htmladcsigphis[0].value;
     var phase = 0;
     for(var t = 1; t < q; t++){
         factor += 2;
         if(phase == 0) phase = 180;
         else phase = 0;
+        //var phasemod = (factor*p0)%360;
         vx = v0 / factor;
         if(vx < 1.0){
             vx = vx*1000;
@@ -2022,6 +2010,10 @@ function AutoSquareFilter(){
 
 function AutoSquare(){
     AutoSquareWhat("adcsignalv","adcsignalvp","adcsignalf","adcsignalfp","adcsignalphi");
+}
+
+function AutoSquareModSignal(){
+    AutoSquareWhat("msgamps","msgampPs","msgfreqs","msgfreqPs","msgphis");
 }
 
 function ChangedAC(){
