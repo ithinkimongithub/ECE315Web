@@ -1029,8 +1029,8 @@ function ChangedModulation(){
 
 function UpdateModulationView(){
     var canvas, ctx, height;
-
     height = mod_time_max;
+
     canvas = document.getElementById("canvasMODtime");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
@@ -1056,6 +1056,7 @@ function UpdateModulationView(){
     canvas = document.getElementById("canvasMODspect");
     if (canvas == null || !canvas.getContext){console.log("bad canvas"); return;} 
     ctx = canvas.getContext("2d");
+
     var stopfreq = modright*mod_fc+5*mod_fm;
     var startfreq = modleft*mod_fc-5*mod_fm;
     var freqspan = stopfreq-startfreq;
@@ -1064,7 +1065,15 @@ function UpdateModulationView(){
     var dfreqpowerrounded = Math.round(dfreqpower-0.5);
     var dfreqbase  = Math.round(dfreq/Math.pow(10,dfreqpowerrounded));
     var roundedfreqstep = dfreqbase*Math.pow(10,dfreqpowerrounded);
-    var stopmag = mod_spectrum_max;
+    var stopmag;
+    var autovoltage = document.getElementById("modspecvoltageauto").checked;
+    var uservoltage = GrabNumber("modspecvoltagewindow","modspecvoltagewindowp",true,1,999);
+    if(autovoltage){
+        stopmag = mod_spectrum_max;
+        PushEngNotation(stopmag,"modspecvoltagewindow","modspecvoltagewindowp");
+    }
+    else stopmag = uservoltage;
+
     initPlot(startfreq,0,stopfreq,stopmag,canvas.width,canvas.height,roundedfreqstep,stopmag/10,false,100,100,25,25);
     GridSetAxisUnits("Hz","V");
     showGrid(ctx,true,false,true);
@@ -1928,12 +1937,14 @@ function RandomizeMessages(){
     var freqPs= document.getElementsByClassName("msgfreqPs");
     var amps = document.getElementsByClassName("msgamps");
     var ampPs = document.getElementsByClassName("msgampPs");
+    var phases = document.getElementsByClassName("msgphis");
     var Normalize = 1000/freqs.length;
     for(var q = 0; q < freqs.length; q++){
-        freqs[q].value = Math.random()*10;
+        freqs[q].value = Math.round(Math.random()/0.05)/10;
         freqPs[q].value = "3";
         amps[q].value = Math.random()*(Normalize);
         ampPs[q].value = "-3";
+        phases[q].value = Math.random()*360;
     }
     //then sort the frequencies?
     var temp;
@@ -2014,6 +2025,7 @@ function AutoSquare(){
 
 function AutoSquareModSignal(){
     AutoSquareWhat("msgamps","msgampPs","msgfreqs","msgfreqPs","msgphis");
+    ChangedModulation();
 }
 
 function ChangedAC(){
